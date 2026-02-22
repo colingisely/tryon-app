@@ -374,6 +374,7 @@
         }
 
         findProductImage() {
+            // Strategy 1: Try common CSS selectors (works for most themes)
             var selectors = [
                 '.product__media img',
                 '.product-single__photo img',
@@ -384,27 +385,70 @@
                 '.product-photo-container img',
                 '.product__image img',
                 'img.product-featured-image',
-                'img[alt*="product"]',
                 '.main-product-image img',
                 '.product-gallery img',
+                // Horizon theme selectors
+                'media-gallery img',
+                '.media-gallery img',
+                '[data-media-gallery] img',
+                '.product-media-container img',
+                'section img[src*="cdn.shopify"]',
+                'main img[src*="cdn.shopify"]',
+                // Generic fallback
                 'img[src*="products"]',
+                'img[src*="files"]',
             ];
 
-            var img = queryFirst(selectors);
-            if (!img) return null;
+            for (var i = 0; i < selectors.length; i++) {
+                var img = document.querySelector(selectors[i]);
+                if (img) {
+                    var src = img.currentSrc || img.src;
+                    if (src && src.indexOf('cdn.shopify') !== -1) {
+                        return src.split('?')[0];
+                    }
+                }
+            }
 
-            var src = img.currentSrc || img.src;
-            return src ? src.split('?')[0] : null;
+            return null;
+        }
+
+        findProductImageFromAPI() {
+            // Strategy 2: Use Shopify product JSON API (works for ALL themes)
+            var handle = window.location.pathname.split('/products/')[1];
+            if (!handle) return Promise.resolve(null);
+            handle = handle.split('?')[0].split('#')[0];
+
+            return fetch('/products/' + handle + '.json')
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.product && data.product.image && data.product.image.src) {
+                        return data.product.image.src;
+                    }
+                    if (data.product && data.product.images && data.product.images.length > 0) {
+                        return data.product.images[0].src;
+                    }
+                    return null;
+                })
+                .catch(function() { return null; });
         }
 
         openModal() {
+            // First try DOM selectors (instant)
             this.productImage = this.findProductImage();
-            if (!this.productImage) {
-                alert('Não foi possível encontrar a imagem do produto.');
+            if (this.productImage) {
+                this.createModal();
                 return;
             }
 
-            this.createModal();
+            // Fallback: Use Shopify JSON API (async but works for ALL themes)
+            this.findProductImageFromAPI().then(function(url) {
+                if (url) {
+                    this.productImage = url;
+                    this.createModal();
+                } else {
+                    alert('Não foi possível encontrar a imagem do produto.');
+                }
+            }.bind(this));
         }
 
         createModal() {
