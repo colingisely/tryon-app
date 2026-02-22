@@ -1,7 +1,7 @@
 /**
  * Virtual Try-On Plugin for Shopify
  * Professional virtual fitting room experience
- * v2.0 - Theme-adaptive, professional UI
+ * v2.1 - Theme-adaptive, professional UI, result-focused view
  */
 (function () {
     'use strict';
@@ -441,13 +441,54 @@
           object-fit: contain;
           border-radius: ${t.borderRadius};
           background: #f8f8f8;
+          cursor: pointer;
+        }
+
+        /* ─── Fullscreen Lightbox ─── */
+        .vto-lightbox {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.92);
+          z-index: 999999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+        }
+        .vto-lightbox.vto-active { opacity: 1; }
+        .vto-lightbox img {
+          max-width: 95vw;
+          max-height: 95vh;
+          object-fit: contain;
+          border-radius: 4px;
+        }
+        .vto-lightbox-close {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+          background: rgba(255,255,255,0.15);
+          border: none;
+          color: #fff;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+          z-index: 1;
+        }
+        .vto-lightbox-close:hover {
+          background: rgba(255,255,255,0.3);
         }
         .vto-result-actions {
           display: flex;
           gap: 10px;
           margin-top: 14px;
         }
-        .vto-result-actions a,
         .vto-result-actions button {
           flex: 1;
           padding: 11px;
@@ -631,13 +672,15 @@
         </div>
         <p class="vto-subtitle">Envie uma foto sua e veja como esta peça fica em você</p>
         
-        <img src="${this.productImage}" class="vto-product-thumb" alt="Produto">
-        
-        <div class="vto-dropzone">
-          <div class="vto-dropzone-icon">${ICONS.upload}</div>
-          <p class="vto-dropzone-text">Envie uma foto sua</p>
-          <p class="vto-dropzone-hint">Foto de corpo inteiro para melhor resultado</p>
-          <input type="file" class="vto-file-input" accept="image/jpeg,image/png" aria-label="Selecionar foto">
+        <div class="vto-upload-section">
+          <img src="${this.productImage}" class="vto-product-thumb" alt="Produto">
+          
+          <div class="vto-dropzone">
+            <div class="vto-dropzone-icon">${ICONS.upload}</div>
+            <p class="vto-dropzone-text">Foto de corpo inteiro</p>
+            <p class="vto-dropzone-hint">PNG ou JPEG, máx. 10 MB</p>
+            <input type="file" class="vto-file-input" accept="image/jpeg,image/png" aria-label="Selecionar foto">
+          </div>
         </div>
         
         <div class="vto-preview-wrap">
@@ -657,7 +700,7 @@
         <div class="vto-result-wrap">
           <img class="vto-result-img" alt="Resultado">
           <div class="vto-result-actions">
-            <a class="vto-btn-download" download="virtual-tryon.jpg">${ICONS.download} Baixar</a>
+            <button class="vto-btn-download">${ICONS.download} Baixar</button>
             <button class="vto-btn-retry">${ICONS.retry} Nova Foto</button>
           </div>
         </div>
@@ -822,13 +865,87 @@
         }
 
         showResult(url) {
+            var self = this;
             var resultWrap = this.modal.querySelector('.vto-result-wrap');
             var resultImg = this.modal.querySelector('.vto-result-img');
             var downloadBtn = this.modal.querySelector('.vto-btn-download');
 
+            // Hide upload section, preview, subtitle, and generate button
+            var uploadSection = this.modal.querySelector('.vto-upload-section');
+            var previewWrap = this.modal.querySelector('.vto-preview-wrap');
+            var subtitle = this.modal.querySelector('.vto-subtitle');
+            var generateBtn = this.modal.querySelector('.vto-generate-btn');
+            if (uploadSection) uploadSection.style.display = 'none';
+            if (previewWrap) previewWrap.style.display = 'none';
+            if (subtitle) subtitle.style.display = 'none';
+            if (generateBtn) generateBtn.style.display = 'none';
+
             resultImg.src = url;
-            downloadBtn.href = url;
+            this._resultUrl = url;
             resultWrap.classList.add('vto-visible');
+
+            // Click on result image to open fullscreen lightbox
+            resultImg.addEventListener('click', function() {
+                self.openLightbox(url);
+            });
+
+            // Download button: real download via fetch + blob
+            downloadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                fetch(url)
+                    .then(function(res) { return res.blob(); })
+                    .then(function(blob) {
+                        var a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = 'provador-virtual.png';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(a.href);
+                    })
+                    .catch(function() {
+                        window.open(url, '_blank');
+                    });
+            });
+        }
+
+        openLightbox(url) {
+            var self = this;
+            var lightbox = document.createElement('div');
+            lightbox.className = 'vto-lightbox';
+            lightbox.innerHTML = '<button class="vto-lightbox-close" aria-label="Fechar">' + ICONS.close + '</button><img src="' + url + '" alt="Resultado">';
+            document.body.appendChild(lightbox);
+
+            requestAnimationFrame(function() {
+                lightbox.classList.add('vto-active');
+            });
+
+            function closeLightbox() {
+                lightbox.classList.remove('vto-active');
+                setTimeout(function() {
+                    if (lightbox.parentNode) lightbox.remove();
+                }, 250);
+            }
+
+            // Close on X button
+            lightbox.querySelector('.vto-lightbox-close').addEventListener('click', function(e) {
+                e.stopPropagation();
+                closeLightbox();
+            });
+
+            // Close on click anywhere on lightbox background
+            lightbox.addEventListener('click', function(e) {
+                if (e.target === lightbox) closeLightbox();
+            });
+
+            // Close on ESC
+            var escHandler = function(e) {
+                if (e.key === 'Escape') {
+                    closeLightbox();
+                    document.removeEventListener('keydown', escHandler);
+                }
+            };
+            document.addEventListener('keydown', escHandler);
         }
 
         reset() {
@@ -836,12 +953,20 @@
             var dropzone = this.modal.querySelector('.vto-dropzone');
             var generateBtn = this.modal.querySelector('.vto-generate-btn');
             var resultWrap = this.modal.querySelector('.vto-result-wrap');
+            var uploadSection = this.modal.querySelector('.vto-upload-section');
+            var subtitle = this.modal.querySelector('.vto-subtitle');
 
             this.userImage = null;
             previewWrap.classList.remove('vto-visible');
+            previewWrap.style.display = '';
             resultWrap.classList.remove('vto-visible');
             dropzone.style.display = 'block';
-            generateBtn.disabled = true;
+            if (uploadSection) uploadSection.style.display = '';
+            if (subtitle) subtitle.style.display = '';
+            if (generateBtn) {
+                generateBtn.style.display = '';
+                generateBtn.disabled = true;
+            }
             this.hideError();
         }
 
