@@ -2,113 +2,6 @@ import { NextResponse } from "next/server";
 
 const FASHN_API_URL = "https://api.fashn.ai/v1/run";
 const FASHN_API_KEY = process.env.FASHN_API_KEY;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-
-async function uploadBase64ToS3(base64Data: string, filename: string): Promise<string> {
-  try {
-    console.log(`📤 Fazendo upload de ${filename} para S3...`);
-    
-    // Extract base64 content (remove data:image/...;base64, prefix if present)
-    const base64Content = base64Data.includes('base64,') 
-      ? base64Data.split('base64,')[1] 
-      : base64Data;
-    
-    // Upload directly as base64 via multipart form
-    const boundary = '----WebKitFormBoundary' + Math.random().toString(36);
-    const body = [
-      `--${boundary}`,
-      `Content-Disposition: form-data; name="file"; filename="${filename}"`,
-      'Content-Type: image/jpeg',
-      '',
-      Buffer.from(base64Content, 'base64').toString('binary'),
-      `--${boundary}--`
-    ].join('\r\n');
-    
-    const response = await fetch('https://api.manus.im/v1/files', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': `multipart/form-data; boundary=${boundary}`,
-      },
-      body: body,
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Upload failed (${response.status}): ${errorText}`);
-    }
-    
-    const data = await response.json();
-    const url = data.url || data.file?.url;
-    
-    if (!url) {
-      throw new Error('No URL returned from upload');
-    }
-    
-    console.log(`✅ Upload concluído: ${url}`);
-    return url;
-  } catch (error: any) {
-    console.error('❌ Erro no upload:', error.message);
-    throw error;
-  }
-}
-
-async function analyzeGarmentWithAI(garmentImageUrl: string): Promise<string> {
-  try {
-    console.log("🔍 Analisando roupa com Gemini Vision...");
-    
-    const response = await fetch("https://api.manus.im/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Analyze this garment image and provide a detailed description for a virtual try-on AI. Focus on:
-1. Type of garment (shirt, sweater, jacket, dress, etc.)
-2. Fit style (tight, fitted, regular, loose, oversized)
-3. Texture (smooth, fuzzy, fluffy, knit, ribbed, etc.)
-4. Material appearance (cotton, wool, fleece, denim, etc.)
-5. Color and patterns
-6. Key visual details
-
-Provide a concise description in English (max 100 words) that will help the AI understand how this garment should look when worn. Be specific about texture and fit.`,
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: garmentImageUrl,
-                },
-              },
-            ],
-          },
-        ],
-        max_tokens: 200,
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn("⚠️ Gemini analysis failed, continuing without description");
-      return "";
-    }
-
-    const data = await response.json();
-    const description = data.choices?.[0]?.message?.content || "";
-    
-    console.log("✅ Descrição gerada:", description);
-    return description;
-  } catch (error) {
-    console.warn("⚠️ Error analyzing garment:", error);
-    return "";
-  }
-}
 
 async function pollFashnStatus(predictionId: string, maxAttempts = 60): Promise<any> {
   const statusUrl = `https://api.fashn.ai/v1/status/${predictionId}`;
@@ -139,6 +32,16 @@ async function pollFashnStatus(predictionId: string, maxAttempts = 60): Promise<
   throw new Error('Timeout waiting for result');
 }
 
+function ensureBase64Prefix(base64Data: string): string {
+  // If already has prefix, return as is
+  if (base64Data.startsWith('data:image/')) {
+    return base64Data;
+  }
+  
+  // Add prefix
+  return `data:image/jpeg;base64,${base64Data}`;
+}
+
 export async function POST(req: Request) {
   try {
     const { image, productImage } = await req.json();
@@ -166,37 +69,25 @@ export async function POST(req: Request) {
 
     console.log("✅ Imagens recebidas do frontend");
     
-    // Upload images to S3 to get public URLs
-    const [userImageUrl, productImageUrl] = await Promise.all([
-      uploadBase64ToS3(image, `user-${Date.now()}.jpg`),
-      // If productImage is already a URL, use it; otherwise upload
-      productImage.startsWith('http') 
-        ? Promise.resolve(productImage)
-        : uploadBase64ToS3(productImage, `product-${Date.now()}.jpg`)
-    ]);
-    
-    // Analyze garment with AI
-    const garmentDescription = await analyzeGarmentWithAI(productImageUrl);
+    // Ensure base64 images have correct prefix
+    const userImage = ensureBase64Prefix(image);
+    const garmentImage = productImage.startsWith('http') 
+      ? productImage 
+      : ensureBase64Prefix(productImage);
     
     console.log("🚀 Chamando FASHN.ai Virtual Try-On v1.6...");
 
     // Prepare FASHN.ai request body
-    const fashnBody: any = {
+    const fashnBody = {
       model_name: "tryon-v1.6",
       inputs: {
-        model_image: userImageUrl,
-        garment_image: productImageUrl,
+        model_image: userImage,
+        garment_image: garmentImage,
       },
       mode: "balanced",
       output_format: "jpeg",
       return_base64: false,
     };
-
-    // Add garment description if available
-    if (garmentDescription) {
-      fashnBody.inputs.garment_description = garmentDescription;
-      console.log("📝 Usando descrição da roupa para melhorar resultado");
-    }
 
     // Submit request to FASHN.ai
     const response = await fetch(FASHN_API_URL, {
@@ -209,8 +100,9 @@ export async function POST(req: Request) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `FASHN API error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error("❌ FASHN API error:", errorText);
+      throw new Error(`FASHN API error (${response.status}): ${errorText}`);
     }
 
     const { id: predictionId } = await response.json();
