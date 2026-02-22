@@ -1,73 +1,44 @@
-# CHECKPOINT - v2.0 (22/02/2026)
+# CHECKPOINT v2.5 - Try-On App
+**Data**: 22/02/2026
+**Commit**: c2010b3
+**Tag**: v2.5
 
-## Commit: `a6bdf27`
+## Estado Atual do Projeto
 
-**Status: FUNCIONANDO - Testado e validado**
-
----
-
-## Arquivos Principais
-
-| Arquivo | Descrição |
-|---------|-----------|
-| `public/virtual-tryon.js` | Plugin v2.0 - Theme-adaptive, outline button, modal profissional |
-| `app/api/tryon/route.ts` | Backend API - FASHN.ai quality mode, segmentation_free |
-
----
-
-## Configuração do Backend (route.ts)
-
-```json
-{
-  "model_name": "tryon-v1.6",
-  "mode": "quality",
-  "category": "auto",
-  "segmentation_free": true,
-  "garment_photo_type": "auto",
-  "output_format": "png",
-  "return_base64": false
-}
-```
-
----
-
-## Funcionalidades Implementadas
-
-### Plugin (virtual-tryon.js)
-- Detecção automática do tema da loja (cores, border-radius, fontes)
-- Botão outline/transparente "Provar em Mim" com ícone de cabide
-- Modal com backdrop blur, animação slide-up/fade-out
-- Ícones SVG (cabide, upload, câmera, download, retry, close)
-- Fechamento: botão X, clique no overlay, tecla ESC
-- Dropzone com drag & drop e texto amigável
-- Preview da foto com botão de remover
-- Barra de progresso animada durante geração
-- Resultado com botões "Baixar" e "Nova Foto"
-- Detecção de imagem: DOM selectors + JSON API fallback
-- Responsivo (desktop + mobile)
+### Frontend (virtual-tryon.js)
+- Plugin JavaScript standalone para Shopify
+- Detecta automaticamente tema da loja (cores, bordas, fontes)
+- Botão "Provar em Mim" estilo outline (discreto, secundário)
+- Modal com animação slide-up, backdrop blur
+- Fechamento: X, overlay click, ESC
+- Upload drag & drop com preview
+- Toggle Rápido/Premium com auto-seleção por preço do produto
+- Tela de resultado: foto gerada + botões Baixar/Nova Foto
+- Lightbox fullscreen com X e click para fechar
+- Textos: "Foto de corpo inteiro" + "PNG ou JPEG, máx. 10 MB"
+- Mensagens de progresso adaptativas por modo
 
 ### Backend (route.ts)
-- FASHN.ai v1.6 modo quality (melhor preservação de corpo/mãos/rosto)
-- segmentation_free: true (melhor textura de pele)
-- Output PNG (máxima qualidade)
-- Polling com timeout de 90 tentativas (3 min)
-- CORS headers para cross-origin
+- Endpoint: /api/tryon
+- Detecção de categoria via GPT (tops/bottoms/one-pieces)
+- Prompt de styling gerado por IA
+- Modo fast: FASHN v1.6 Quality (~15s, 1 crédito)
+- Modo premium: Try-On Max (~50s, 4 créditos) com fallback para v1.6
+- garment_photo_type: flat-lay (para fotos de produto Shopify)
+- Output: PNG (máxima qualidade)
 
----
+### Infraestrutura
+- GitHub: github.com/colingisely/tryon-app
+- Vercel: tryon-app-tau.vercel.app
+- Shopify: tryonapp-2.myshopify.com (senha: tryonapp)
+- Tema: Horizon
 
-## Deploy
+### Variáveis de Ambiente (Vercel)
+- FASHN_API_KEY: configurada
+- OPENAI_API_KEY: configurada
 
-- **Vercel**: https://tryon-app-tau.vercel.app
-- **Plugin JS**: https://tryon-app-tau.vercel.app/virtual-tryon.js
-- **API Endpoint**: https://tryon-app-tau.vercel.app/api/tryon
-- **GitHub**: https://github.com/colingisely/tryon-app
-
----
-
-## Shopify (theme.liquid)
-
+### Script na Shopify (theme.liquid antes de </body>)
 ```html
-<!-- Virtual Try-On Plugin -->
 <script 
   src="https://tryon-app-tau.vercel.app/virtual-tryon.js"
   data-shop="{{ shop.permanent_domain }}"
@@ -76,30 +47,17 @@
 </script>
 ```
 
-Colar antes de `</body>` no `layout/theme.liquid`.
+### Pendências / Próximos Passos
+- Estratégia de custos: modo rápido como padrão, premium para casos especiais
+- Ideia: modo premium interno para lojistas gerarem fotos profissionais
+- Correções UI pendentes da v2.2 (X do lightbox, esconder header no resultado)
+- Melhorar preservação do produto na IA (detalhes, caimento, textura)
 
----
-
-## Loja de Teste
-
-- **URL**: https://tryonapp-2.myshopify.com
-- **Senha**: tryonapp
-- **Tema**: Horizon
-- **Produto teste**: Sweter rosa estampa de gato (R$ 199,00)
-- **Imagem produto**: `https://cdn.shopify.com/s/files/1/0797/0494/8974/files/sweater.webp?v=1771724060`
-
----
-
-## Variáveis de Ambiente (Vercel)
-
-- `FASHN_API_KEY`: Configurada no Vercel
-
----
-
-## Resultado do Teste
-
-- Tempo de resposta: ~10s (quality mode)
-- Mãos preservadas corretamente
-- Pele com textura natural
-- Suéter rosa com estampa de gato aplicado corretamente
-- Fundo preservado
+### Histórico de Versões
+- v1.0: Plugin básico com FASHN.ai
+- v2.0: Redesign completo UX/UI + adaptação ao tema
+- v2.1: Fix resultado como foco, download, lightbox, textos
+- v2.2: Fix lightbox X vs modal X, esconder header no resultado
+- v2.3: Detecção de categoria via GPT + flat-lay
+- v2.4: Try-On Max premium + loading UX
+- v2.5: Toggle Rápido/Premium + auto preço + roteamento inteligente
