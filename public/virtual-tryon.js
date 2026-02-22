@@ -1,7 +1,7 @@
 /**
  * Virtual Try-On Plugin for Shopify
  * Professional virtual fitting room experience
- * v2.1 - Theme-adaptive, professional UI, result-focused view
+ * v2.2 - Theme-adaptive, professional UI, result-only view (no header/thumbnail)
  */
 (function () {
     'use strict';
@@ -870,14 +870,16 @@
             var resultImg = this.modal.querySelector('.vto-result-img');
             var downloadBtn = this.modal.querySelector('.vto-btn-download');
 
-            // Hide upload section, preview, subtitle, and generate button
+            // Hide upload section, preview, subtitle, header, and generate button
             var uploadSection = this.modal.querySelector('.vto-upload-section');
             var previewWrap = this.modal.querySelector('.vto-preview-wrap');
             var subtitle = this.modal.querySelector('.vto-subtitle');
+            var header = this.modal.querySelector('.vto-header');
             var generateBtn = this.modal.querySelector('.vto-generate-btn');
             if (uploadSection) uploadSection.style.display = 'none';
             if (previewWrap) previewWrap.style.display = 'none';
             if (subtitle) subtitle.style.display = 'none';
+            if (header) header.style.display = 'none';
             if (generateBtn) generateBtn.style.display = 'none';
 
             resultImg.src = url;
@@ -955,6 +957,7 @@
             var resultWrap = this.modal.querySelector('.vto-result-wrap');
             var uploadSection = this.modal.querySelector('.vto-upload-section');
             var subtitle = this.modal.querySelector('.vto-subtitle');
+            var header = this.modal.querySelector('.vto-header');
 
             this.userImage = null;
             previewWrap.classList.remove('vto-visible');
@@ -963,6 +966,7 @@
             dropzone.style.display = 'block';
             if (uploadSection) uploadSection.style.display = '';
             if (subtitle) subtitle.style.display = '';
+            if (header) header.style.display = '';
             if (generateBtn) {
                 generateBtn.style.display = '';
                 generateBtn.disabled = true;
