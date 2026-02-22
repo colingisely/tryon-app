@@ -376,6 +376,72 @@
           background: rgba(0,0,0,0.7);
         }
 
+        /* ─── Mode Toggle ─── */
+        .vto-mode-toggle {
+          display: flex;
+          margin-top: 16px;
+          border: 1.5px solid #e0e0e0;
+          border-radius: ${t.borderRadius};
+          overflow: hidden;
+          background: #f8f8f8;
+        }
+        .vto-mode-option {
+          flex: 1;
+          padding: 10px 8px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          font-family: ${t.fontFamily};
+          font-size: 13px;
+          color: #666;
+          transition: all 0.25s ease;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+          position: relative;
+        }
+        .vto-mode-option:first-child {
+          border-right: 1.5px solid #e0e0e0;
+        }
+        .vto-mode-option.vto-mode-active {
+          background: #fff;
+          color: #111;
+          font-weight: 600;
+        }
+        .vto-mode-option.vto-mode-active.vto-mode-fast {
+          box-shadow: inset 0 -2px 0 ${t.primaryColor};
+        }
+        .vto-mode-option.vto-mode-active.vto-mode-premium {
+          box-shadow: inset 0 -2px 0 #d4a017;
+        }
+        .vto-mode-option:hover:not(.vto-mode-active) {
+          background: #f0f0f0;
+        }
+        .vto-mode-name {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 13px;
+        }
+        .vto-mode-desc {
+          font-size: 11px;
+          color: #999;
+          font-weight: 400;
+        }
+        .vto-mode-option.vto-mode-active .vto-mode-desc {
+          color: #777;
+        }
+        .vto-mode-badge {
+          font-size: 9px;
+          background: linear-gradient(135deg, #d4a017, #f0c040);
+          color: #fff;
+          padding: 1px 5px;
+          border-radius: 3px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
+        }
+
         /* ─── Generate Button ─── */
         .vto-generate-btn {
           display: flex;
@@ -688,6 +754,17 @@
           <button class="vto-preview-remove" aria-label="Remover foto">${ICONS.close}</button>
         </div>
         
+        <div class="vto-mode-toggle">
+          <button type="button" class="vto-mode-option vto-mode-fast" data-mode="fast">
+            <span class="vto-mode-name">&#9889; Rápido</span>
+            <span class="vto-mode-desc">~15 seg</span>
+          </button>
+          <button type="button" class="vto-mode-option vto-mode-premium vto-mode-active" data-mode="premium">
+            <span class="vto-mode-name">&#11088; Premium <span class="vto-mode-badge">MAX</span></span>
+            <span class="vto-mode-desc">~1 min &middot; Melhor qualidade</span>
+          </button>
+        </div>
+        
         <button class="vto-generate-btn" disabled>${ICONS.camera} Experimentar</button>
         
         <div class="vto-progress-wrap">
@@ -786,9 +863,56 @@
                 generateBtn.disabled = true;
             });
 
+            // Mode toggle
+            self.selectedMode = 'premium'; // Default to premium
+            var modeOptions = modal.querySelectorAll('.vto-mode-option');
+            modeOptions.forEach(function(opt) {
+                opt.addEventListener('click', function() {
+                    modeOptions.forEach(function(o) { o.classList.remove('vto-mode-active'); });
+                    opt.classList.add('vto-mode-active');
+                    self.selectedMode = opt.getAttribute('data-mode');
+                    self.updateProgressLabels();
+                });
+            });
+
+            // Auto-detect product price and pre-select mode
+            self.autoSelectMode();
+
             // Generate & retry
             generateBtn.addEventListener('click', function() { self.generate(); });
             retryBtn.addEventListener('click', function() { self.reset(); });
+        }
+
+        autoSelectMode() {
+            // Try to detect product price from the page
+            var priceEl = document.querySelector('.price__regular .price-item--regular, .product-price, .price .money, [data-product-price], .price-item, .product__price');
+            if (priceEl) {
+                var priceText = priceEl.textContent || '';
+                var priceNum = parseFloat(priceText.replace(/[^0-9.,]/g, '').replace(',', '.'));
+                if (!isNaN(priceNum)) {
+                    // Products under 150 BRL: default to fast
+                    if (priceNum < 150) {
+                        this.selectedMode = 'fast';
+                        var modeOptions = this.modal.querySelectorAll('.vto-mode-option');
+                        modeOptions.forEach(function(o) { o.classList.remove('vto-mode-active'); });
+                        var fastBtn = this.modal.querySelector('.vto-mode-fast');
+                        if (fastBtn) fastBtn.classList.add('vto-mode-active');
+                    }
+                    // Products 150+ BRL: keep premium (default)
+                }
+            }
+        }
+
+        updateProgressLabels() {
+            var progressLabel = this.modal.querySelector('.vto-progress-label');
+            var progressSublabel = this.modal.querySelector('.vto-progress-sublabel');
+            if (this.selectedMode === 'fast') {
+                if (progressLabel) progressLabel.textContent = 'Gerando resultado r\u00e1pido...';
+                if (progressSublabel) progressSublabel.textContent = 'Resultado em ~15 segundos';
+            } else {
+                if (progressLabel) progressLabel.textContent = 'Gerando sua prova virtual com IA premium...';
+                if (progressSublabel) progressSublabel.textContent = 'Isso pode levar at\u00e9 1 minuto para o melhor resultado';
+            }
         }
 
         handleFile(file) {
@@ -826,16 +950,31 @@
             progressWrap.classList.add('vto-visible');
             this.hideError();
 
+            // Update progress labels based on selected mode
+            this.updateProgressLabels();
+
+            var isFast = this.selectedMode === 'fast';
+            var progressSpeed = isFast ? 6 : 2;
             var progress = 0;
             var progressLabel = this.modal.querySelector('.vto-progress-label');
             var interval = setInterval(function () {
-                progress += Math.random() * 3;
+                progress += Math.random() * progressSpeed;
                 if (progress > 95) progress = 95;
                 progressBar.style.width = progress + '%';
-                if (progress > 30 && progress < 60 && progressLabel) {
-                    progressLabel.textContent = 'Analisando a peça e ajustando o caimento...';
-                } else if (progress >= 60 && progressLabel) {
-                    progressLabel.textContent = 'Finalizando os detalhes...';
+                if (isFast) {
+                    if (progress > 40 && progress < 70 && progressLabel) {
+                        progressLabel.textContent = 'Ajustando a pe\u00e7a...';
+                    } else if (progress >= 70 && progressLabel) {
+                        progressLabel.textContent = 'Quase pronto...';
+                    }
+                } else {
+                    if (progress > 20 && progress < 45 && progressLabel) {
+                        progressLabel.textContent = 'Analisando a pe\u00e7a e ajustando o caimento...';
+                    } else if (progress >= 45 && progress < 75 && progressLabel) {
+                        progressLabel.textContent = 'Preservando detalhes do produto...';
+                    } else if (progress >= 75 && progressLabel) {
+                        progressLabel.textContent = 'Finalizando com qualidade m\u00e1xima...';
+                    }
                 }
             }, 1000);
 
@@ -845,6 +984,7 @@
                 body: JSON.stringify({
                     image: this.userImage,
                     productImage: this.productImage,
+                    mode: this.selectedMode || 'premium',
                 }),
             })
                 .then(function (res) {
