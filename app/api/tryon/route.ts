@@ -4,6 +4,47 @@ const FASHN_API_URL = "https://api.fashn.ai/v1/run";
 const FASHN_API_KEY = process.env.FASHN_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
+async function uploadImageToS3(base64Data: string, filename: string): Promise<string> {
+  try {
+    console.log(`📤 Fazendo upload de ${filename} para S3...`);
+    
+    // Convert base64 to blob
+    const base64WithoutPrefix = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64WithoutPrefix, 'base64');
+    
+    // Create form data
+    const formData = new FormData();
+    const blob = new Blob([buffer], { type: 'image/jpeg' });
+    formData.append('file', blob, filename);
+    
+    // Upload to S3 via Manus API
+    const response = await fetch('https://api.manus.im/v1/files', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    const url = data.url || data.file?.url;
+    
+    if (!url) {
+      throw new Error('No URL returned from upload');
+    }
+    
+    console.log(`✅ Upload concluído: ${url}`);
+    return url;
+  } catch (error) {
+    console.error('❌ Erro no upload:', error);
+    throw error;
+  }
+}
+
 async function analyzeGarmentWithAI(garmentImageUrl: string): Promise<string> {
   try {
     console.log("🔍 Analisando roupa com Gemini Vision...");
@@ -115,10 +156,19 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("✅ Imagem recebida do frontend");
+    console.log("✅ Imagens recebidas do frontend");
+    
+    // Upload images to S3 to get public URLs
+    const [userImageUrl, productImageUrl] = await Promise.all([
+      uploadImageToS3(image, `user-${Date.now()}.jpg`),
+      // If productImage is already a URL, use it; otherwise upload
+      productImage.startsWith('http') 
+        ? Promise.resolve(productImage)
+        : uploadImageToS3(productImage, `product-${Date.now()}.jpg`)
+    ]);
     
     // Analyze garment with AI
-    const garmentDescription = await analyzeGarmentWithAI(productImage);
+    const garmentDescription = await analyzeGarmentWithAI(productImageUrl);
     
     console.log("🚀 Chamando FASHN.ai Virtual Try-On v1.6...");
 
@@ -126,8 +176,8 @@ export async function POST(req: Request) {
     const fashnBody: any = {
       model_name: "tryon-v1.6",
       inputs: {
-        model_image: image,
-        garment_image: productImage,
+        model_image: userImageUrl,
+        garment_image: productImageUrl,
       },
       mode: "balanced",
       output_format: "jpeg",
