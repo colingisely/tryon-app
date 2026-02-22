@@ -375,7 +375,13 @@
 
         findProductImage() {
             var selectors = [
+                // Horizon theme
+                '.product__media-item img',
                 '.product__media img',
+                '.product-media-container img',
+                // Dawn theme
+                '.product__media-wrapper img',
+                // Common patterns
                 '.product-single__photo img',
                 '.product-image-main img',
                 '[data-product-featured-image]',
@@ -384,10 +390,13 @@
                 '.product-photo-container img',
                 '.product__image img',
                 'img.product-featured-image',
+                // Fallbacks
                 'img[alt*="product"]',
                 '.main-product-image img',
                 '.product-gallery img',
                 'img[src*="products"]',
+                // Last resort: any img in product area
+                '[class*="product"] img:not([class*="icon"]):not([class*="logo"])',
             ];
 
             var img = queryFirst(selectors);
