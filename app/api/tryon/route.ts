@@ -7,19 +7,26 @@ const replicate = new Replicate({
 
 export async function POST(req: Request) {
   try {
-    const { image } = await req.json();
+    const { image, productImage } = await req.json();
 
     if (!image) {
       return NextResponse.json(
         { error: "Imagem não enviada" },
-        { status: 400 }
+        { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } }
+      );
+    }
+
+    if (!productImage) {
+      return NextResponse.json(
+        { error: "Imagem do produto não enviada" },
+        { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } }
       );
     }
 
     console.log("✅ Imagem recebida do frontend");
 
-    const productImageUrl =
-      "https://replicate.delivery/pbxt/KgwTlZyFx5aUU3gc5gMiKuD5nNPTgliMlLUWx160G4z99YjO/sweater.webp";
+    // Use the product image from the request
+    const productImageUrl = productImage;
 
     console.log("🚀 Chamando Replicate IDM-VTON com parâmetros otimizados...");
 
@@ -59,13 +66,30 @@ export async function POST(req: Request) {
 
     console.log("✅ URL do resultado:", resultUrl);
 
-    return NextResponse.json({ result: resultUrl });
+    return NextResponse.json({ resultUrl }, { 
+      headers: { 
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      } 
+    });
 
   } catch (err: any) {
     console.error("❌ Erro no try-on:", err?.message || err);
     return NextResponse.json(
       { error: `Erro no try-on: ${err?.message || "erro desconhecido"}` },
-      { status: 500 }
+      { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }
