@@ -3,8 +3,9 @@ import path from "path";
 
 export async function GET(
   req: Request,
-  { params }: { params: { filename: string } }
+  context: { params: Promise<{ filename: string }> }
 ) {
+  const params = await context.params;
   const filePath = path.join("/tmp", params.filename);
 
   if (!fs.existsSync(filePath)) {
