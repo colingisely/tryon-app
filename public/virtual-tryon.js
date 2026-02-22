@@ -559,7 +559,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userImage: this.userImage,
+                    image: this.userImage,
                     productImage: this.productImage,
                 }),
             })
