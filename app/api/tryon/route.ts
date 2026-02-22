@@ -4,30 +4,38 @@ const FASHN_API_URL = "https://api.fashn.ai/v1/run";
 const FASHN_API_KEY = process.env.FASHN_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-async function uploadImageToS3(base64Data: string, filename: string): Promise<string> {
+async function uploadBase64ToS3(base64Data: string, filename: string): Promise<string> {
   try {
     console.log(`📤 Fazendo upload de ${filename} para S3...`);
     
-    // Convert base64 to blob
-    const base64WithoutPrefix = base64Data.replace(/^data:image\/\w+;base64,/, '');
-    const buffer = Buffer.from(base64WithoutPrefix, 'base64');
+    // Extract base64 content (remove data:image/...;base64, prefix if present)
+    const base64Content = base64Data.includes('base64,') 
+      ? base64Data.split('base64,')[1] 
+      : base64Data;
     
-    // Create form data
-    const formData = new FormData();
-    const blob = new Blob([buffer], { type: 'image/jpeg' });
-    formData.append('file', blob, filename);
+    // Upload directly as base64 via multipart form
+    const boundary = '----WebKitFormBoundary' + Math.random().toString(36);
+    const body = [
+      `--${boundary}`,
+      `Content-Disposition: form-data; name="file"; filename="${filename}"`,
+      'Content-Type: image/jpeg',
+      '',
+      Buffer.from(base64Content, 'base64').toString('binary'),
+      `--${boundary}--`
+    ].join('\r\n');
     
-    // Upload to S3 via Manus API
     const response = await fetch('https://api.manus.im/v1/files', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
       },
-      body: formData,
+      body: body,
     });
     
     if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`Upload failed (${response.status}): ${errorText}`);
     }
     
     const data = await response.json();
@@ -39,8 +47,8 @@ async function uploadImageToS3(base64Data: string, filename: string): Promise<st
     
     console.log(`✅ Upload concluído: ${url}`);
     return url;
-  } catch (error) {
-    console.error('❌ Erro no upload:', error);
+  } catch (error: any) {
+    console.error('❌ Erro no upload:', error.message);
     throw error;
   }
 }
@@ -160,11 +168,11 @@ export async function POST(req: Request) {
     
     // Upload images to S3 to get public URLs
     const [userImageUrl, productImageUrl] = await Promise.all([
-      uploadImageToS3(image, `user-${Date.now()}.jpg`),
+      uploadBase64ToS3(image, `user-${Date.now()}.jpg`),
       // If productImage is already a URL, use it; otherwise upload
       productImage.startsWith('http') 
         ? Promise.resolve(productImage)
-        : uploadImageToS3(productImage, `product-${Date.now()}.jpg`)
+        : uploadBase64ToS3(productImage, `product-${Date.now()}.jpg`)
     ]);
     
     // Analyze garment with AI
