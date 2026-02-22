@@ -32,16 +32,6 @@ async function pollFashnStatus(predictionId: string, maxAttempts = 60): Promise<
   throw new Error('Timeout waiting for result');
 }
 
-function ensureBase64Prefix(base64Data: string): string {
-  // If already has prefix, return as is
-  if (base64Data.startsWith('data:image/')) {
-    return base64Data;
-  }
-  
-  // Add prefix
-  return `data:image/jpeg;base64,${base64Data}`;
-}
-
 export async function POST(req: Request) {
   try {
     const { image, productImage } = await req.json();
@@ -67,27 +57,8 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("✅ Imagens recebidas do frontend");
-    
-    // Ensure base64 images have correct prefix
-    const userImage = ensureBase64Prefix(image);
-    const garmentImage = productImage.startsWith('http') 
-      ? productImage 
-      : ensureBase64Prefix(productImage);
-    
+    console.log("✅ Imagem recebida do frontend");
     console.log("🚀 Chamando FASHN.ai Virtual Try-On v1.6...");
-
-    // Prepare FASHN.ai request body
-    const fashnBody = {
-      model_name: "tryon-v1.6",
-      inputs: {
-        model_image: userImage,
-        garment_image: garmentImage,
-      },
-      mode: "balanced",
-      output_format: "jpeg",
-      return_base64: false,
-    };
 
     // Submit request to FASHN.ai
     const response = await fetch(FASHN_API_URL, {
@@ -96,13 +67,21 @@ export async function POST(req: Request) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${FASHN_API_KEY}`,
       },
-      body: JSON.stringify(fashnBody),
+      body: JSON.stringify({
+        model_name: "tryon-v1.6",
+        inputs: {
+          model_image: image,
+          garment_image: productImage,
+        },
+        mode: "balanced",
+        output_format: "jpeg",
+        return_base64: false,
+      }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ FASHN API error:", errorText);
-      throw new Error(`FASHN API error (${response.status}): ${errorText}`);
+      const errorData = await response.json();
+      throw new Error(errorData.message || `FASHN API error: ${response.statusText}`);
     }
 
     const { id: predictionId } = await response.json();
