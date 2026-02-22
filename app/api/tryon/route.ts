@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 const FASHN_API_URL = "https://api.fashn.ai/v1/run";
 const FASHN_API_KEY = process.env.FASHN_API_KEY;
 
-async function pollFashnStatus(predictionId: string, maxAttempts = 60): Promise<any> {
+async function pollFashnStatus(predictionId: string, maxAttempts = 90): Promise<any> {
   const statusUrl = `https://api.fashn.ai/v1/status/${predictionId}`;
   
   for (let i = 0; i < maxAttempts; i++) {
@@ -58,9 +58,9 @@ export async function POST(req: Request) {
     }
 
     console.log("✅ Imagem recebida do frontend");
-    console.log("🚀 Chamando FASHN.ai Virtual Try-On v1.6...");
+    console.log("🚀 Chamando FASHN.ai Virtual Try-On v1.6 (quality mode)...");
 
-    // Submit request to FASHN.ai
+    // Submit request to FASHN.ai with quality mode for best results
     const response = await fetch(FASHN_API_URL, {
       method: 'POST',
       headers: {
@@ -73,8 +73,17 @@ export async function POST(req: Request) {
           model_image: image,
           garment_image: productImage,
         },
-        mode: "balanced",
-        output_format: "jpeg",
+        // Quality mode: best results, preserves body/hands/face better
+        mode: "quality",
+        // Auto-detect garment category (tops, bottoms, one-pieces)
+        category: "auto",
+        // Better body shape and skin texture preservation
+        segmentation_free: true,
+        // Auto-detect garment photo type
+        garment_photo_type: "auto",
+        // PNG for highest quality output
+        output_format: "png",
+        // Return URL (not base64) for faster response
         return_base64: false,
       }),
     });
@@ -87,8 +96,8 @@ export async function POST(req: Request) {
     const { id: predictionId } = await response.json();
     console.log("📋 Prediction ID:", predictionId);
 
-    // Poll for result
-    console.log("⏳ Aguardando resultado...");
+    // Poll for result (quality mode takes 12-17 seconds)
+    console.log("⏳ Aguardando resultado (quality mode ~15s)...");
     const result = await pollFashnStatus(predictionId);
 
     if (!result.output || !Array.isArray(result.output) || result.output.length === 0) {
