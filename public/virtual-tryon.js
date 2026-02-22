@@ -691,7 +691,8 @@
         <button class="vto-generate-btn" disabled>${ICONS.camera} Experimentar</button>
         
         <div class="vto-progress-wrap">
-          <p class="vto-progress-label">Gerando sua prova virtual...</p>
+          <p class="vto-progress-label">Gerando sua prova virtual com IA premium...</p>
+          <p class="vto-progress-sublabel" style="font-size:11px;color:#aaa;text-align:center;margin-top:4px;">Isso pode levar até 1 minuto para o melhor resultado</p>
           <div class="vto-progress-track">
             <div class="vto-progress-bar"></div>
           </div>
@@ -826,11 +827,17 @@
             this.hideError();
 
             var progress = 0;
+            var progressLabel = this.modal.querySelector('.vto-progress-label');
             var interval = setInterval(function () {
-                progress += Math.random() * 12;
-                if (progress > 90) progress = 90;
+                progress += Math.random() * 3;
+                if (progress > 95) progress = 95;
                 progressBar.style.width = progress + '%';
-            }, 600);
+                if (progress > 30 && progress < 60 && progressLabel) {
+                    progressLabel.textContent = 'Analisando a peça e ajustando o caimento...';
+                } else if (progress >= 60 && progressLabel) {
+                    progressLabel.textContent = 'Finalizando os detalhes...';
+                }
+            }, 1000);
 
             fetch(this.config.apiEndpoint, {
                 method: 'POST',

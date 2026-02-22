@@ -4,97 +4,121 @@ const FASHN_API_URL = "https://api.fashn.ai/v1/run";
 const FASHN_API_KEY = process.env.FASHN_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// ─── Garment Category Detection via GPT Vision ─────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────
 
 type GarmentCategory = "tops" | "bottoms" | "one-pieces";
 
-async function detectGarmentCategory(imageUrl: string): Promise<GarmentCategory> {
+interface GarmentAnalysis {
+  category: GarmentCategory;
+  description: string; // Used as prompt hint for Try-On Max
+}
+
+// ─── Garment Analysis via GPT Vision ───────────────────────────────────────
+// Detects category AND generates a styling prompt for better results
+
+async function analyzeGarment(imageUrl: string): Promise<GarmentAnalysis> {
+  const defaultResult: GarmentAnalysis = {
+    category: "tops",
+    description: "",
+  };
+
   if (!OPENAI_API_KEY) {
-    console.log("⚠️ No OpenAI key, defaulting to auto category");
-    return "tops"; // safe default
+    console.log("⚠️ No OpenAI key, defaulting to tops");
+    return defaultResult;
   }
 
   try {
-    console.log("🔍 Detecting garment category with GPT Vision...");
+    console.log("🔍 Analyzing garment with GPT Vision...");
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
         model: "gpt-4.1-mini",
         messages: [
           {
             role: "system",
-            content: `You are a fashion garment classifier. Analyze the product image and classify it into exactly ONE category. Reply with ONLY the category word, nothing else.
+            content: `You are a fashion garment analyzer. Analyze the product image and provide:
+1. CATEGORY: exactly one of "tops", "bottoms", or "one-pieces"
+2. PROMPT: a short styling instruction (max 15 words) for how this garment should be worn on a person
 
-Categories:
-- "tops" = upper body garments: t-shirts, shirts, blouses, sweaters, jackets, coats, vests, crop tops, tank tops, hoodies, cardigans
-- "bottoms" = lower body garments: pants, jeans, trousers, shorts, skirts, leggings, bermudas
-- "one-pieces" = full body garments: dresses, jumpsuits, rompers, overalls, bodysuits, full-length gowns
+Category rules:
+- "tops" = upper body: t-shirts, shirts, blouses, sweaters, jackets, coats, vests, crop tops, tank tops, hoodies, cardigans
+- "bottoms" = lower body: pants, jeans, trousers, shorts, skirts, leggings, bermudas
+- "one-pieces" = full body: dresses, jumpsuits, rompers, overalls, bodysuits, gowns
 
-Rules:
-- If the garment covers ONLY the upper body → "tops"
-- If the garment covers ONLY the lower body → "bottoms"  
-- If the garment covers BOTH upper AND lower body as one piece → "one-pieces"
-- Jackets and coats are ALWAYS "tops" (they are outerwear for upper body)
-- Sets/combos that are separate pieces: classify by the MAIN piece visible`
+Prompt rules:
+- For tops/jackets: mention if it should be open, closed, tucked, layered over existing clothes
+- For bottoms: mention fit style (wide leg, skinny, high waist, etc.)
+- For one-pieces: mention the overall silhouette
+- ALWAYS mention "preserve existing" for the body parts NOT being changed
+- Keep the person's OTHER clothes intact
+
+Reply in this exact format (2 lines only):
+CATEGORY: <category>
+PROMPT: <styling instruction>`,
           },
           {
             role: "user",
             content: [
               {
                 type: "image_url",
-                image_url: {
-                  url: imageUrl,
-                  detail: "low"
-                }
+                image_url: { url: imageUrl, detail: "low" },
               },
               {
                 type: "text",
-                text: "What category is this garment? Reply with only: tops, bottoms, or one-pieces"
-              }
-            ]
-          }
+                text: "Analyze this garment. Reply with CATEGORY and PROMPT only.",
+              },
+            ],
+          },
         ],
-        max_tokens: 10,
+        max_tokens: 60,
         temperature: 0,
       }),
     });
 
     if (!response.ok) {
-      console.log("⚠️ GPT Vision failed, defaulting to auto");
-      return "tops";
+      console.log("⚠️ GPT Vision failed, using defaults");
+      return defaultResult;
     }
 
     const data = await response.json();
-    const answer = data.choices?.[0]?.message?.content?.trim()?.toLowerCase() || "";
+    const answer = data.choices?.[0]?.message?.content?.trim() || "";
+    console.log("🤖 GPT Analysis:", answer);
 
-    // Validate the response
-    if (answer.includes("bottoms")) return "bottoms";
-    if (answer.includes("one-pieces") || answer.includes("one-piece")) return "one-pieces";
-    if (answer.includes("tops")) return "tops";
+    // Parse category
+    let category: GarmentCategory = "tops";
+    if (answer.toLowerCase().includes("bottoms")) category = "bottoms";
+    else if (answer.toLowerCase().includes("one-pieces") || answer.toLowerCase().includes("one-piece"))
+      category = "one-pieces";
+    else if (answer.toLowerCase().includes("tops")) category = "tops";
 
-    console.log("⚠️ Unexpected GPT response:", answer, "- defaulting to tops");
-    return "tops";
+    // Parse prompt
+    let description = "";
+    const promptMatch = answer.match(/PROMPT:\s*(.+)/i);
+    if (promptMatch) {
+      description = promptMatch[1].trim();
+    }
 
+    return { category, description };
   } catch (error) {
-    console.log("⚠️ Category detection error, defaulting to tops:", error);
-    return "tops";
+    console.log("⚠️ Garment analysis error:", error);
+    return defaultResult;
   }
 }
 
 // ─── FASHN.ai Status Polling ────────────────────────────────────────────────
 
-async function pollFashnStatus(predictionId: string, maxAttempts = 90): Promise<any> {
+async function pollFashnStatus(predictionId: string, maxAttempts = 120): Promise<any> {
   const statusUrl = `https://api.fashn.ai/v1/status/${predictionId}`;
-  
+
   for (let i = 0; i < maxAttempts; i++) {
     const response = await fetch(statusUrl, {
       headers: {
-        'Authorization': `Bearer ${FASHN_API_KEY}`,
+        Authorization: `Bearer ${FASHN_API_KEY}`,
       },
     });
 
@@ -103,120 +127,204 @@ async function pollFashnStatus(predictionId: string, maxAttempts = 90): Promise<
     }
 
     const result = await response.json();
-    
-    if (result.status === 'completed') {
+
+    if (result.status === "completed") {
       return result;
-    } else if (result.status === 'failed') {
-      throw new Error(result.error?.message || 'Generation failed');
+    } else if (result.status === "failed") {
+      throw new Error(result.error?.message || "Generation failed");
     }
-    
+
     // Wait 2 seconds before next poll
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
-  
-  throw new Error('Timeout waiting for result');
+
+  throw new Error("Timeout waiting for result");
+}
+
+// ─── Try-On Max (Premium Quality) ──────────────────────────────────────────
+// Uses tryon-max model: 50s processing, up to 4K, enhanced fidelity
+// 4 credits per image
+
+async function tryOnMax(
+  modelImage: string,
+  garmentImage: string,
+  prompt: string
+): Promise<{ resultUrl: string; model: string }> {
+  console.log("🏆 Using Try-On Max (premium quality, ~50s)...");
+  console.log(`   Prompt: "${prompt || "(none)"}"`);
+
+  const response = await fetch(FASHN_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${FASHN_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model_name: "tryon-max",
+      inputs: {
+        model_image: modelImage,
+        product_image: garmentImage,
+        // Styling prompt from GPT analysis
+        ...(prompt ? { prompt } : {}),
+        // PNG for maximum quality
+        output_format: "png",
+        // Return URL for faster response
+        return_base64: false,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || errorData.message || `FASHN API error: ${response.statusText}`);
+  }
+
+  const { id: predictionId } = await response.json();
+  console.log("📋 Try-On Max Prediction ID:", predictionId);
+
+  // Poll for result (Try-On Max takes ~50 seconds)
+  console.log("⏳ Aguardando resultado (Try-On Max ~50s)...");
+  const result = await pollFashnStatus(predictionId, 120);
+
+  if (!result.output || !Array.isArray(result.output) || result.output.length === 0) {
+    throw new Error("No output image returned from Try-On Max");
+  }
+
+  return { resultUrl: result.output[0], model: "tryon-max" };
+}
+
+// ─── Try-On v1.6 Quality (Fallback) ────────────────────────────────────────
+// Uses tryon-v1.6 model: 12-17s processing, quality mode
+// 1 credit per image
+
+async function tryOnV16(
+  modelImage: string,
+  garmentImage: string,
+  category: GarmentCategory
+): Promise<{ resultUrl: string; model: string }> {
+  console.log(`🔄 Fallback: Try-On v1.6 (quality mode, category: ${category})...`);
+
+  const response = await fetch(FASHN_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${FASHN_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model_name: "tryon-v1.6",
+      inputs: {
+        model_image: modelImage,
+        garment_image: garmentImage,
+      },
+      // Quality mode: best v1.6 results (12-17s)
+      mode: "quality",
+      // Explicit category from GPT Vision
+      category: category,
+      // Better body shape and skin texture preservation
+      segmentation_free: true,
+      // Product photos from Shopify are typically flat-lay
+      garment_photo_type: "flat-lay",
+      // PNG for highest quality
+      output_format: "png",
+      return_base64: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || errorData.message || `FASHN API error: ${response.statusText}`);
+  }
+
+  const { id: predictionId } = await response.json();
+  console.log("📋 v1.6 Prediction ID:", predictionId);
+
+  console.log("⏳ Aguardando resultado (v1.6 quality ~15s)...");
+  const result = await pollFashnStatus(predictionId, 90);
+
+  if (!result.output || !Array.isArray(result.output) || result.output.length === 0) {
+    throw new Error("No output image returned from v1.6");
+  }
+
+  return { resultUrl: result.output[0], model: "tryon-v1.6" };
 }
 
 // ─── Main API Route ─────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
   try {
-    const { image, productImage } = await req.json();
+    const { image, productImage, mode } = await req.json();
 
     if (!image) {
       return NextResponse.json(
         { error: "Imagem não enviada" },
-        { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } }
+        { status: 400, headers: { "Access-Control-Allow-Origin": "*" } }
       );
     }
 
     if (!productImage) {
       return NextResponse.json(
         { error: "Imagem do produto não enviada" },
-        { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } }
+        { status: 400, headers: { "Access-Control-Allow-Origin": "*" } }
       );
     }
 
     if (!FASHN_API_KEY) {
       return NextResponse.json(
         { error: "FASHN API key not configured" },
-        { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }
+        { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
       );
     }
 
     console.log("✅ Imagens recebidas do frontend");
 
-    // Step 1: Detect garment category using GPT Vision
-    const category = await detectGarmentCategory(productImage);
-    console.log(`👗 Categoria detectada: ${category}`);
+    // Step 1: Analyze garment (category + styling prompt)
+    const analysis = await analyzeGarment(productImage);
+    console.log(`👗 Categoria: ${analysis.category}`);
+    console.log(`💡 Prompt: ${analysis.description}`);
 
-    // Step 2: Call FASHN.ai with explicit category
-    console.log(`🚀 Chamando FASHN.ai (quality mode, category: ${category})...`);
+    // Step 2: Choose endpoint based on mode
+    // Default: Try-On Max for best quality
+    // Fallback: v1.6 quality if Max fails or if explicitly requested
+    const useFast = mode === "fast";
 
-    const response = await fetch(FASHN_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${FASHN_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model_name: "tryon-v1.6",
-        inputs: {
-          model_image: image,
-          garment_image: productImage,
-        },
-        // Quality mode: best results, preserves body/hands/face better
-        mode: "quality",
-        // EXPLICIT category from GPT Vision (tops/bottoms/one-pieces)
-        // This tells FASHN exactly which body part to edit and which to preserve
-        category: category,
-        // Better body shape and skin texture preservation
-        segmentation_free: true,
-        // Product photos from Shopify are typically flat-lay or ghost mannequin
-        garment_photo_type: "flat-lay",
-        // PNG for highest quality output
-        output_format: "png",
-        // Return URL (not base64) for faster response
-        return_base64: false,
-      }),
-    });
+    let resultData: { resultUrl: string; model: string };
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `FASHN API error: ${response.statusText}`);
+    if (useFast) {
+      // Fast mode: use v1.6 directly
+      resultData = await tryOnV16(image, productImage, analysis.category);
+    } else {
+      // Premium mode (default): Try-On Max with v1.6 fallback
+      try {
+        resultData = await tryOnMax(image, productImage, analysis.description);
+      } catch (maxError: any) {
+        console.log("⚠️ Try-On Max failed, falling back to v1.6:", maxError?.message);
+        resultData = await tryOnV16(image, productImage, analysis.category);
+      }
     }
 
-    const { id: predictionId } = await response.json();
-    console.log("📋 Prediction ID:", predictionId);
-
-    // Poll for result (quality mode takes 12-17 seconds)
-    console.log("⏳ Aguardando resultado (quality mode ~15s)...");
-    const result = await pollFashnStatus(predictionId);
-
-    if (!result.output || !Array.isArray(result.output) || result.output.length === 0) {
-      throw new Error("No output image returned");
-    }
-
-    const resultUrl = result.output[0];
     console.log("✅ Resultado gerado com sucesso");
-    console.log(`   Categoria: ${category} | Modo: quality | Tipo foto: flat-lay`);
+    console.log(`   Modelo: ${resultData.model} | Categoria: ${analysis.category}`);
 
     return NextResponse.json(
-      { resultUrl, category },
-      { 
-        headers: { 
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        } 
+      {
+        resultUrl: resultData.resultUrl,
+        category: analysis.category,
+        model: resultData.model,
+        prompt: analysis.description,
+      },
+      {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
       }
     );
-
   } catch (err: any) {
     console.error("❌ Erro no try-on:", err?.message || err);
     return NextResponse.json(
       { error: `Erro no try-on: ${err?.message || "erro desconhecido"}` },
-      { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }
+      { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
     );
   }
 }
@@ -225,9 +333,9 @@ export async function OPTIONS() {
   return new Response(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
     },
   });
 }
