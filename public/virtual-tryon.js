@@ -1,20 +1,12 @@
 /**
- * virtual-tryon.js
- * Inject a "Provar em Mim" (Try On Me) button into Shopify product pages.
- *
- * Usage:
- *   <script src="virtual-tryon.js"
- *           data-shop="my-store.myshopify.com"
- *           data-api-endpoint="https://seu-dominio.com/api/tryon"
- *           defer>
- *   </script>
+ * Virtual Try-On Plugin for Shopify
+ * Professional virtual fitting room experience
  */
 (function () {
     'use strict';
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
-    /** Read a file as a base64 data-URI */
     function fileToBase64(file) {
         return new Promise(function (resolve, reject) {
             var reader = new FileReader();
@@ -24,7 +16,6 @@
         });
     }
 
-    /** Query helper — returns the first match from an array of CSS selectors */
     function queryFirst(selectors, context) {
         context = context || document;
         for (var i = 0; i < selectors.length; i++) {
@@ -37,14 +28,11 @@
     // ─── Main Class ───────────────────────────────────────────────────────────
 
     class VirtualTryOn {
-        /**
-         * @param {{ shop: string, apiEndpoint: string }} config
-         */
         constructor(config) {
             this.config = config;
-            this.productImage = null; // URL string
-            this.userImage = null; // base64 data-URI
-            this.modal = null; // DOM node
+            this.productImage = null;
+            this.userImage = null;
+            this.modal = null;
             this._stylesInjected = false;
 
             if (this.isProductPage()) {
@@ -52,11 +40,7 @@
             }
         }
 
-        // ── Detection ────────────────────────────────────────────────────────────
-
         isProductPage() {
-            // Shopify sets window.ShopifyAnalytics.meta.page.pageType = 'product'
-            // or exposes window.Shopify.product. We also fall back to the URL path.
             if (window.Shopify && window.Shopify.product) return true;
             if (
                 window.ShopifyAnalytics &&
@@ -67,14 +51,10 @@
             return /\/products\//.test(window.location.pathname);
         }
 
-        // ── Initialisation ───────────────────────────────────────────────────────
-
         init() {
             this.injectStyles();
             this.createTryOnButton();
         }
-
-        // ── Styles ───────────────────────────────────────────────────────────────
 
         injectStyles() {
             if (this._stylesInjected) return;
@@ -83,277 +63,280 @@
             var style = document.createElement('style');
             style.id = 'vto-styles';
             style.textContent = `
-        /* ── Try-On Button ── */
+        /* Button */
         .vto-button {
           display: block;
           width: 100%;
           margin-bottom: 10px;
-          padding: 13px 16px;
-          background: #1a1a1a;
+          padding: 14px 16px;
+          background: #000;
           color: #fff;
-          border: 1px solid #333;
-          border-radius: 8px;
+          border: none;
+          border-radius: 6px;
           cursor: pointer;
           font-size: 15px;
           font-weight: 600;
-          letter-spacing: 0.03em;
           text-align: center;
-          transition: background 0.2s, transform 0.1s;
-          box-sizing: border-box;
+          transition: background 0.2s;
         }
-        .vto-button:hover  { background: #333; }
-        .vto-button:active { transform: scale(0.98); }
+        .vto-button:hover { background: #333; }
 
-        /* ── Overlay ── */
+        /* Overlay */
         .vto-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,0.65);
+          background: rgba(0,0,0,0.7);
           z-index: 999998;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 16px;
-          box-sizing: border-box;
-          animation: vtoFadeIn 0.2s ease;
+          padding: 20px;
+          animation: fadeIn 0.2s ease;
         }
-        @keyframes vtoFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* ── Modal ── */
+        /* Modal */
         .vto-modal {
           position: relative;
           background: #fff;
-          border-radius: 16px;
-          box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+          border-radius: 12px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
           width: 100%;
-          max-width: 520px;
-          padding: 32px 28px 28px;
-          box-sizing: border-box;
-          animation: vtoSlideUp 0.25s ease;
-          overflow: hidden;
+          max-width: 480px;
+          max-height: 90vh;
+          padding: 28px 24px;
+          overflow-y: auto;
+          animation: slideUp 0.25s ease;
         }
-        @keyframes vtoSlideUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to   { opacity: 1; transform: translateY(0); }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Close button ── */
+        /* Close button */
         .vto-close {
           position: absolute;
-          top: 14px;
-          right: 18px;
+          top: 12px;
+          right: 12px;
           background: none;
           border: none;
-          font-size: 22px;
+          font-size: 24px;
           cursor: pointer;
-          color: #555;
+          color: #666;
           line-height: 1;
-          padding: 4px 8px;
-          border-radius: 6px;
+          padding: 4px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
           transition: background 0.15s;
         }
         .vto-close:hover { background: #f0f0f0; }
 
-        /* ── Title ── */
+        /* Title */
         .vto-title {
-          margin: 0 0 6px;
-          font-size: 20px;
+          margin: 0 0 8px;
+          font-size: 22px;
           font-weight: 700;
-          color: #111;
+          color: #000;
         }
         .vto-subtitle {
-          margin: 0 0 20px;
-          font-size: 13px;
-          color: #777;
+          margin: 0 0 24px;
+          font-size: 14px;
+          color: #666;
+          line-height: 1.5;
         }
 
-        /* ── Product thumbnail ── */
+        /* Product thumbnail */
         .vto-product-thumb {
           display: block;
-          max-height: 120px;
+          max-height: 100px;
           border-radius: 8px;
-          margin: 0 auto 20px;
+          margin: 0 auto 24px;
           object-fit: contain;
         }
 
-        /* ── Drop Zone ── */
+        /* Drop Zone */
         .vto-dropzone {
-          border: 2px dashed #ccc;
-          border-radius: 12px;
-          padding: 28px 20px;
+          border: 2px dashed #d0d0d0;
+          border-radius: 10px;
+          padding: 32px 20px;
           text-align: center;
           cursor: pointer;
-          transition: border-color 0.2s, background 0.2s;
+          transition: all 0.2s;
           background: #fafafa;
           position: relative;
         }
         .vto-dropzone.vto-drag-over {
-          border-color: #1a1a1a;
+          border-color: #000;
           background: #f0f0f0;
         }
         .vto-dropzone-icon {
-          font-size: 36px;
-          margin-bottom: 8px;
+          font-size: 40px;
+          margin-bottom: 12px;
           display: block;
+          color: #999;
         }
         .vto-dropzone-text {
-          font-size: 14px;
-          color: #555;
-          margin: 0;
-          line-height: 1.5;
+          font-size: 15px;
+          color: #333;
+          margin: 0 0 4px;
+          font-weight: 500;
         }
         .vto-dropzone-hint {
-          font-size: 12px;
-          color: #aaa;
-          margin: 6px 0 0;
+          font-size: 13px;
+          color: #999;
+          margin: 0;
         }
         .vto-file-input {
           position: absolute;
           inset: 0;
           opacity: 0;
           cursor: pointer;
-          width: 100%;
-          height: 100%;
         }
 
-        /* ── Preview ── */
+        /* Preview */
         .vto-preview-wrap {
           display: none;
           position: relative;
-          text-align: center;
           margin-bottom: 20px;
         }
         .vto-preview-wrap.vto-visible { display: block; }
         .vto-preview-img {
           width: 100%;
-          max-height: 200px;
-          object-fit: cover;
+          max-height: 300px;
+          object-fit: contain;
           border-radius: 10px;
+          background: #f5f5f5;
         }
         .vto-preview-remove {
           position: absolute;
-          top: 6px;
-          right: 6px;
-          background: rgba(0,0,0,0.5);
+          top: 8px;
+          right: 8px;
+          background: rgba(0,0,0,0.6);
           color: #fff;
           border: none;
           border-radius: 50%;
-          width: 26px;
-          height: 26px;
+          width: 28px;
+          height: 28px;
           cursor: pointer;
-          font-size: 14px;
-          line-height: 26px;
-          text-align: center;
-          padding: 0;
+          font-size: 16px;
         }
 
-        /* ── Generate button ── */
+        /* Generate button */
         .vto-generate-btn {
           display: block;
           width: 100%;
-          margin-top: 16px;
-          padding: 14px;
-          background: linear-gradient(135deg, #1a1a1a 0%, #444 100%);
+          margin-top: 20px;
+          padding: 15px;
+          background: #000;
           color: #fff;
           border: none;
-          border-radius: 10px;
+          border-radius: 8px;
           font-size: 15px;
-          font-weight: 700;
+          font-weight: 600;
           cursor: pointer;
-          transition: opacity 0.2s, transform 0.1s;
-          box-sizing: border-box;
+          transition: background 0.2s;
         }
         .vto-generate-btn:disabled {
-          opacity: 0.4;
+          opacity: 0.5;
           cursor: not-allowed;
         }
-        .vto-generate-btn:not(:disabled):hover  { opacity: 0.88; }
-        .vto-generate-btn:not(:disabled):active { transform: scale(0.98); }
+        .vto-generate-btn:not(:disabled):hover { background: #333; }
 
-        /* ── Progress ── */
+        /* Progress */
         .vto-progress-wrap {
           display: none;
-          margin-top: 16px;
+          margin-top: 20px;
         }
         .vto-progress-wrap.vto-visible { display: block; }
         .vto-progress-label {
-          font-size: 13px;
-          color: #555;
-          margin-bottom: 6px;
+          font-size: 14px;
+          color: #666;
+          margin-bottom: 8px;
           text-align: center;
         }
         .vto-progress-track {
-          height: 6px;
-          background: #eee;
+          height: 4px;
+          background: #e0e0e0;
           border-radius: 99px;
           overflow: hidden;
         }
         .vto-progress-bar {
           height: 100%;
           width: 0%;
-          background: linear-gradient(90deg, #1a1a1a, #777);
+          background: #000;
           border-radius: 99px;
           transition: width 0.4s ease;
         }
 
-        /* ── Result ── */
+        /* Result */
         .vto-result-wrap {
           display: none;
-          margin-top: 20px;
+          margin-top: 24px;
         }
         .vto-result-wrap.vto-visible { display: block; }
         .vto-result-img {
           width: 100%;
-          border-radius: 12px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+          max-height: 500px;
+          object-fit: contain;
+          border-radius: 10px;
+          background: #f5f5f5;
         }
         .vto-result-actions {
           display: flex;
           gap: 10px;
-          margin-top: 12px;
+          margin-top: 16px;
         }
         .vto-result-actions a,
         .vto-result-actions button {
           flex: 1;
-          padding: 10px;
+          padding: 12px;
           border-radius: 8px;
           font-size: 14px;
           font-weight: 600;
           text-align: center;
           text-decoration: none;
           cursor: pointer;
-          box-sizing: border-box;
         }
         .vto-btn-download {
-          background: #1a1a1a;
+          background: #000;
           color: #fff;
           border: none;
         }
         .vto-btn-retry {
-          background: none;
-          color: #1a1a1a;
-          border: 1px solid #ccc;
+          background: #fff;
+          color: #000;
+          border: 1px solid #d0d0d0;
         }
         .vto-btn-retry:hover { background: #f5f5f5; }
 
-        /* ── Error ── */
+        /* Error */
         .vto-error {
           display: none;
-          margin-top: 14px;
+          margin-top: 16px;
           padding: 12px 16px;
-          background: #fff0f0;
-          border: 1px solid #fcc;
+          background: #fff5f5;
+          border: 1px solid #ffdddd;
           border-radius: 8px;
           font-size: 13px;
-          color: #c00;
+          color: #d00;
           text-align: center;
         }
         .vto-error.vto-visible { display: block; }
+
+        /* Mobile responsive */
+        @media (max-width: 640px) {
+          .vto-modal {
+            max-width: 100%;
+            max-height: 95vh;
+            padding: 24px 20px;
+          }
+          .vto-title { font-size: 20px; }
+          .vto-result-img { max-height: 400px; }
+        }
       `;
             document.head.appendChild(style);
         }
-
-        // ── Button Injection ──────────────────────────────────────────────────────
 
         createTryOnButton() {
             var formSelectors = [
@@ -372,313 +355,209 @@
             ];
 
             var form = queryFirst(formSelectors);
-            if (!form) {
-                console.warn('[VirtualTryOn] Formulário de produto não encontrado.');
-                return;
-            }
+            if (!form) return;
 
             var addBtn = queryFirst(addBtnSelectors, form);
-            if (!addBtn) {
-                console.warn('[VirtualTryOn] Botão "Adicionar ao Carrinho" não encontrado.');
-                return;
-            }
+            if (!addBtn) return;
 
-            // Avoid double injection
             if (document.querySelector('.vto-button')) return;
 
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'vto-button';
-            btn.innerHTML = '👗 Provar em Mim';
-            btn.setAttribute('aria-label', 'Abrir virtual try-on');
+            btn.textContent = 'Provar em Mim';
+            btn.setAttribute('aria-label', 'Abrir provador virtual');
 
             btn.addEventListener('click', this.openModal.bind(this));
 
             addBtn.parentNode.insertBefore(btn, addBtn);
         }
 
-        // ── Product Image ─────────────────────────────────────────────────────────
-
-        getProductImage() {
+        findProductImage() {
             var selectors = [
-                '.product__media-item--main img',
-                '.product--large .product__media-item img',
-                '.product-gallery__image img',
+                '.product__media img',
                 '.product-single__photo img',
-                '.product-featured-img',
-                '#main-product-image',
-                'img.featured-image',
-                '.product-image-container img',
-                '.product__photo img',
+                '.product-image-main img',
                 '[data-product-featured-image]',
-                '.product-images img:first-child',
+                '.product__main-photos img',
+                'img[data-image-id]',
+                '.product-photo-container img',
+                '.product__image img',
+                'img.product-featured-image',
+                'img[alt*="product"]',
                 '.main-product-image img',
-                'img[itemprop="image"]',
+                '.product-gallery img',
+                'img[src*="products"]',
             ];
 
             var img = queryFirst(selectors);
+            if (!img) return null;
 
-            if (img) {
-                // Prefer srcset / data-src for high-res image
-                var src =
-                    img.dataset.src ||
-                    img.dataset.lazySrc ||
-                    img.currentSrc ||
-                    img.src;
-                // Resolve protocol-less URLs
-                if (src && src.startsWith('//')) src = 'https:' + src;
-                return src || null;
-            }
-
-            // Fallback: look for first large <img> in the page
-            var allImgs = Array.from(document.querySelectorAll('img'));
-            for (var i = 0; i < allImgs.length; i++) {
-                var el = allImgs[i];
-                if (el.naturalWidth > 300 && el.naturalHeight > 300) {
-                    var s = el.currentSrc || el.src;
-                    if (s && !s.includes('logo') && !s.includes('icon')) return s;
-                }
-            }
-
-            return null;
+            var src = img.currentSrc || img.src;
+            return src ? src.split('?')[0] : null;
         }
 
-        // ── Modal ─────────────────────────────────────────────────────────────────
-
         openModal() {
-            this.productImage = this.getProductImage();
-
+            this.productImage = this.findProductImage();
             if (!this.productImage) {
-                alert('Não foi possível encontrar a imagem do produto. Tente em outro tema.');
+                alert('Não foi possível encontrar a imagem do produto.');
                 return;
             }
 
-            // Remove any stale modal
-            this._removeModal();
+            this.createModal();
+        }
 
+        createModal() {
             var overlay = document.createElement('div');
             overlay.className = 'vto-overlay';
             overlay.setAttribute('role', 'dialog');
             overlay.setAttribute('aria-modal', 'true');
-            overlay.setAttribute('aria-label', 'Virtual Try-On');
-            overlay.innerHTML = this._modalHTML();
 
+            var modal = document.createElement('div');
+            modal.className = 'vto-modal';
+
+            modal.innerHTML = `
+        <button class="vto-close" aria-label="Fechar">×</button>
+        <h2 class="vto-title">Provador Virtual</h2>
+        <p class="vto-subtitle">Envie sua foto e veja como este produto fica em você</p>
+        
+        <img src="${this.productImage}" class="vto-product-thumb" alt="Produto">
+        
+        <div class="vto-dropzone">
+          <span class="vto-dropzone-icon">📷</span>
+          <p class="vto-dropzone-text">Clique para enviar sua foto</p>
+          <p class="vto-dropzone-hint">JPG ou PNG · máx. 10 MB</p>
+          <input type="file" class="vto-file-input" accept="image/jpeg,image/png" aria-label="Selecionar foto">
+        </div>
+        
+        <div class="vto-preview-wrap">
+          <img class="vto-preview-img" alt="Sua foto">
+          <button class="vto-preview-remove" aria-label="Remover foto">×</button>
+        </div>
+        
+        <button class="vto-generate-btn" disabled>Experimentar</button>
+        
+        <div class="vto-progress-wrap">
+          <p class="vto-progress-label">Processando...</p>
+          <div class="vto-progress-track">
+            <div class="vto-progress-bar"></div>
+          </div>
+        </div>
+        
+        <div class="vto-result-wrap">
+          <img class="vto-result-img" alt="Resultado">
+          <div class="vto-result-actions">
+            <a class="vto-btn-download" download="virtual-tryon.jpg">Baixar</a>
+            <button class="vto-btn-retry">Tentar Novamente</button>
+          </div>
+        </div>
+        
+        <div class="vto-error"></div>
+      `;
+
+            overlay.appendChild(modal);
             document.body.appendChild(overlay);
-            document.body.style.overflow = 'hidden';
             this.modal = overlay;
 
-            this._bindModalEvents();
+            this.attachModalEvents();
         }
 
-        _modalHTML() {
-            return `
-        <div class="vto-modal">
-          <button class="vto-close" aria-label="Fechar">✕</button>
-          <h2 class="vto-title">👗 Virtual Try-On</h2>
-          <p class="vto-subtitle">Envie sua foto e experimente este look com IA.</p>
+        attachModalEvents() {
+            var modal = this.modal;
+            var closeBtn = modal.querySelector('.vto-close');
+            var dropzone = modal.querySelector('.vto-dropzone');
+            var fileInput = modal.querySelector('.vto-file-input');
+            var previewWrap = modal.querySelector('.vto-preview-wrap');
+            var previewImg = modal.querySelector('.vto-preview-img');
+            var removeBtn = modal.querySelector('.vto-preview-remove');
+            var generateBtn = modal.querySelector('.vto-generate-btn');
+            var retryBtn = modal.querySelector('.vto-btn-retry');
 
-          <img class="vto-product-thumb" src="${this.productImage}" alt="Imagem do produto">
+            closeBtn.addEventListener('click', this.closeModal.bind(this));
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) this.closeModal();
+            }.bind(this));
 
-          <div class="vto-dropzone" id="vtoDropzone">
-            <input class="vto-file-input" type="file" id="vtoFileInput"
-                   accept="image/jpeg,image/png,image/webp" aria-label="Selecionar foto">
-            <span class="vto-dropzone-icon">📷</span>
-            <p class="vto-dropzone-text">Arraste sua foto ou <strong>clique para selecionar</strong></p>
-            <p class="vto-dropzone-hint">JPG ou PNG · máx. 10 MB</p>
-          </div>
-
-          <div class="vto-preview-wrap" id="vtoPreviewWrap">
-            <img class="vto-preview-img" id="vtoPreviewImg" src="" alt="Sua foto">
-            <button class="vto-preview-remove" id="vtoPreviewRemove" aria-label="Remover foto">✕</button>
-          </div>
-
-          <button class="vto-generate-btn" id="vtoGenerateBtn" disabled>
-            ✨ Gerar look com IA
-          </button>
-
-          <div class="vto-progress-wrap" id="vtoProgressWrap">
-            <p class="vto-progress-label" id="vtoProgressLabel">Processando…</p>
-            <div class="vto-progress-track">
-              <div class="vto-progress-bar" id="vtoProgressBar"></div>
-            </div>
-          </div>
-
-          <div class="vto-result-wrap" id="vtoResultWrap">
-            <img class="vto-result-img" id="vtoResultImg" src="" alt="Resultado do virtual try-on">
-            <div class="vto-result-actions">
-              <a class="vto-btn-download" id="vtoDownloadBtn" download="tryon-result.jpg">
-                ⬇ Baixar
-              </a>
-              <button class="vto-btn-retry" id="vtoRetryBtn">↺ Tentar Novamente</button>
-            </div>
-          </div>
-
-          <div class="vto-error" id="vtoError"></div>
-        </div>
-      `;
-        }
-
-        _bindModalEvents() {
-            var self = this;
-            var overlay = this.modal;
-            var modal = overlay.querySelector('.vto-modal');
-
-            // Close on overlay click (outside modal)
-            overlay.addEventListener('click', function (e) {
-                if (e.target === overlay) self._removeModal();
-            });
-
-            // Close button
-            overlay.querySelector('.vto-close').addEventListener('click', function () {
-                self._removeModal();
-            });
-
-            // ESC key
-            this._escHandler = function (e) {
-                if (e.key === 'Escape') self._removeModal();
-            };
-            document.addEventListener('keydown', this._escHandler);
-
-            // File input
-            var fileInput = overlay.querySelector('#vtoFileInput');
             fileInput.addEventListener('change', function (e) {
                 if (e.target.files && e.target.files[0]) {
-                    self.handleFileUpload(e.target.files[0]);
+                    this.handleFile(e.target.files[0]);
                 }
-            });
+            }.bind(this));
 
-            // Drag & drop
-            var dropzone = overlay.querySelector('#vtoDropzone');
             dropzone.addEventListener('dragover', function (e) {
                 e.preventDefault();
                 dropzone.classList.add('vto-drag-over');
             });
+
             dropzone.addEventListener('dragleave', function () {
                 dropzone.classList.remove('vto-drag-over');
             });
+
             dropzone.addEventListener('drop', function (e) {
                 e.preventDefault();
                 dropzone.classList.remove('vto-drag-over');
-                var files = e.dataTransfer && e.dataTransfer.files;
-                if (files && files[0]) self.handleFileUpload(files[0]);
-            });
-
-            // Remove preview
-            overlay.querySelector('#vtoPreviewRemove').addEventListener('click', function () {
-                self.userImage = null;
-                overlay.querySelector('#vtoPreviewWrap').classList.remove('vto-visible');
-                overlay.querySelector('#vtoDropzone').style.display = '';
-                overlay.querySelector('#vtoGenerateBtn').disabled = true;
-                // Reset result / error too
-                overlay.querySelector('#vtoResultWrap').classList.remove('vto-visible');
-                overlay.querySelector('#vtoError').classList.remove('vto-visible');
-            });
-
-            // Generate
-            overlay.querySelector('#vtoGenerateBtn').addEventListener('click', function () {
-                self.generateLook();
-            });
-
-            // Retry
-            overlay.querySelector('#vtoRetryBtn').addEventListener('click', function () {
-                self.userImage = null;
-                overlay.querySelector('#vtoPreviewWrap').classList.remove('vto-visible');
-                overlay.querySelector('#vtoDropzone').style.display = '';
-                overlay.querySelector('#vtoResultWrap').classList.remove('vto-visible');
-                overlay.querySelector('#vtoProgressWrap').classList.remove('vto-visible');
-                overlay.querySelector('#vtoError').classList.remove('vto-visible');
-                overlay.querySelector('#vtoGenerateBtn').disabled = true;
-            });
-        }
-
-        _removeModal() {
-            if (this.modal) {
-                document.body.removeChild(this.modal);
-                this.modal = null;
-            }
-            document.body.style.overflow = '';
-            if (this._escHandler) {
-                document.removeEventListener('keydown', this._escHandler);
-                this._escHandler = null;
-            }
-            // Clear animated progress if running
-            if (this._progressInterval) {
-                clearInterval(this._progressInterval);
-                this._progressInterval = null;
-            }
-        }
-
-        // ── File Upload ───────────────────────────────────────────────────────────
-
-        handleFileUpload(file) {
-            var self = this;
-
-            // Validate type
-            if (!file.type.startsWith('image/')) {
-                this.showError('Por favor, selecione um arquivo de imagem (JPG, PNG ou WEBP).');
-                return;
-            }
-
-            // Validate size (10 MB)
-            if (file.size > 10 * 1024 * 1024) {
-                this.showError('A imagem deve ter no máximo 10 MB.');
-                return;
-            }
-
-            fileToBase64(file)
-                .then(function (dataUri) {
-                    self.userImage = dataUri;
-
-                    var overlay = self.modal;
-                    if (!overlay) return;
-
-                    // Show preview
-                    overlay.querySelector('#vtoPreviewImg').src = dataUri;
-                    overlay.querySelector('#vtoPreviewWrap').classList.add('vto-visible');
-                    overlay.querySelector('#vtoDropzone').style.display = 'none';
-
-                    // Enable generate button
-                    overlay.querySelector('#vtoGenerateBtn').disabled = false;
-
-                    // Clear stale errors
-                    overlay.querySelector('#vtoError').classList.remove('vto-visible');
-                })
-                .catch(function (err) {
-                    self.showError('Falha ao carregar a imagem: ' + err.message);
-                });
-        }
-
-        // ── Generation ────────────────────────────────────────────────────────────
-
-        generateLook() {
-            if (!this.userImage) {
-                this.showError('Envie uma foto antes de gerar o look.');
-                return;
-            }
-            if (!this.productImage) {
-                this.showError('Imagem do produto não disponível. Feche e abra o painel novamente.');
-                return;
-            }
-
-            var self = this;
-            var overlay = this.modal;
-
-            // Hide result / error, show progress
-            overlay.querySelector('#vtoResultWrap').classList.remove('vto-visible');
-            overlay.querySelector('#vtoError').classList.remove('vto-visible');
-            overlay.querySelector('#vtoGenerateBtn').disabled = true;
-            this.showLoading(0);
-
-            // Animate progress bar while waiting
-            var progress = 0;
-            this._progressInterval = setInterval(function () {
-                // Slowly creep up to 85% while waiting for the server
-                if (progress < 85) {
-                    progress += Math.random() * 4;
-                    if (progress > 85) progress = 85;
-                    self.showLoading(progress);
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    this.handleFile(e.dataTransfer.files[0]);
                 }
-            }, 400);
+            }.bind(this));
+
+            removeBtn.addEventListener('click', function () {
+                this.userImage = null;
+                previewWrap.classList.remove('vto-visible');
+                dropzone.style.display = 'block';
+                generateBtn.disabled = true;
+            }.bind(this));
+
+            generateBtn.addEventListener('click', this.generate.bind(this));
+            retryBtn.addEventListener('click', this.reset.bind(this));
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') this.closeModal();
+            }.bind(this));
+        }
+
+        handleFile(file) {
+            if (!file.type.match(/^image\/(jpeg|png)$/)) {
+                this.showError('Por favor, envie uma imagem JPG ou PNG.');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                this.showError('Arquivo muito grande. Máximo: 10 MB.');
+                return;
+            }
+
+            var dropzone = this.modal.querySelector('.vto-dropzone');
+            var previewWrap = this.modal.querySelector('.vto-preview-wrap');
+            var previewImg = this.modal.querySelector('.vto-preview-img');
+            var generateBtn = this.modal.querySelector('.vto-generate-btn');
+
+            fileToBase64(file).then(function (base64) {
+                this.userImage = base64;
+                previewImg.src = base64;
+                dropzone.style.display = 'none';
+                previewWrap.classList.add('vto-visible');
+                generateBtn.disabled = false;
+            }.bind(this)).catch(function (err) {
+                this.showError(err.message);
+            }.bind(this));
+        }
+
+        generate() {
+            var generateBtn = this.modal.querySelector('.vto-generate-btn');
+            var progressWrap = this.modal.querySelector('.vto-progress-wrap');
+            var progressBar = this.modal.querySelector('.vto-progress-bar');
+            var resultWrap = this.modal.querySelector('.vto-result-wrap');
+
+            generateBtn.disabled = true;
+            progressWrap.classList.add('vto-visible');
+            this.hideError();
+
+            var progress = 0;
+            var interval = setInterval(function () {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressBar.style.width = progress + '%';
+            }, 500);
 
             fetch(this.config.apiEndpoint, {
                 method: 'POST',
@@ -686,119 +565,91 @@
                 body: JSON.stringify({
                     image: this.userImage,
                     productImage: this.productImage,
-                    shop: this.config.shop,
                 }),
             })
                 .then(function (res) {
-                    if (!res.ok) {
-                        return res.json().catch(function () { return {}; }).then(function (data) {
-                            throw new Error(data.message || 'Erro do servidor (' + res.status + ').');
-                        });
-                    }
+                    if (!res.ok) throw new Error('Erro no servidor (' + res.status + ')');
                     return res.json();
                 })
                 .then(function (data) {
-                    clearInterval(self._progressInterval);
-                    self._progressInterval = null;
-                    self.showLoading(100);
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
 
-                    var resultUrl = data.resultUrl || data.result_url || data.image || data.url;
-
-                    if (!resultUrl) {
-                        throw new Error('A IA não retornou uma imagem válida.');
-                    }
+                    if (data.error) throw new Error(data.error);
+                    if (!data.resultUrl) throw new Error('Nenhuma imagem foi gerada');
 
                     setTimeout(function () {
-                        overlay.querySelector('#vtoProgressWrap').classList.remove('vto-visible');
-                        self.displayResult(resultUrl);
-                        overlay.querySelector('#vtoGenerateBtn').disabled = false;
-                    }, 500);
-                })
+                        progressWrap.classList.remove('vto-visible');
+                        this.showResult(data.resultUrl);
+                    }.bind(this), 400);
+                }.bind(this))
                 .catch(function (err) {
-                    clearInterval(self._progressInterval);
-                    self._progressInterval = null;
-                    overlay.querySelector('#vtoProgressWrap').classList.remove('vto-visible');
-                    overlay.querySelector('#vtoGenerateBtn').disabled = false;
-                    self.showError(err.message || 'Ocorreu um erro. Tente novamente.');
-                });
+                    clearInterval(interval);
+                    progressWrap.classList.remove('vto-visible');
+                    generateBtn.disabled = false;
+                    this.showError(err.message);
+                }.bind(this));
         }
 
-        // ── Progress ──────────────────────────────────────────────────────────────
+        showResult(url) {
+            var resultWrap = this.modal.querySelector('.vto-result-wrap');
+            var resultImg = this.modal.querySelector('.vto-result-img');
+            var downloadBtn = this.modal.querySelector('.vto-btn-download');
 
-        showLoading(progress) {
-            var overlay = this.modal;
-            if (!overlay) return;
-
-            var wrap = overlay.querySelector('#vtoProgressWrap');
-            var bar = overlay.querySelector('#vtoProgressBar');
-            var label = overlay.querySelector('#vtoProgressLabel');
-
-            wrap.classList.add('vto-visible');
-            bar.style.width = Math.min(100, progress).toFixed(1) + '%';
-
-            if (progress < 30) label.textContent = 'Analisando a imagem…';
-            else if (progress < 60) label.textContent = 'Aplicando o look com IA…';
-            else if (progress < 90) label.textContent = 'Finalizando detalhes…';
-            else label.textContent = 'Quase pronto…';
-        }
-
-        // ── Result ────────────────────────────────────────────────────────────────
-
-        displayResult(imageUrl) {
-            var overlay = this.modal;
-            if (!overlay) return;
-
-            var resultImg = overlay.querySelector('#vtoResultImg');
-            var downloadBtn = overlay.querySelector('#vtoDownloadBtn');
-            var resultWrap = overlay.querySelector('#vtoResultWrap');
-
-            resultImg.src = imageUrl;
-            resultImg.alt = 'Resultado — Virtual Try-On';
-            downloadBtn.href = imageUrl;
-
+            resultImg.src = url;
+            downloadBtn.href = url;
             resultWrap.classList.add('vto-visible');
         }
 
-        // ── Error ─────────────────────────────────────────────────────────────────
+        reset() {
+            var previewWrap = this.modal.querySelector('.vto-preview-wrap');
+            var dropzone = this.modal.querySelector('.vto-dropzone');
+            var generateBtn = this.modal.querySelector('.vto-generate-btn');
+            var resultWrap = this.modal.querySelector('.vto-result-wrap');
 
-        showError(message) {
-            var overlay = this.modal;
-            if (!overlay) {
-                console.error('[VirtualTryOn]', message);
-                return;
-            }
+            this.userImage = null;
+            previewWrap.classList.remove('vto-visible');
+            resultWrap.classList.remove('vto-visible');
+            dropzone.style.display = 'block';
+            generateBtn.disabled = true;
+            this.hideError();
+        }
 
-            var errorEl = overlay.querySelector('#vtoError');
-            errorEl.textContent = '⚠️ ' + message;
+        showError(msg) {
+            var errorEl = this.modal.querySelector('.vto-error');
+            errorEl.textContent = msg;
             errorEl.classList.add('vto-visible');
-
-            // Auto-hide after 6 s
-            var el = errorEl;
-            setTimeout(function () { el.classList.remove('vto-visible'); }, 6000);
+            setTimeout(function () {
+                errorEl.classList.remove('vto-visible');
+            }, 6000);
         }
-    }
 
-    // ─── Bootstrap ────────────────────────────────────────────────────────────
+        hideError() {
+            var errorEl = this.modal.querySelector('.vto-error');
+            errorEl.classList.remove('vto-visible');
+        }
 
-    var scriptTag = document.querySelector('script[src*="virtual-tryon.js"]');
-    var shop = scriptTag ? scriptTag.dataset.shop : null;
-    var apiEndpoint = scriptTag ? scriptTag.dataset.apiEndpoint : 'https://tryon-app-tau.vercel.app/api/tryon';
-
-    function bootstrap() {
-        if (shop) {
-            new VirtualTryOn({ shop: shop, apiEndpoint: apiEndpoint });
-        } else {
-            // Dev-mode fallback: run on any product page even without data-shop
-            if (/\/products\//.test(window.location.pathname)) {
-                console.info('[VirtualTryOn] Rodando em modo de desenvolvimento (sem data-shop).');
-                new VirtualTryOn({ shop: window.location.hostname, apiEndpoint: apiEndpoint });
+        closeModal() {
+            if (this.modal) {
+                this.modal.remove();
+                this.modal = null;
             }
         }
     }
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
+
+    var scriptTag = document.currentScript;
+    var config = {
+        shop: scriptTag ? scriptTag.dataset.shop : '',
+        apiEndpoint: scriptTag ? scriptTag.dataset.apiEndpoint : 'https://tryon-app-tau.vercel.app/api/tryon',
+    };
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bootstrap);
+        document.addEventListener('DOMContentLoaded', function () {
+            new VirtualTryOn(config);
+        });
     } else {
-        bootstrap();
+        new VirtualTryOn(config);
     }
 })();

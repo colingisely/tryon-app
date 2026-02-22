@@ -1,9 +1,36 @@
 import { NextResponse } from "next/server";
-import Replicate from "replicate";
 
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
+const FASHN_API_URL = "https://api.fashn.ai/v1/run";
+const FASHN_API_KEY = process.env.FASHN_API_KEY;
+
+async function pollFashnStatus(predictionId: string, maxAttempts = 60): Promise<any> {
+  const statusUrl = `https://api.fashn.ai/v1/status/${predictionId}`;
+  
+  for (let i = 0; i < maxAttempts; i++) {
+    const response = await fetch(statusUrl, {
+      headers: {
+        'Authorization': `Bearer ${FASHN_API_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Status check failed: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    
+    if (result.status === 'completed') {
+      return result;
+    } else if (result.status === 'failed') {
+      throw new Error(result.error?.message || 'Generation failed');
+    }
+    
+    // Wait 2 seconds before next poll
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+  
+  throw new Error('Timeout waiting for result');
+}
 
 export async function POST(req: Request) {
   try {
@@ -23,47 +50,52 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("✅ Imagem recebida do frontend");
-
-    // Use the product image from the request
-    const productImageUrl = productImage;
-
-    console.log("🚀 Chamando Replicate IDM-VTON com parâmetros otimizados...");
-
-    const output = await replicate.run(
-      "cuuupid/idm-vton:0513734a452173b8173e907e3a59d19a36266e55b48528559432bd21c7d7e985",
-      {
-        input: {
-          human_img: image,
-          garm_img: productImageUrl,
-          garment_des: "fashionable top",
-          // ✅ Novos parâmetros para melhorar qualidade
-          auto_crop: true,      // Recorta automaticamente a área da roupa
-          auto_mask: true,      // Gera máscara automática para melhor precisão
-        },
-      }
-    );
-
-    console.log("✅ Replicate respondeu:", typeof output);
-
-    if (!output) {
+    if (!FASHN_API_KEY) {
       return NextResponse.json(
-        { error: "IA não retornou imagem" },
-        { status: 500 }
+        { error: "FASHN API key not configured" },
+        { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }
       );
     }
 
-    let resultUrl: string;
-    if (typeof output === "string") {
-      resultUrl = output;
-    } else if (typeof output === "object" && "url" in (output as any)) {
-      resultUrl = (output as any).url();
-    } else if (Array.isArray(output) && output[0]) {
-      resultUrl = typeof output[0] === "string" ? output[0] : (output[0] as any).url();
-    } else {
-      resultUrl = String(output);
+    console.log("✅ Imagem recebida do frontend");
+    console.log("🚀 Chamando FASHN.ai Virtual Try-On v1.6...");
+
+    // Submit request to FASHN.ai
+    const response = await fetch(FASHN_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${FASHN_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model_name: "tryon-v1.6",
+        inputs: {
+          model_image: image,
+          garment_image: productImage,
+        },
+        mode: "balanced",
+        output_format: "jpeg",
+        return_base64: false,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `FASHN API error: ${response.statusText}`);
     }
 
+    const { id: predictionId } = await response.json();
+    console.log("📋 Prediction ID:", predictionId);
+
+    // Poll for result
+    console.log("⏳ Aguardando resultado...");
+    const result = await pollFashnStatus(predictionId);
+
+    if (!result.output || !Array.isArray(result.output) || result.output.length === 0) {
+      throw new Error("No output image returned");
+    }
+
+    const resultUrl = result.output[0];
     console.log("✅ URL do resultado:", resultUrl);
 
     return NextResponse.json({ resultUrl }, { 
