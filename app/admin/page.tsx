@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 // --- Design System Constants ---
 const THEME = {
@@ -49,12 +50,21 @@ const ICONS = {
       <polyline points="20 6 9 17 4 12" />
     </svg>
   ),
+  logout: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  ),
 };
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
 
   // Try-on state
   const [modelImage, setModelImage] = useState<string | null>(null);
@@ -64,14 +74,32 @@ export default function AdminPage() {
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("Aguardando imagens...");
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setLoading(false);
+    };
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "tryonapp2026") {
-      setIsAuthenticated(true);
-      setError("");
-    } else {
-      setError("Senha incorreta. Tente novamente.");
-    }
+    setAuthError("");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setAuthError(error.message);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: "model" | "product") => {
@@ -164,7 +192,15 @@ export default function AdminPage() {
     }
   };
 
-  if (!isAuthenticated) {
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return (
       <div className="login-container">
         <style jsx>{`
@@ -183,7 +219,7 @@ export default function AdminPage() {
             border-radius: 24px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             width: 100%;
-            maxWidth: 420px;
+            max-width: 420px;
             text-align: center;
           }
           .icon-box {
@@ -232,13 +268,20 @@ export default function AdminPage() {
           <p>Acesse a ferramenta exclusiva para geração de fotos de alta qualidade.</p>
           <form onSubmit={handleLogin}>
             <input
+              type="email"
+              placeholder="E-mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
               type="password"
-              placeholder="Digite a senha de acesso"
+              placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoFocus
+              required
             />
-            {error && <div className="error">{error}</div>}
+            {authError && <div className="error">{authError}</div>}
             <button type="submit">Entrar no Estúdio</button>
           </form>
         </div>
@@ -260,16 +303,22 @@ export default function AdminPage() {
         header { margin-bottom: 48px; display: flex; align-items: center; justify-content: space-between; }
         .header-text h1 { margin: 0 0 4px; font-size: 32px; font-weight: 800; }
         .header-text p { margin: 0; color: ${THEME.textMuted}; font-size: 16px; }
-        .badge {
-          background: #e0e7ff;
-          color: ${THEME.primary};
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
+        .user-info { display: flex; align-items: center; gap: 16px; }
+        .user-email { font-size: 14px; color: ${THEME.textMuted}; }
+        .btn-logout {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          background: white;
+          border: 1px solid ${THEME.border};
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
         }
+        .btn-logout:hover { background: #fef2f2; color: ${THEME.error}; border-color: #fee2e2; }
 
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
         .card {
@@ -396,7 +445,12 @@ export default function AdminPage() {
             <h1>Estúdio Profissional</h1>
             <p>Geração de fotos de alta fidelidade com Try-On Max</p>
           </div>
-          <div className="badge">Modo Premium Ativo</div>
+          <div className="user-info">
+            <span className="user-email">{user.email}</span>
+            <button className="btn-logout" onClick={handleLogout}>
+              {ICONS.logout} Sair
+            </button>
+          </div>
         </header>
 
         {!result ? (
@@ -460,17 +514,13 @@ export default function AdminPage() {
                   <div className="progress-track">
                     <div className="progress-fill" style={{ width: `${progress}%` }}></div>
                   </div>
-                  <div className="status-text">{statusText} ({progress}%)</div>
+                  <div className="status-text">{statusText}</div>
                 </div>
               )}
             </div>
           </>
         ) : (
           <div className="result-section">
-            <div className="card-header" style={{ justifyContent: "center", marginBottom: "32px" }}>
-              <span style={{ color: THEME.success }}>{ICONS.check}</span>
-              <h3 style={{ fontSize: "24px" }}>Resultado Final</h3>
-            </div>
             <img src={result} className="result-img" alt="Resultado" />
             <div className="result-actions">
               <button className="btn-download" onClick={handleDownload}>
