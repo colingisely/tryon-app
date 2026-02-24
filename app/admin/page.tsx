@@ -76,12 +76,14 @@ export default function AdminPage() {
 
   useEffect(() => {
     const checkUser = async () => {
+      if (!supabase) return;
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
       setLoading(false);
     };
     checkUser();
 
+    if (!supabase) return;
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
@@ -94,11 +96,13 @@ export default function AdminPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
+    if (!supabase) return;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) setAuthError(error.message);
   };
 
   const handleLogout = async () => {
+    if (!supabase) return;
     await supabase.auth.signOut();
   };
 
