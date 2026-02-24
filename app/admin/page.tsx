@@ -65,6 +65,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
 
   // Try-on state
   const [modelImage, setModelImage] = useState<string | null>(null);
@@ -75,16 +76,24 @@ export default function AdminPage() {
   const [statusText, setStatusText] = useState("Aguardando imagens...");
 
   useEffect(() => {
-    const checkUser = async () => {
-      if (!supabase) return;
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+    if (!supabase) {
       setLoading(false);
+      return;
+    }
+
+    const checkUser = async () => {
+      try {
+        const { data: { user } } = await supabase!.auth.getUser();
+        setUser(user);
+      } catch (err) {
+        console.error("Error checking user:", err);
+      } finally {
+        setLoading(false);
+      }
     };
     checkUser();
 
-    if (!supabase) return;
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase!.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
@@ -96,14 +105,37 @@ export default function AdminPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
-    if (!supabase) return;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setAuthError(error.message);
+    setAuthLoading(true);
+
+    if (!supabase) {
+      setAuthError("Sistema de autenticação não configurado. Contate o administrador.");
+      setAuthLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase!.auth.signInWithPassword({ email, password });
+      if (error) {
+        // Translate common Supabase errors to Portuguese
+        if (error.message === "Email not confirmed") {
+          setAuthError("E-mail não confirmado. Verifique sua caixa de entrada ou contate o administrador.");
+        } else if (error.message === "Invalid login credentials") {
+          setAuthError("E-mail ou senha incorretos.");
+        } else {
+          setAuthError(error.message);
+        }
+      }
+    } catch (err: any) {
+      setAuthError("Erro de conexão. Tente novamente.");
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const handleLogout = async () => {
     if (!supabase) return;
-    await supabase.auth.signOut();
+    await supabase!.auth.signOut();
+    setUser(null);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: "model" | "product") => {
@@ -196,80 +228,71 @@ export default function AdminPage() {
     }
   };
 
+  // --- LOADING STATE ---
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: `linear-gradient(135deg, ${THEME.primary} 0%, ${THEME.primaryDark} 100%)`,
+      }}>
+        <div style={{
+          width: 48,
+          height: 48,
+          border: "4px solid rgba(255,255,255,0.3)",
+          borderTopColor: "white",
+          borderRadius: "50%",
+          animation: "spin 1s linear infinite",
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
+  // --- LOGIN SCREEN ---
   if (!user) {
     return (
-      <div className="login-container">
-        <style jsx>{`
-          .login-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, ${THEME.primary} 0%, ${THEME.primaryDark} 100%);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 20px;
-          }
-          .login-card {
-            background: white;
-            padding: 48px 40px;
-            border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
-          }
-          .icon-box {
-            width: 64px;
-            height: 64px;
-            background: #f1f5f9;
-            color: ${THEME.primary};
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-          }
-          h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; color: ${THEME.text}; }
-          p { margin: 0 0 32px; color: ${THEME.textMuted}; font-size: 15px; line-height: 1.5; }
-          input {
-            width: 100%;
-            padding: 16px;
-            border: 2px solid ${THEME.border};
-            border-radius: 12px;
-            font-size: 16px;
-            margin-bottom: 16px;
-            transition: all 0.2s;
-            outline: none;
-          }
-          input:focus { border-color: ${THEME.primary}; box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1); }
-          .error { color: ${THEME.error}; font-size: 14px; margin-bottom: 16px; font-weight: 500; }
-          button {
-            width: 100%;
-            padding: 16px;
-            background: ${THEME.primary};
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-          }
-          button:hover { background: ${THEME.primaryDark}; transform: translateY(-1px); }
-          button:active { transform: translateY(0); }
-        `}</style>
-        <div className="login-card">
-          <div className="icon-box">{ICONS.hanger}</div>
-          <h1>Estúdio Profissional</h1>
-          <p>Acesse a ferramenta exclusiva para geração de fotos de alta qualidade.</p>
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: `linear-gradient(135deg, ${THEME.primary} 0%, ${THEME.primaryDark} 100%)`,
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        padding: 20,
+        margin: 0,
+      }}>
+        <div style={{
+          background: "white",
+          padding: "48px 40px",
+          borderRadius: 24,
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+          width: "100%",
+          maxWidth: 420,
+          textAlign: "center",
+          boxSizing: "border-box",
+        }}>
+          <div style={{
+            width: 64,
+            height: 64,
+            background: "#f1f5f9",
+            color: THEME.primary,
+            borderRadius: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto 24px",
+          }}>
+            {ICONS.hanger}
+          </div>
+          <h1 style={{ margin: "0 0 8px", fontSize: 28, fontWeight: 800, color: THEME.text }}>
+            Estúdio Profissional
+          </h1>
+          <p style={{ margin: "0 0 32px", color: THEME.textMuted, fontSize: 15, lineHeight: 1.5 }}>
+            Acesse a ferramenta exclusiva para geração de fotos de alta qualidade.
+          </p>
           <form onSubmit={handleLogin}>
             <input
               type="email"
@@ -277,6 +300,21 @@ export default function AdminPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
+              style={{
+                width: "100%",
+                padding: "16px",
+                border: `2px solid ${THEME.border}`,
+                borderRadius: 12,
+                fontSize: 16,
+                marginBottom: 16,
+                outline: "none",
+                boxSizing: "border-box",
+                background: "white",
+                color: THEME.text,
+                WebkitAppearance: "none",
+                appearance: "none" as any,
+              }}
             />
             <input
               type="password"
@@ -284,174 +322,95 @@ export default function AdminPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
+              style={{
+                width: "100%",
+                padding: "16px",
+                border: `2px solid ${THEME.border}`,
+                borderRadius: 12,
+                fontSize: 16,
+                marginBottom: 16,
+                outline: "none",
+                boxSizing: "border-box",
+                background: "white",
+                color: THEME.text,
+                WebkitAppearance: "none",
+                appearance: "none" as any,
+              }}
             />
-            {authError && <div className="error">{authError}</div>}
-            <button type="submit">Entrar no Estúdio</button>
+            {authError && (
+              <div style={{
+                color: THEME.error,
+                fontSize: 14,
+                marginBottom: 16,
+                fontWeight: 500,
+                padding: "12px",
+                background: "#fef2f2",
+                borderRadius: 8,
+                border: "1px solid #fee2e2",
+              }}>
+                {authError}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={authLoading}
+              style={{
+                width: "100%",
+                padding: "16px",
+                background: authLoading ? THEME.border : THEME.primary,
+                color: "white",
+                border: "none",
+                borderRadius: 12,
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: authLoading ? "not-allowed" : "pointer",
+                transition: "transform 0.2s, background 0.2s",
+                boxSizing: "border-box",
+              }}
+            >
+              {authLoading ? "Entrando..." : "Entrar no Estúdio"}
+            </button>
           </form>
         </div>
       </div>
     );
   }
 
+  // --- STUDIO (AUTHENTICATED) ---
   return (
-    <div className="admin-container">
-      <style jsx>{`
-        .admin-container {
-          min-height: 100vh;
-          background: ${THEME.bg};
-          color: ${THEME.text};
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          padding: 40px 20px;
-        }
-        .content { max-width: 1100px; margin: 0 auto; }
-        header { margin-bottom: 48px; display: flex; align-items: center; justify-content: space-between; }
-        .header-text h1 { margin: 0 0 4px; font-size: 32px; font-weight: 800; }
-        .header-text p { margin: 0; color: ${THEME.textMuted}; font-size: 16px; }
-        .user-info { display: flex; align-items: center; gap: 16px; }
-        .user-email { font-size: 14px; color: ${THEME.textMuted}; }
-        .btn-logout {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 16px;
-          background: white;
-          border: 1px solid ${THEME.border};
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .btn-logout:hover { background: #fef2f2; color: ${THEME.error}; border-color: #fee2e2; }
-
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
-        .card {
-          background: ${THEME.cardBg};
-          padding: 32px;
-          border-radius: 20px;
-          border: 1px solid ${THEME.border};
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-        .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-        .card-header h3 { margin: 0; font-size: 18px; font-weight: 700; }
-        .icon-small { color: ${THEME.primary}; }
-
-        .upload-zone {
-          border: 2px dashed ${THEME.border};
-          border-radius: 16px;
-          padding: 40px 20px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.2s;
-          position: relative;
-          overflow: hidden;
-          min-height: 200px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-        }
-        .upload-zone:hover { border-color: ${THEME.primary}; background: #f8fafc; }
-        .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-        .upload-icon { color: ${THEME.textMuted}; margin-bottom: 12px; }
-        .upload-text { font-size: 14px; font-weight: 600; color: ${THEME.text}; }
-        .upload-hint { font-size: 12px; color: ${THEME.textMuted}; margin-top: 4px; }
-
-        .preview-img {
-          width: 100%;
-          height: 300px;
-          object-fit: contain;
-          border-radius: 12px;
-          background: #f1f5f9;
-        }
-
-        .action-bar {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 20px;
-          margin: 40px 0;
-        }
-        .btn-generate {
-          padding: 18px 64px;
-          background: ${isGenerating ? THEME.border : THEME.primary};
-          color: white;
-          border: none;
-          border-radius: 16px;
-          font-size: 18px;
-          font-weight: 700;
-          cursor: ${isGenerating ? "not-allowed" : "pointer"};
-          box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.3);
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .btn-generate:not(:disabled):hover { background: ${THEME.primaryDark}; transform: translateY(-2px); }
-
-        .progress-container { width: 100%; max-width: 500px; }
-        .progress-track { height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
-        .progress-fill { height: 100%; background: ${THEME.primary}; transition: width 0.4s ease; }
-        .status-text { font-size: 14px; font-weight: 600; color: ${THEME.primary}; text-align: center; }
-
-        .result-section {
-          background: white;
-          padding: 40px;
-          border-radius: 24px;
-          border: 2px solid ${THEME.primary};
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-          text-align: center;
-          animation: slideUp 0.5s ease-out;
-        }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .result-img {
-          max-width: 100%;
-          max-height: 600px;
-          border-radius: 16px;
-          margin-bottom: 32px;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        .result-actions { display: flex; justify-content: center; gap: 16px; }
-        .btn-download {
-          background: ${THEME.success};
-          color: white;
-          padding: 14px 32px;
-          border-radius: 12px;
-          font-weight: 700;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          border: none;
-          cursor: pointer;
-        }
-        .btn-new {
-          background: #f1f5f9;
-          color: ${THEME.text};
-          padding: 14px 32px;
-          border-radius: 12px;
-          font-weight: 700;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          border: none;
-          cursor: pointer;
-        }
-
-        @media (max-width: 768px) {
-          .grid { grid-template-columns: 1fr; }
-        }
-      `}</style>
-
-      <div className="content">
-        <header>
-          <div className="header-text">
-            <h1>Estúdio Profissional</h1>
-            <p>Geração de fotos de alta fidelidade com Try-On Max</p>
+    <div style={{
+      minHeight: "100vh",
+      background: THEME.bg,
+      color: THEME.text,
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      padding: "40px 20px",
+    }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        {/* Header */}
+        <header style={{ marginBottom: 48, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <h1 style={{ margin: "0 0 4px", fontSize: 32, fontWeight: 800 }}>Estúdio Profissional</h1>
+            <p style={{ margin: 0, color: THEME.textMuted, fontSize: 16 }}>Geração de fotos de alta fidelidade com Try-On Max</p>
           </div>
-          <div className="user-info">
-            <span className="user-email">{user.email}</span>
-            <button className="btn-logout" onClick={handleLogout}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span style={{ fontSize: 14, color: THEME.textMuted }}>{user.email}</span>
+            <button
+              onClick={handleLogout}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 16px",
+                background: "white",
+                border: `1px solid ${THEME.border}`,
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+            >
               {ICONS.logout} Sair
             </button>
           </div>
@@ -459,84 +418,202 @@ export default function AdminPage() {
 
         {!result ? (
           <>
-            <div className="grid">
+            {/* Upload Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 32 }}>
               {/* Model Card */}
-              <div className="card">
-                <div className="card-header">
-                  <span className="icon-small">{ICONS.upload}</span>
-                  <h3>Foto do Modelo</h3>
+              <div style={{
+                background: THEME.cardBg,
+                padding: 32,
+                borderRadius: 20,
+                border: `1px solid ${THEME.border}`,
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+                  <span style={{ color: THEME.primary }}>{ICONS.upload}</span>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Foto do Modelo</h3>
                 </div>
                 {modelImage ? (
-                  <div className="preview-container" onClick={() => setModelImage(null)}>
-                    <img src={modelImage} className="preview-img" alt="Modelo" />
-                    <p style={{ fontSize: "12px", color: THEME.textMuted, marginTop: "8px", textAlign: "center" }}>Clique para trocar</p>
+                  <div onClick={() => setModelImage(null)} style={{ cursor: "pointer" }}>
+                    <img src={modelImage} alt="Modelo" style={{
+                      width: "100%",
+                      height: 300,
+                      objectFit: "contain",
+                      borderRadius: 12,
+                      background: "#f1f5f9",
+                    }} />
+                    <p style={{ fontSize: 12, color: THEME.textMuted, marginTop: 8, textAlign: "center" }}>Clique para trocar</p>
                   </div>
                 ) : (
-                  <div className="upload-zone">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, "model")} />
-                    <div className="upload-icon">{ICONS.upload}</div>
-                    <div className="upload-text">Upload da Pessoa</div>
-                    <div className="upload-hint">Foto de corpo inteiro recomendada</div>
+                  <div style={{
+                    border: `2px dashed ${THEME.border}`,
+                    borderRadius: 16,
+                    padding: "40px 20px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                    position: "relative",
+                    overflow: "hidden",
+                    minHeight: 200,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, "model")}
+                      style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}
+                    />
+                    <div style={{ color: THEME.textMuted, marginBottom: 12 }}>{ICONS.upload}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: THEME.text }}>Upload da Pessoa</div>
+                    <div style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4 }}>Foto de corpo inteiro recomendada</div>
                   </div>
                 )}
               </div>
 
               {/* Product Card */}
-              <div className="card">
-                <div className="card-header">
-                  <span className="icon-small">{ICONS.hanger}</span>
-                  <h3>Foto do Produto</h3>
+              <div style={{
+                background: THEME.cardBg,
+                padding: 32,
+                borderRadius: 20,
+                border: `1px solid ${THEME.border}`,
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+                  <span style={{ color: THEME.primary }}>{ICONS.hanger}</span>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Foto do Produto</h3>
                 </div>
                 {productImage ? (
-                  <div className="preview-container" onClick={() => setProductImage(null)}>
-                    <img src={productImage} className="preview-img" alt="Produto" />
-                    <p style={{ fontSize: "12px", color: THEME.textMuted, marginTop: "8px", textAlign: "center" }}>Clique para trocar</p>
+                  <div onClick={() => setProductImage(null)} style={{ cursor: "pointer" }}>
+                    <img src={productImage} alt="Produto" style={{
+                      width: "100%",
+                      height: 300,
+                      objectFit: "contain",
+                      borderRadius: 12,
+                      background: "#f1f5f9",
+                    }} />
+                    <p style={{ fontSize: 12, color: THEME.textMuted, marginTop: 8, textAlign: "center" }}>Clique para trocar</p>
                   </div>
                 ) : (
-                  <div className="upload-zone">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, "product")} />
-                    <div className="upload-icon">{ICONS.hanger}</div>
-                    <div className="upload-text">Upload da Roupa</div>
-                    <div className="upload-hint">Foto em cabide ou flat-lay</div>
+                  <div style={{
+                    border: `2px dashed ${THEME.border}`,
+                    borderRadius: 16,
+                    padding: "40px 20px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                    position: "relative",
+                    overflow: "hidden",
+                    minHeight: 200,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, "product")}
+                      style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}
+                    />
+                    <div style={{ color: THEME.textMuted, marginBottom: 12 }}>{ICONS.hanger}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: THEME.text }}>Upload da Roupa</div>
+                    <div style={{ fontSize: 12, color: THEME.textMuted, marginTop: 4 }}>Foto em cabide ou flat-lay</div>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="action-bar">
+            {/* Action Bar */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, margin: "40px 0" }}>
               {!isGenerating ? (
-                <button 
-                  className="btn-generate" 
+                <button
                   onClick={handleGenerate}
                   disabled={!modelImage || !productImage}
-                  style={{ opacity: (!modelImage || !productImage) ? 0.5 : 1 }}
+                  style={{
+                    padding: "18px 64px",
+                    background: (!modelImage || !productImage) ? THEME.border : THEME.primary,
+                    color: "white",
+                    border: "none",
+                    borderRadius: 16,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    cursor: (!modelImage || !productImage) ? "not-allowed" : "pointer",
+                    boxShadow: "0 10px 15px -3px rgba(102, 126, 234, 0.3)",
+                    transition: "all 0.2s",
+                    opacity: (!modelImage || !productImage) ? 0.5 : 1,
+                  }}
                 >
-                  🚀 Gerar Foto Profissional
+                  Gerar Foto Profissional
                 </button>
               ) : (
-                <div className="progress-container">
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+                <div style={{ width: "100%", maxWidth: 500 }}>
+                  <div style={{ height: 8, background: "#e2e8f0", borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+                    <div style={{ height: "100%", background: THEME.primary, transition: "width 0.4s ease", width: `${progress}%` }} />
                   </div>
-                  <div className="status-text">{statusText}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: THEME.primary, textAlign: "center" }}>{statusText}</div>
                 </div>
               )}
             </div>
           </>
         ) : (
-          <div className="result-section">
-            <img src={result} className="result-img" alt="Resultado" />
-            <div className="result-actions">
-              <button className="btn-download" onClick={handleDownload}>
+          <div style={{
+            background: "white",
+            padding: 40,
+            borderRadius: 24,
+            border: `2px solid ${THEME.primary}`,
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+            textAlign: "center",
+          }}>
+            <img src={result} alt="Resultado" style={{
+              maxWidth: "100%",
+              maxHeight: 600,
+              borderRadius: 16,
+              marginBottom: 32,
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+            }} />
+            <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+              <button onClick={handleDownload} style={{
+                background: THEME.success,
+                color: "white",
+                padding: "14px 32px",
+                borderRadius: 12,
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                border: "none",
+                cursor: "pointer",
+                fontSize: 16,
+              }}>
                 {ICONS.download} Baixar em Alta Resolução
               </button>
-              <button className="btn-new" onClick={() => { setResult(null); setModelImage(null); setProductImage(null); }}>
+              <button onClick={() => { setResult(null); setModelImage(null); setProductImage(null); }} style={{
+                background: "#f1f5f9",
+                color: THEME.text,
+                padding: "14px 32px",
+                borderRadius: 12,
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                border: "none",
+                cursor: "pointer",
+                fontSize: 16,
+              }}>
                 {ICONS.retry} Criar Outra Foto
               </button>
             </div>
           </div>
         )}
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          div[style*="grid-template-columns: 1fr 1fr"] {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
