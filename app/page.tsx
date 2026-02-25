@@ -3,18 +3,19 @@
 import Link from "next/link";
 
 const THEME = {
-  primary: "#667eea",
-  primaryDark: "#764ba2",
-  success: "#10b981",
-  text: "#1e293b",
-  textMuted: "#64748b",
+  bg: "#ffffff",
+  text: "#333333",
+  textMuted: "#666666",
+  textLight: "#999999",
+  border: "#e0e0e0",
+  buttonBg: "#000000",
+  buttonText: "#ffffff",
 };
 
 const plans = [
   {
     name: "Free",
     price: "R$ 0",
-    period: "/mês",
     description: "Perfeito para testar",
     features: [
       "100 try-ons rápidos/mês",
@@ -22,13 +23,10 @@ const plans = [
       'Logo "Powered by TryOn"',
       "Suporte por email",
     ],
-    cta: "Começar Grátis",
-    highlighted: false,
   },
   {
     name: "Starter",
     price: "R$ 99",
-    period: "/mês",
     description: "Para lojas em crescimento",
     features: [
       "500 try-ons rápidos/mês",
@@ -36,13 +34,10 @@ const plans = [
       "Sem logo",
       "Suporte prioritário",
     ],
-    cta: "Começar Agora",
-    highlighted: false,
   },
   {
     name: "Pro",
     price: "R$ 249",
-    period: "/mês",
     description: "Para lojas estabelecidas",
     features: [
       "2.000 try-ons rápidos/mês",
@@ -51,13 +46,11 @@ const plans = [
       "Analytics avançado",
       "Suporte prioritário",
     ],
-    cta: "Começar Agora",
-    highlighted: true,
+    recommended: true,
   },
   {
     name: "Enterprise",
     price: "R$ 599",
-    period: "/mês",
     description: "Para grandes operações",
     features: [
       "Try-ons ilimitados",
@@ -66,18 +59,16 @@ const plans = [
       "Suporte dedicado",
       "API customizada",
     ],
-    cta: "Falar com Vendas",
-    highlighted: false,
   },
 ];
 
 export default function LandingPage() {
   return (
-    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", background: THEME.bg }}>
       {/* Header */}
       <header style={{
-        background: "white",
-        borderBottom: "1px solid #e2e8f0",
+        background: THEME.bg,
+        borderBottom: `1px solid ${THEME.border}`,
         padding: "20px 40px",
         display: "flex",
         justifyContent: "space-between",
@@ -86,161 +77,126 @@ export default function LandingPage() {
         top: 0,
         zIndex: 1000,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 40,
-            height: 40,
-            background: `linear-gradient(135deg, ${THEME.primary}, ${THEME.primaryDark})`,
-            borderRadius: 10,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "white",
-            fontWeight: 800,
-            fontSize: 20,
-          }}>
-            T
-          </div>
-          <span style={{ fontSize: 24, fontWeight: 800, color: THEME.text }}>TryOn</span>
+        <div style={{
+          fontSize: 22,
+          fontWeight: 700,
+          color: THEME.text,
+          letterSpacing: "-0.5px",
+        }}>
+          TryOn
         </div>
-        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
           <Link href="/login" style={{
-            padding: "10px 20px",
-            color: THEME.text,
+            color: THEME.textMuted,
             textDecoration: "none",
-            fontWeight: 600,
             fontSize: 15,
+            fontWeight: 500,
           }}>
             Entrar
           </Link>
           <Link href="/signup" style={{
-            padding: "10px 24px",
-            background: THEME.primary,
-            color: "white",
+            padding: "10px 20px",
+            background: THEME.buttonBg,
+            color: THEME.buttonText,
             textDecoration: "none",
-            borderRadius: 8,
-            fontWeight: 700,
-            fontSize: 15,
-            transition: "transform 0.2s",
+            borderRadius: 6,
+            fontSize: 14,
+            fontWeight: 600,
           }}>
             Começar Grátis
           </Link>
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero */}
       <section style={{
-        background: `linear-gradient(135deg, ${THEME.primary} 0%, ${THEME.primaryDark} 100%)`,
-        color: "white",
-        padding: "120px 40px",
+        padding: "100px 40px 80px",
         textAlign: "center",
+        maxWidth: 900,
+        margin: "0 auto",
       }}>
         <h1 style={{
           fontSize: 56,
-          fontWeight: 900,
-          margin: "0 0 24px",
+          fontWeight: 800,
+          color: THEME.text,
+          marginBottom: 24,
+          letterSpacing: "-1.5px",
           lineHeight: 1.1,
         }}>
-          Provador Virtual + Estúdio Profissional
+          Provador Virtual para Shopify
         </h1>
         <p style={{
-          fontSize: 22,
-          margin: "0 auto 40px",
-          maxWidth: 700,
-          opacity: 0.95,
+          fontSize: 20,
+          color: THEME.textMuted,
+          marginBottom: 40,
           lineHeight: 1.6,
+          maxWidth: 700,
+          margin: "0 auto 40px",
         }}>
-          Aumente suas vendas com provador virtual para clientes e gere fotos profissionais de produtos com IA
+          Aumente suas vendas permitindo que clientes vejam como as roupas ficam neles antes de comprar. Instalação em 2 minutos.
         </p>
-        <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/signup" style={{
-            padding: "18px 40px",
-            background: "white",
-            color: THEME.primary,
-            textDecoration: "none",
-            borderRadius: 12,
-            fontWeight: 700,
-            fontSize: 18,
-            boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
-          }}>
-            🚀 Começar Grátis
-          </Link>
-          <a href="#pricing" style={{
-            padding: "18px 40px",
-            background: "rgba(255,255,255,0.2)",
-            color: "white",
-            textDecoration: "none",
-            borderRadius: 12,
-            fontWeight: 700,
-            fontSize: 18,
-            border: "2px solid white",
-          }}>
-            Ver Planos
-          </a>
-        </div>
+        <Link href="/signup" style={{
+          display: "inline-block",
+          padding: "16px 32px",
+          background: THEME.buttonBg,
+          color: THEME.buttonText,
+          textDecoration: "none",
+          borderRadius: 6,
+          fontSize: 16,
+          fontWeight: 600,
+        }}>
+          Começar Grátis →
+        </Link>
       </section>
 
-      {/* Features Section */}
-      <section style={{ padding: "100px 40px", background: "#f8fafc" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+      {/* Features */}
+      <section style={{
+        padding: "80px 40px",
+        background: "#fafafa",
+        borderTop: `1px solid ${THEME.border}`,
+        borderBottom: `1px solid ${THEME.border}`,
+      }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <h2 style={{
-            fontSize: 42,
-            fontWeight: 800,
+            fontSize: 36,
+            fontWeight: 700,
+            color: THEME.text,
             textAlign: "center",
             marginBottom: 60,
-            color: THEME.text,
+            letterSpacing: "-0.5px",
           }}>
-            Tudo que você precisa em uma plataforma
+            Como funciona
           </h2>
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: 32,
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 40,
           }}>
             {[
-              {
-                icon: "👗",
-                title: "Provador Virtual",
-                description: "Seus clientes experimentam roupas virtualmente antes de comprar, reduzindo devoluções e aumentando conversão.",
-              },
-              {
-                icon: "📸",
-                title: "Fotos Profissionais",
-                description: "Gere fotos de produtos com modelos reais usando IA. Economize milhares em sessões fotográficas.",
-              },
-              {
-                icon: "⚡",
-                title: "Instalação em 2 Minutos",
-                description: "Copie e cole um código na sua loja Shopify. Sem complicação, sem desenvolvedor.",
-              },
-              {
-                icon: "📊",
-                title: "Analytics Completo",
-                description: "Veja quantos clientes usaram o provador, quais produtos mais convertem e muito mais.",
-              },
-              {
-                icon: "🎨",
-                title: "Personalizável",
-                description: "Adapte cores, textos e branding para combinar perfeitamente com sua loja.",
-              },
-              {
-                icon: "🔒",
-                title: "Seguro e Privado",
-                description: "Fotos dos clientes não são armazenadas. Processamento seguro e privacidade garantida.",
-              },
-            ].map((feature, i) => (
+              { title: "1. Instale o plugin", desc: "Adicione o código na sua loja Shopify em menos de 2 minutos" },
+              { title: "2. Cliente envia foto", desc: "Seus clientes fazem upload de uma foto deles mesmos" },
+              { title: "3. IA gera resultado", desc: "Nossa IA cria uma imagem realista da roupa no cliente" },
+            ].map((item, i) => (
               <div key={i} style={{
-                background: "white",
                 padding: 32,
-                borderRadius: 16,
-                boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
+                background: THEME.bg,
+                borderRadius: 8,
+                border: `1px solid ${THEME.border}`,
               }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>{feature.icon}</div>
-                <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12, color: THEME.text }}>
-                  {feature.title}
+                <h3 style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: THEME.text,
+                  marginBottom: 12,
+                }}>
+                  {item.title}
                 </h3>
-                <p style={{ fontSize: 16, color: THEME.textMuted, lineHeight: 1.6, margin: 0 }}>
-                  {feature.description}
+                <p style={{
+                  fontSize: 15,
+                  color: THEME.textMuted,
+                  lineHeight: 1.6,
+                }}>
+                  {item.desc}
                 </p>
               </div>
             ))}
@@ -248,141 +204,143 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" style={{ padding: "100px 40px", background: "white" }}>
+      {/* Pricing */}
+      <section style={{
+        padding: "100px 40px",
+      }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <h2 style={{
-            fontSize: 42,
-            fontWeight: 800,
+            fontSize: 36,
+            fontWeight: 700,
+            color: THEME.text,
             textAlign: "center",
             marginBottom: 16,
-            color: THEME.text,
+            letterSpacing: "-0.5px",
           }}>
-            Planos para todos os tamanhos
+            Planos e Preços
           </h2>
           <p style={{
             fontSize: 18,
-            textAlign: "center",
             color: THEME.textMuted,
+            textAlign: "center",
             marginBottom: 60,
           }}>
-            Comece grátis e escale conforme sua loja cresce
+            Escolha o plano ideal para o tamanho da sua loja
           </p>
+
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
             gap: 24,
           }}>
-            {plans.map((plan, i) => (
-              <div key={i} style={{
-                background: plan.highlighted ? `linear-gradient(135deg, ${THEME.primary}, ${THEME.primaryDark})` : "white",
-                color: plan.highlighted ? "white" : THEME.text,
-                padding: 40,
-                borderRadius: 20,
-                border: plan.highlighted ? "none" : "2px solid #e2e8f0",
-                boxShadow: plan.highlighted ? "0 20px 40px rgba(102, 126, 234, 0.3)" : "0 4px 6px rgba(0,0,0,0.05)",
-                position: "relative",
-                transform: plan.highlighted ? "scale(1.05)" : "scale(1)",
-              }}>
-                {plan.highlighted && (
+            {plans.map((plan) => (
+              <div
+                key={plan.name}
+                style={{
+                  background: THEME.bg,
+                  border: plan.recommended ? `2px solid ${THEME.text}` : `1px solid ${THEME.border}`,
+                  borderRadius: 8,
+                  padding: 32,
+                  position: "relative",
+                }}
+              >
+                {plan.recommended && (
                   <div style={{
                     position: "absolute",
                     top: -12,
                     left: "50%",
                     transform: "translateX(-50%)",
-                    background: THEME.success,
-                    color: "white",
-                    padding: "6px 20px",
-                    borderRadius: 20,
-                    fontSize: 13,
+                    background: THEME.text,
+                    color: THEME.buttonText,
+                    padding: "4px 12px",
+                    borderRadius: 4,
+                    fontSize: 11,
                     fontWeight: 700,
+                    letterSpacing: "0.5px",
                   }}>
-                    MAIS POPULAR
+                    RECOMENDADO
                   </div>
                 )}
-                <h3 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>{plan.name}</h3>
+                <h3 style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: THEME.text,
+                  marginBottom: 8,
+                }}>
+                  {plan.name}
+                </h3>
+                <div style={{
+                  fontSize: 40,
+                  fontWeight: 800,
+                  color: THEME.text,
+                  marginBottom: 8,
+                }}>
+                  {plan.price}
+                  <span style={{ fontSize: 16, fontWeight: 500, color: THEME.textMuted }}>/mês</span>
+                </div>
                 <p style={{
                   fontSize: 14,
-                  opacity: 0.8,
+                  color: THEME.textMuted,
                   marginBottom: 24,
                 }}>
                   {plan.description}
                 </p>
-                <div style={{ marginBottom: 32 }}>
-                  <span style={{ fontSize: 48, fontWeight: 900 }}>{plan.price}</span>
-                  <span style={{ fontSize: 16, opacity: 0.8 }}>{plan.period}</span>
-                </div>
-                <Link href="/signup" style={{
-                  display: "block",
-                  padding: "16px",
-                  background: plan.highlighted ? "white" : THEME.primary,
-                  color: plan.highlighted ? THEME.primary : "white",
-                  textDecoration: "none",
-                  borderRadius: 12,
-                  fontWeight: 700,
-                  textAlign: "center",
-                  marginBottom: 32,
+                <ul style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: "0 0 24px",
                 }}>
-                  {plan.cta}
-                </Link>
-                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                  {plan.features.map((feature, j) => (
-                    <li key={j} style={{
-                      fontSize: 15,
+                  {plan.features.map((feature, i) => (
+                    <li key={i} style={{
+                      fontSize: 14,
+                      color: THEME.text,
                       marginBottom: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
+                      paddingLeft: 20,
+                      position: "relative",
                     }}>
-                      <span style={{ fontSize: 18 }}>✓</span>
+                      <span style={{
+                        position: "absolute",
+                        left: 0,
+                        color: THEME.text,
+                      }}>✓</span>
                       {feature}
                     </li>
                   ))}
                 </ul>
+                <Link href="/signup" style={{
+                  display: "block",
+                  textAlign: "center",
+                  padding: "12px",
+                  background: plan.recommended ? THEME.buttonBg : "transparent",
+                  color: plan.recommended ? THEME.buttonText : THEME.text,
+                  border: plan.recommended ? "none" : `1px solid ${THEME.border}`,
+                  borderRadius: 6,
+                  textDecoration: "none",
+                  fontSize: 15,
+                  fontWeight: 600,
+                }}>
+                  Começar
+                </Link>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section style={{
-        background: `linear-gradient(135deg, ${THEME.primary} 0%, ${THEME.primaryDark} 100%)`,
-        color: "white",
-        padding: "80px 40px",
-        textAlign: "center",
-      }}>
-        <h2 style={{ fontSize: 42, fontWeight: 800, marginBottom: 24 }}>
-          Pronto para revolucionar sua loja?
-        </h2>
-        <p style={{ fontSize: 20, marginBottom: 40, opacity: 0.95 }}>
-          Junte-se a centenas de lojistas que já aumentaram suas vendas com TryOn
-        </p>
-        <Link href="/signup" style={{
-          padding: "18px 48px",
-          background: "white",
-          color: THEME.primary,
-          textDecoration: "none",
-          borderRadius: 12,
-          fontWeight: 700,
-          fontSize: 18,
-          boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
-          display: "inline-block",
-        }}>
-          Começar Grátis Agora
-        </Link>
-      </section>
-
       {/* Footer */}
       <footer style={{
-        background: "#1e293b",
-        color: "white",
         padding: "40px",
+        borderTop: `1px solid ${THEME.border}`,
         textAlign: "center",
+        color: THEME.textMuted,
+        fontSize: 14,
       }}>
-        <p style={{ margin: 0, opacity: 0.7 }}>
+        <div style={{ marginBottom: 16 }}>
+          <span style={{ fontWeight: 700, color: THEME.text }}>TryOn</span> — Provador Virtual para Shopify
+        </div>
+        <div>
           © 2026 TryOn. Todos os direitos reservados.
-        </p>
+        </div>
       </footer>
     </div>
   );
