@@ -87,15 +87,18 @@ ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 -- Plans: Everyone can read, only admins can modify
 CREATE POLICY "Plans are viewable by everyone" ON plans FOR SELECT USING (true);
 
--- Merchants: Users can only see their own data
+-- Merchants: Users can only see and manage their own data
 CREATE POLICY "Merchants can view own data" ON merchants FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Merchants can insert own data" ON merchants FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Merchants can update own data" ON merchants FOR UPDATE USING (auth.uid() = id);
 
--- Usage logs: Users can only see their own logs
+-- Usage logs: Users can only see and create their own logs
 CREATE POLICY "Users can view own usage logs" ON usage_logs FOR SELECT USING (auth.uid() = merchant_id);
+CREATE POLICY "Users can insert own usage logs" ON usage_logs FOR INSERT WITH CHECK (auth.uid() = merchant_id);
 
--- Transactions: Users can only see their own transactions
+-- Transactions: Users can only see and create their own transactions
 CREATE POLICY "Users can view own transactions" ON transactions FOR SELECT USING (auth.uid() = merchant_id);
+CREATE POLICY "Users can insert own transactions" ON transactions FOR INSERT WITH CHECK (auth.uid() = merchant_id);
 
 -- ============================================
 -- FUNCTIONS
