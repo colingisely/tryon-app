@@ -285,6 +285,8 @@ export default function SignupPage() {
                   marginBottom: 16,
                   outline: "none",
                   boxSizing: "border-box",
+                  background: "white",
+                  color: THEME.text,
                 }}
               />
               <input
@@ -303,6 +305,8 @@ export default function SignupPage() {
                   marginBottom: 16,
                   outline: "none",
                   boxSizing: "border-box",
+                  background: "white",
+                  color: THEME.text,
                 }}
               />
               <input
@@ -320,6 +324,8 @@ export default function SignupPage() {
                   marginBottom: 16,
                   outline: "none",
                   boxSizing: "border-box",
+                  background: "white",
+                  color: THEME.text,
                 }}
               />
               <input
@@ -336,6 +342,8 @@ export default function SignupPage() {
                   marginBottom: 16,
                   outline: "none",
                   boxSizing: "border-box",
+                  background: "white",
+                  color: THEME.text,
                 }}
               />
 
