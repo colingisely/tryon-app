@@ -985,6 +985,7 @@
                     image: this.userImage,
                     productImage: this.productImage,
                     mode: this.selectedMode || 'premium',
+                    apiKey: this.config.apiKey,
                 }),
             })
                 .then(function (res) {
@@ -1168,6 +1169,7 @@
     var config = {
         shop: scriptTag ? scriptTag.dataset.shop : '',
         apiEndpoint: scriptTag ? scriptTag.dataset.apiEndpoint : 'https://tryon-app-tau.vercel.app/api/tryon',
+        apiKey: (window.TryOnConfig && window.TryOnConfig.apiKey) || null,
     };
 
     if (document.readyState === 'loading') {
