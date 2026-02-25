@@ -5,14 +5,14 @@ import { supabase } from "@/lib/supabase";
 
 // --- Design System Constants ---
 const THEME = {
-  primary: "#667eea",
-  primaryDark: "#764ba2",
-  bg: "#f8fafc",
+  primary: "#000000",
+  primaryDark: "#333333",
+  bg: "#ffffff",
   cardBg: "#ffffff",
-  text: "#1e293b",
-  textMuted: "#64748b",
-  border: "#e2e8f0",
-  success: "#10b981",
+  text: "#333333",
+  textMuted: "#666666",
+  border: "#e0e0e0",
+  success: "#000000",
   error: "#ef4444",
   radius: "12px",
 };
@@ -547,7 +547,7 @@ export default function AdminPage() {
                 </button>
               ) : (
                 <div style={{ width: "100%", maxWidth: 500 }}>
-                  <div style={{ height: 8, background: "#e2e8f0", borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+                  <div style={{ height: 8, background: "#e0e0e0", borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
                     <div style={{ height: "100%", background: THEME.primary, transition: "width 0.4s ease", width: `${progress}%` }} />
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: THEME.primary, textAlign: "center" }}>{statusText}</div>
