@@ -236,13 +236,13 @@ export default function AdminPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: `linear-gradient(135deg, ${THEME.primary} 0%, ${THEME.primaryDark} 100%)`,
+        background: THEME.bg,
       }}>
         <div style={{
           width: 48,
           height: 48,
-          border: "4px solid rgba(255,255,255,0.3)",
-          borderTopColor: "white",
+          border: `3px solid ${THEME.border}`,
+          borderTopColor: THEME.text,
           borderRadius: "50%",
           animation: "spin 1s linear infinite",
         }} />
@@ -259,7 +259,7 @@ export default function AdminPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: `linear-gradient(135deg, ${THEME.primary} 0%, ${THEME.primaryDark} 100%)`,
+        background: THEME.bg,
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         padding: 20,
         margin: 0,
@@ -277,7 +277,7 @@ export default function AdminPage() {
           <div style={{
             width: 64,
             height: 64,
-            background: "#f1f5f9",
+            background: "#fafafa",
             color: THEME.primary,
             borderRadius: 16,
             display: "flex",
@@ -439,7 +439,7 @@ export default function AdminPage() {
                       height: 300,
                       objectFit: "contain",
                       borderRadius: 12,
-                      background: "#f1f5f9",
+                      background: "#fafafa",
                     }} />
                     <p style={{ fontSize: 12, color: THEME.textMuted, marginTop: 8, textAlign: "center" }}>Clique para trocar</p>
                   </div>
@@ -490,7 +490,7 @@ export default function AdminPage() {
                       height: 300,
                       objectFit: "contain",
                       borderRadius: 12,
-                      background: "#f1f5f9",
+                      background: "#fafafa",
                     }} />
                     <p style={{ fontSize: 12, color: THEME.textMuted, marginTop: 8, textAlign: "center" }}>Clique para trocar</p>
                   </div>
@@ -538,7 +538,7 @@ export default function AdminPage() {
                     fontSize: 18,
                     fontWeight: 700,
                     cursor: (!modelImage || !productImage) ? "not-allowed" : "pointer",
-                    boxShadow: "0 10px 15px -3px rgba(102, 126, 234, 0.3)",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
                     transition: "all 0.2s",
                     opacity: (!modelImage || !productImage) ? 0.5 : 1,
                   }}
@@ -588,7 +588,7 @@ export default function AdminPage() {
                 {ICONS.download} Baixar em Alta Resolução
               </button>
               <button onClick={() => { setResult(null); setModelImage(null); setProductImage(null); }} style={{
-                background: "#f1f5f9",
+                background: "#fafafa",
                 color: THEME.text,
                 padding: "14px 32px",
                 borderRadius: 12,

@@ -43,7 +43,7 @@ async function validateAndDeductCredits(
     // 1. Find merchant by API key
     const { data: merchant, error: merchantError } = await supabase
       .from("merchants")
-      .select("id, fast_credits_remaining, premium_credits_remaining, subscription_status")
+      .select("id, fast_credits_remaining, premium_credits_remaining, fast_credits_used_total, premium_credits_used_total, subscription_status")
       .eq("api_key", apiKey)
       .single();
 
@@ -80,7 +80,7 @@ async function validateAndDeductCredits(
       .from("merchants")
       .update({
         [updateField]: creditsAvailable - creditsNeeded,
-        [usedField]: merchant[usedField] + creditsNeeded,
+        [usedField]: (merchant as any)[usedField] + creditsNeeded,
       })
       .eq("id", merchant.id);
 
