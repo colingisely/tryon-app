@@ -5,21 +5,24 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+// Clean aesthetic matching the try-on modal
 const THEME = {
-  primary: "#667eea",
-  primaryDark: "#764ba2",
-  success: "#10b981",
-  text: "#1e293b",
-  textMuted: "#64748b",
-  border: "#e2e8f0",
-  error: "#ef4444",
+  bg: "#ffffff",
+  text: "#333333",
+  textMuted: "#666666",
+  textLight: "#999999",
+  border: "#e0e0e0",
+  buttonBg: "#000000",
+  buttonText: "#ffffff",
+  error: "#dc2626",
+  success: "#16a34a",
 };
 
 const plans = [
-  { name: "Free", slug: "free", price: "R$ 0", recommended: false },
-  { name: "Starter", slug: "starter", price: "R$ 99", recommended: false },
-  { name: "Pro", slug: "pro", price: "R$ 249", recommended: true },
-  { name: "Enterprise", slug: "enterprise", price: "R$ 599", recommended: false },
+  { name: "Free", slug: "free", price: "R$ 0", credits: "100 try-ons/mês" },
+  { name: "Starter", slug: "starter", price: "R$ 99", credits: "500 rápidos + 10 premium" },
+  { name: "Pro", slug: "pro", price: "R$ 249", credits: "2.000 rápidos + 50 premium", recommended: true },
+  { name: "Enterprise", slug: "enterprise", price: "R$ 599", credits: "Ilimitado + 300 premium" },
 ];
 
 export default function SignupPage() {
@@ -45,7 +48,6 @@ export default function SignupPage() {
     }
 
     try {
-      // 1. Create auth user
       const { data: authData, error: authError } = await supabase!.auth.signUp({
         email,
         password,
@@ -63,9 +65,6 @@ export default function SignupPage() {
         return;
       }
 
-      // 2. Create merchant record (will be done via database trigger or API)
-      // For now, we'll redirect to dashboard and let it handle the setup
-      
       router.push("/dashboard?welcome=true");
     } catch (err: any) {
       setError("Erro de conexão. Tente novamente.");
@@ -76,74 +75,61 @@ export default function SignupPage() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#f8fafc",
+      background: THEME.bg,
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       padding: "40px 20px",
     }}>
       {/* Header */}
       <div style={{
         maxWidth: 1000,
-        margin: "0 auto 40px",
+        margin: "0 auto 60px",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
       }}>
         <Link href="/" style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
+          fontSize: 24,
+          fontWeight: 700,
+          color: THEME.text,
           textDecoration: "none",
+          letterSpacing: "-0.5px",
         }}>
-          <div style={{
-            width: 40,
-            height: 40,
-            background: `linear-gradient(135deg, ${THEME.primary}, ${THEME.primaryDark})`,
-            borderRadius: 10,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "white",
-            fontWeight: 800,
-            fontSize: 20,
-          }}>
-            T
-          </div>
-          <span style={{ fontSize: 24, fontWeight: 800, color: THEME.text }}>TryOn</span>
+          TryOn
         </Link>
         <Link href="/login" style={{
           color: THEME.textMuted,
           textDecoration: "none",
           fontSize: 15,
-          fontWeight: 600,
+          fontWeight: 500,
         }}>
-          Já tem conta? <span style={{ color: THEME.primary }}>Entrar</span>
+          Já tem conta? <span style={{ color: THEME.text, fontWeight: 600 }}>Entrar</span>
         </Link>
       </div>
 
-      {/* Progress Indicator */}
-      <div style={{ maxWidth: 600, margin: "0 auto 40px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+      {/* Progress */}
+      <div style={{ maxWidth: 600, margin: "0 auto 50px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
           {["Escolha o plano", "Crie sua conta"].map((label, i) => (
             <div key={i} style={{
               flex: 1,
               textAlign: "center",
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
-              color: step > i ? THEME.primary : THEME.textMuted,
+              color: step > i ? THEME.text : THEME.textMuted,
             }}>
               {label}
             </div>
           ))}
         </div>
         <div style={{
-          height: 4,
-          background: "#e2e8f0",
-          borderRadius: 4,
+          height: 2,
+          background: THEME.border,
+          borderRadius: 2,
           overflow: "hidden",
         }}>
           <div style={{
             height: "100%",
-            background: THEME.primary,
+            background: THEME.text,
             width: `${(step / 2) * 100}%`,
             transition: "width 0.3s",
           }} />
@@ -151,20 +137,21 @@ export default function SignupPage() {
       </div>
 
       {/* Content */}
-      <div style={{ maxWidth: step === 1 ? 1000 : 500, margin: "0 auto" }}>
+      <div style={{ maxWidth: step === 1 ? 900 : 480, margin: "0 auto" }}>
         {step === 1 && (
           <div>
             <h1 style={{
-              fontSize: 36,
-              fontWeight: 800,
+              fontSize: 32,
+              fontWeight: 700,
               textAlign: "center",
-              marginBottom: 16,
+              marginBottom: 12,
               color: THEME.text,
+              letterSpacing: "-0.5px",
             }}>
               Escolha seu plano
             </h1>
             <p style={{
-              fontSize: 18,
+              fontSize: 16,
               textAlign: "center",
               color: THEME.textMuted,
               marginBottom: 48,
@@ -174,19 +161,18 @@ export default function SignupPage() {
 
             <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 20,
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: 16,
             }}>
               {plans.map((plan) => (
                 <div
                   key={plan.slug}
                   onClick={() => setSelectedPlan(plan.slug)}
                   style={{
-                    background: selectedPlan === plan.slug ? `linear-gradient(135deg, ${THEME.primary}, ${THEME.primaryDark})` : "white",
-                    color: selectedPlan === plan.slug ? "white" : THEME.text,
-                    padding: 32,
-                    borderRadius: 16,
-                    border: selectedPlan === plan.slug ? "none" : `2px solid ${THEME.border}`,
+                    background: THEME.bg,
+                    border: selectedPlan === plan.slug ? `2px solid ${THEME.text}` : `1px solid ${THEME.border}`,
+                    padding: 24,
+                    borderRadius: 8,
                     cursor: "pointer",
                     transition: "all 0.2s",
                     position: "relative",
@@ -196,31 +182,32 @@ export default function SignupPage() {
                     <div style={{
                       position: "absolute",
                       top: -10,
-                      right: 20,
-                      background: THEME.success,
-                      color: "white",
-                      padding: "4px 12px",
-                      borderRadius: 12,
-                      fontSize: 11,
+                      right: 16,
+                      background: THEME.text,
+                      color: THEME.buttonText,
+                      padding: "3px 10px",
+                      borderRadius: 4,
+                      fontSize: 10,
                       fontWeight: 700,
+                      letterSpacing: "0.5px",
                     }}>
                       RECOMENDADO
                     </div>
                   )}
-                  <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>{plan.name}</h3>
-                  <div style={{ fontSize: 32, fontWeight: 900, marginBottom: 16 }}>{plan.price}</div>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6, color: THEME.text }}>{plan.name}</h3>
+                  <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8, color: THEME.text }}>{plan.price}</div>
+                  <p style={{ fontSize: 13, color: THEME.textMuted, marginBottom: 16 }}>{plan.credits}</p>
                   <div style={{
-                    width: 24,
-                    height: 24,
+                    width: 20,
+                    height: 20,
                     borderRadius: "50%",
-                    border: selectedPlan === plan.slug ? "none" : `2px solid ${THEME.border}`,
-                    background: selectedPlan === plan.slug ? "white" : "transparent",
+                    border: `2px solid ${selectedPlan === plan.slug ? THEME.text : THEME.border}`,
+                    background: selectedPlan === plan.slug ? THEME.text : "transparent",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    margin: "0 auto",
                   }}>
-                    {selectedPlan === plan.slug && <span style={{ color: THEME.primary, fontSize: 16 }}>✓</span>}
+                    {selectedPlan === plan.slug && <span style={{ color: THEME.buttonText, fontSize: 12 }}>✓</span>}
                   </div>
                 </div>
               ))}
@@ -231,13 +218,13 @@ export default function SignupPage() {
               style={{
                 display: "block",
                 margin: "40px auto 0",
-                padding: "16px 48px",
-                background: THEME.primary,
-                color: "white",
+                padding: "14px 40px",
+                background: THEME.buttonBg,
+                color: THEME.buttonText,
                 border: "none",
-                borderRadius: 12,
-                fontSize: 18,
-                fontWeight: 700,
+                borderRadius: 6,
+                fontSize: 15,
+                fontWeight: 600,
                 cursor: "pointer",
               }}
             >
@@ -248,114 +235,134 @@ export default function SignupPage() {
 
         {step === 2 && (
           <div style={{
-            background: "white",
-            padding: 48,
-            borderRadius: 24,
-            boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+            background: THEME.bg,
+            padding: 40,
+            borderRadius: 8,
+            border: `1px solid ${THEME.border}`,
           }}>
             <h1 style={{
-              fontSize: 32,
-              fontWeight: 800,
+              fontSize: 28,
+              fontWeight: 700,
               marginBottom: 8,
               color: THEME.text,
+              letterSpacing: "-0.5px",
             }}>
               Crie sua conta
             </h1>
             <p style={{
-              fontSize: 16,
+              fontSize: 14,
               color: THEME.textMuted,
               marginBottom: 32,
             }}>
-              Plano selecionado: <strong>{plans.find(p => p.slug === selectedPlan)?.name}</strong>
+              Plano selecionado: <strong style={{ color: THEME.text }}>{plans.find(p => p.slug === selectedPlan)?.name}</strong>
             </p>
 
             <form onSubmit={handleSignup}>
-              <input
-                type="email"
-                placeholder="E-mail"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{
-                  width: "100%",
-                  padding: "16px",
-                  border: `2px solid ${THEME.border}`,
-                  borderRadius: 12,
-                  fontSize: 16,
-                  marginBottom: 16,
-                  outline: "none",
-                  boxSizing: "border-box",
-                  background: "white",
-                  color: THEME.text,
-                }}
-              />
-              <input
-                type="password"
-                placeholder="Senha (mínimo 6 caracteres)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                style={{
-                  width: "100%",
-                  padding: "16px",
-                  border: `2px solid ${THEME.border}`,
-                  borderRadius: 12,
-                  fontSize: 16,
-                  marginBottom: 16,
-                  outline: "none",
-                  boxSizing: "border-box",
-                  background: "white",
-                  color: THEME.text,
-                }}
-              />
-              <input
-                type="text"
-                placeholder="Nome da loja"
-                value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                required
-                style={{
-                  width: "100%",
-                  padding: "16px",
-                  border: `2px solid ${THEME.border}`,
-                  borderRadius: 12,
-                  fontSize: 16,
-                  marginBottom: 16,
-                  outline: "none",
-                  boxSizing: "border-box",
-                  background: "white",
-                  color: THEME.text,
-                }}
-              />
-              <input
-                type="url"
-                placeholder="URL da loja (ex: https://minhaloja.com)"
-                value={storeUrl}
-                onChange={(e) => setStoreUrl(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "16px",
-                  border: `2px solid ${THEME.border}`,
-                  borderRadius: 12,
-                  fontSize: 16,
-                  marginBottom: 16,
-                  outline: "none",
-                  boxSizing: "border-box",
-                  background: "white",
-                  color: THEME.text,
-                }}
-              />
+              <label style={{ display: "block", marginBottom: 16 }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 6 }}>
+                  E-mail
+                </span>
+                <input
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    border: `1px solid ${THEME.border}`,
+                    borderRadius: 6,
+                    fontSize: 15,
+                    outline: "none",
+                    boxSizing: "border-box",
+                    background: THEME.bg,
+                    color: THEME.text,
+                  }}
+                />
+              </label>
+
+              <label style={{ display: "block", marginBottom: 16 }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 6 }}>
+                  Senha
+                </span>
+                <input
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    border: `1px solid ${THEME.border}`,
+                    borderRadius: 6,
+                    fontSize: 15,
+                    outline: "none",
+                    boxSizing: "border-box",
+                    background: THEME.bg,
+                    color: THEME.text,
+                  }}
+                />
+              </label>
+
+              <label style={{ display: "block", marginBottom: 16 }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 6 }}>
+                  Nome da loja
+                </span>
+                <input
+                  type="text"
+                  placeholder="Minha Loja"
+                  value={storeName}
+                  onChange={(e) => setStoreName(e.target.value)}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    border: `1px solid ${THEME.border}`,
+                    borderRadius: 6,
+                    fontSize: 15,
+                    outline: "none",
+                    boxSizing: "border-box",
+                    background: THEME.bg,
+                    color: THEME.text,
+                  }}
+                />
+              </label>
+
+              <label style={{ display: "block", marginBottom: 24 }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 6 }}>
+                  URL da loja (opcional)
+                </span>
+                <input
+                  type="url"
+                  placeholder="https://minhaloja.com"
+                  value={storeUrl}
+                  onChange={(e) => setStoreUrl(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    border: `1px solid ${THEME.border}`,
+                    borderRadius: 6,
+                    fontSize: 15,
+                    outline: "none",
+                    boxSizing: "border-box",
+                    background: THEME.bg,
+                    color: THEME.text,
+                  }}
+                />
+              </label>
 
               {error && (
                 <div style={{
                   color: THEME.error,
-                  fontSize: 14,
+                  fontSize: 13,
                   marginBottom: 16,
                   fontWeight: 500,
-                  padding: "12px",
+                  padding: "10px 12px",
                   background: "#fef2f2",
-                  borderRadius: 8,
+                  borderRadius: 6,
                   border: "1px solid #fee2e2",
                 }}>
                   {error}
@@ -367,15 +374,15 @@ export default function SignupPage() {
                 disabled={loading}
                 style={{
                   width: "100%",
-                  padding: "16px",
-                  background: loading ? THEME.border : THEME.primary,
-                  color: "white",
+                  padding: "14px",
+                  background: loading ? THEME.border : THEME.buttonBg,
+                  color: THEME.buttonText,
                   border: "none",
-                  borderRadius: 12,
-                  fontSize: 18,
-                  fontWeight: 700,
+                  borderRadius: 6,
+                  fontSize: 15,
+                  fontWeight: 600,
                   cursor: loading ? "not-allowed" : "pointer",
-                  marginBottom: 16,
+                  marginBottom: 12,
                 }}
               >
                 {loading ? "Criando conta..." : "Criar conta grátis"}
@@ -386,12 +393,12 @@ export default function SignupPage() {
                 onClick={() => setStep(1)}
                 style={{
                   width: "100%",
-                  padding: "16px",
+                  padding: "14px",
                   background: "transparent",
                   color: THEME.textMuted,
                   border: "none",
-                  fontSize: 15,
-                  fontWeight: 600,
+                  fontSize: 14,
+                  fontWeight: 500,
                   cursor: "pointer",
                 }}
               >
