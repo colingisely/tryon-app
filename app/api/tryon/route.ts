@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 const FASHN_API_URL = "https://api.fashn.ai/v1/run";
 const FASHN_API_KEY = process.env.FASHN_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+// Supabase client for server-side operations
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+const supabase = supabaseUrl && supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : null;
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -11,6 +20,112 @@ type GarmentCategory = "tops" | "bottoms" | "one-pieces";
 interface GarmentAnalysis {
   category: GarmentCategory;
   description: string; // Used as prompt hint for Try-On Max
+}
+
+// ─── Credit Management ─────────────────────────────────────────────────────
+
+async function validateAndDeductCredits(
+  apiKey: string | null,
+  mode: "fast" | "premium"
+): Promise<{ success: boolean; error?: string; merchantId?: string }> {
+  // If no API key provided, allow for testing (will be removed in production)
+  if (!apiKey) {
+    console.log("⚠️ No API key provided - allowing for testing");
+    return { success: true };
+  }
+
+  if (!supabase) {
+    console.log("⚠️ Supabase not configured - allowing for testing");
+    return { success: true };
+  }
+
+  try {
+    // 1. Find merchant by API key
+    const { data: merchant, error: merchantError } = await supabase
+      .from("merchants")
+      .select("id, fast_credits_remaining, premium_credits_remaining, subscription_status")
+      .eq("api_key", apiKey)
+      .single();
+
+    if (merchantError || !merchant) {
+      return { success: false, error: "API key inválida" };
+    }
+
+    if (merchant.subscription_status !== "active" && merchant.subscription_status !== "trial") {
+      return { success: false, error: "Assinatura inativa" };
+    }
+
+    // 2. Check if merchant has enough credits
+    const creditsNeeded = mode === "premium" ? 1 : 1; // Both modes cost 1 credit for now
+    const creditsAvailable = mode === "premium"
+      ? merchant.premium_credits_remaining
+      : merchant.fast_credits_remaining;
+
+    if (creditsAvailable < creditsNeeded) {
+      return {
+        success: false,
+        error: `Créditos ${mode === "premium" ? "Premium" : "Fast"} insuficientes. Você tem ${creditsAvailable}, precisa de ${creditsNeeded}.`,
+      };
+    }
+
+    // 3. Deduct credits
+    const updateField = mode === "premium"
+      ? "premium_credits_remaining"
+      : "fast_credits_remaining";
+    const usedField = mode === "premium"
+      ? "premium_credits_used_total"
+      : "fast_credits_used_total";
+
+    const { error: updateError } = await supabase
+      .from("merchants")
+      .update({
+        [updateField]: creditsAvailable - creditsNeeded,
+        [usedField]: merchant[usedField] + creditsNeeded,
+      })
+      .eq("id", merchant.id);
+
+    if (updateError) {
+      console.error("Error updating credits:", updateError);
+      return { success: false, error: "Erro ao atualizar créditos" };
+    }
+
+    console.log(`✅ Credits deducted: ${creditsNeeded} ${mode} credits from merchant ${merchant.id}`);
+    return { success: true, merchantId: merchant.id };
+  } catch (error) {
+    console.error("Error in credit validation:", error);
+    return { success: false, error: "Erro ao validar créditos" };
+  }
+}
+
+async function logUsage(
+  merchantId: string | undefined,
+  mode: "fast" | "premium",
+  modelImageUrl: string,
+  productImageUrl: string,
+  resultImageUrl: string,
+  req: Request
+) {
+  if (!merchantId || !supabase) return;
+
+  try {
+    const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    const userAgent = req.headers.get("user-agent") || "unknown";
+
+    await supabase.from("usage_logs").insert({
+      merchant_id: merchantId,
+      mode,
+      credits_used: 1,
+      model_image_url: modelImageUrl.substring(0, 500), // Truncate to avoid DB limits
+      product_image_url: productImageUrl.substring(0, 500),
+      result_image_url: resultImageUrl,
+      ip_address: ipAddress,
+      user_agent: userAgent.substring(0, 500),
+    });
+
+    console.log(`📊 Usage logged for merchant ${merchantId}`);
+  } catch (error) {
+    console.error("Error logging usage:", error);
+  }
 }
 
 // ─── Garment Analysis via GPT Vision ───────────────────────────────────────
@@ -146,7 +261,7 @@ async function pollFashnStatus(predictionId: string, maxAttempts = 120): Promise
 
 // ─── Try-On Max (Premium Quality) ──────────────────────────────────────────
 // Uses tryon-max model: 50s processing, up to 4K, enhanced fidelity
-// 4 credits per image
+// 1 credit per image
 
 async function tryOnMax(
   modelImage: string,
@@ -255,7 +370,7 @@ async function tryOnV16(
 
 export async function POST(req: Request) {
   try {
-    const { image, productImage, mode } = await req.json();
+    const { image, productImage, mode, apiKey } = await req.json();
 
     if (!image) {
       return NextResponse.json(
@@ -280,16 +395,23 @@ export async function POST(req: Request) {
 
     console.log("✅ Imagens recebidas do frontend");
 
-    // Step 1: Analyze garment (category + styling prompt)
+    // Step 1: Validate API key and check credits
+    const useFast = mode === "fast";
+    const creditCheck = await validateAndDeductCredits(apiKey, useFast ? "fast" : "premium");
+
+    if (!creditCheck.success) {
+      return NextResponse.json(
+        { error: creditCheck.error || "Erro ao validar créditos" },
+        { status: 403, headers: { "Access-Control-Allow-Origin": "*" } }
+      );
+    }
+
+    // Step 2: Analyze garment (category + styling prompt)
     const analysis = await analyzeGarment(productImage);
     console.log(`👗 Categoria: ${analysis.category}`);
     console.log(`💡 Prompt: ${analysis.description}`);
 
-    // Step 2: Choose endpoint based on mode
-    // Default: Try-On Max for best quality
-    // Fallback: v1.6 quality if Max fails or if explicitly requested
-    const useFast = mode === "fast";
-
+    // Step 3: Choose endpoint based on mode
     let resultData: { resultUrl: string; model: string };
 
     if (useFast) {
@@ -307,6 +429,16 @@ export async function POST(req: Request) {
 
     console.log("✅ Resultado gerado com sucesso");
     console.log(`   Modelo: ${resultData.model} | Categoria: ${analysis.category}`);
+
+    // Step 4: Log usage
+    await logUsage(
+      creditCheck.merchantId,
+      useFast ? "fast" : "premium",
+      image,
+      productImage,
+      resultData.resultUrl,
+      req
+    );
 
     return NextResponse.json(
       {
