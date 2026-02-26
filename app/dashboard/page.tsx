@@ -238,6 +238,14 @@ export default function DashboardPage() {
           Reflexy
         </div>
         <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+          <Link href="/analytics" style={{
+            color: THEME.text,
+            textDecoration: "none",
+            fontWeight: 600,
+            fontSize: 15,
+          }}>
+            Analytics
+          </Link>
           <Link href="/admin" style={{
             color: THEME.text,
             textDecoration: "none",

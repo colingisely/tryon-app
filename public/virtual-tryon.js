@@ -120,6 +120,8 @@
             this.modal = null;
             this._stylesInjected = false;
             this.theme = null;
+            this.sessionId = this.generateSessionId();
+            this.modalOpenTime = null;
 
             if (this.isProductPage()) {
                 this.init();
@@ -704,6 +706,8 @@
         }
 
         openModal() {
+            this.modalOpenTime = Date.now();
+            this.trackEvent('tryon_initiated');
             this.productImage = this.findProductImage();
             if (this.productImage) {
                 this.createModal();
@@ -1001,10 +1005,12 @@
 
                     setTimeout(function () {
                         progressWrap.classList.remove('vto-visible');
-                        this.showResult(data.resultUrl);
+                        this.trackEvent('tryon_completed', { mode: this.selectedMode });
+                    this.showResult(data.resultUrl);
                     }.bind(this), 400);
                 }.bind(this))
                 .catch(function (err) {
+                    this.trackEvent('tryon_failed', { error: err.message, mode: this.selectedMode });
                     clearInterval(interval);
                     progressWrap.classList.remove('vto-visible');
                     generateBtn.disabled = false;
@@ -1137,6 +1143,11 @@
         }
 
         closeModal() {
+            if (this.modalOpenTime) {
+                var timeSpent = Math.round((Date.now() - this.modalOpenTime) / 1000);
+                this.trackEvent('modal_closed', { time_spent_seconds: timeSpent });
+                this.modalOpenTime = null;
+            }
             if (!this.modal) return;
 
             var overlay = this.modal;
@@ -1160,6 +1171,57 @@
             }, 300);
 
             this.modal = null;
+        }
+
+        generateSessionId() {
+            return 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        trackEvent(eventType, metadata) {
+            if (!this.config.apiKey) return;
+
+            var productInfo = this.getProductInfo();
+            var payload = {
+                api_key: this.config.apiKey,
+                event_type: eventType,
+                product_id: productInfo.id,
+                product_name: productInfo.name,
+                product_image_url: this.productImage,
+                session_id: this.sessionId,
+                user_fingerprint: this.getUserFingerprint(),
+                metadata: metadata || {}
+            };
+
+            fetch(this.config.apiEndpoint.replace('/tryon', '/analytics'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(function() {}); // Silent fail
+        }
+
+        getProductInfo() {
+            var productId = null;
+            var productName = null;
+
+            // Try to get product ID from URL or meta tags
+            var urlMatch = window.location.pathname.match(/\/products\/([^\/\?]+)/);
+            if (urlMatch) productId = urlMatch[1];
+
+            var metaProduct = document.querySelector('meta[property="og:title"]');
+            if (metaProduct) productName = metaProduct.content;
+
+            if (!productName) {
+                var titleEl = document.querySelector('.product-title, .product__title, h1');
+                if (titleEl) productName = titleEl.textContent.trim();
+            }
+
+            return { id: productId, name: productName };
+        }
+
+        getUserFingerprint() {
+            // Simple fingerprint based on screen and navigator
+            var fp = [screen.width, screen.height, navigator.language, navigator.platform].join('|');
+            return btoa(fp).substr(0, 16);
         }
     }
 
