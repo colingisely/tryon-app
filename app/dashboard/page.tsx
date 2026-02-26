@@ -235,7 +235,7 @@ export default function DashboardPage() {
           color: THEME.text,
           letterSpacing: "-0.5px",
         }}>
-          TryOn
+          Reflexy
         </div>
         <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
           <Link href="/admin" style={{
@@ -410,7 +410,7 @@ export default function DashboardPage() {
             border: `1px solid ${THEME.border}`,
           }}>
 {`<script>
-  window.TryOnConfig = {
+  window.ReflexyConfig = {
     apiKey: "${merchant.api_key}",
   };
 </script>

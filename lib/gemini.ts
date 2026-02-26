@@ -44,7 +44,7 @@ The final result must look like a single authentic photograph.`;
 /**
  * Chama Gemini com retry automático
  */
-export async function generateTryOn(
+export async function generateReflexy(
   userImageBase64: string,
   productImageUrl: string,
   clothingType: string = "jacket",

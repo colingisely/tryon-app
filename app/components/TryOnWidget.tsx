@@ -1,21 +1,21 @@
-// app/components/TryOnWidget.tsx
+// app/components/ReflexyWidget.tsx
 // Widget do frontend - upload + polling
 
 "use client";
 
 import { useState, useRef } from "react";
 
-interface TryOnWidgetProps {
+interface ReflexyWidgetProps {
   productImageUrl: string;
   productName?: string;
   clothingType?: string;
 }
 
-export function TryOnWidget({
+export function ReflexyWidget({
   productImageUrl,
   productName = "Produto",
   clothingType = "jacket",
-}: TryOnWidgetProps) {
+}: ReflexyWidgetProps) {
   const [status, setStatus] = useState<
     "idle" | "uploading" | "processing" | "done" | "error"
   >("idle");

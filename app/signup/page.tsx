@@ -94,7 +94,7 @@ export default function SignupPage() {
           textDecoration: "none",
           letterSpacing: "-0.5px",
         }}>
-          TryOn
+          Reflexy
         </Link>
         <Link href="/login" style={{
           color: THEME.textMuted,

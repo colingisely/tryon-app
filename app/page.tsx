@@ -1,345 +1,183 @@
-"use client";
-
-import Link from "next/link";
-
-const THEME = {
-  bg: "#ffffff",
-  text: "#333333",
-  textMuted: "#666666",
-  textLight: "#999999",
-  border: "#e0e0e0",
-  buttonBg: "#000000",
-  buttonText: "#ffffff",
-};
-
-const plans = [
-  {
-    name: "Free",
-    price: "R$ 0",
-    description: "Perfeito para testar",
-    features: [
-      "100 try-ons rápidos/mês",
-      "0 fotos Premium",
-      'Logo "Powered by TryOn"',
-      "Suporte por email",
-    ],
-  },
-  {
-    name: "Starter",
-    price: "R$ 99",
-    description: "Para lojas em crescimento",
-    features: [
-      "500 try-ons rápidos/mês",
-      "10 fotos Premium/mês",
-      "Sem logo",
-      "Suporte prioritário",
-    ],
-  },
-  {
-    name: "Pro",
-    price: "R$ 249",
-    description: "Para lojas estabelecidas",
-    features: [
-      "2.000 try-ons rápidos/mês",
-      "50 fotos Premium/mês",
-      "Sem logo",
-      "Analytics avançado",
-      "Suporte prioritário",
-    ],
-    recommended: true,
-  },
-  {
-    name: "Enterprise",
-    price: "R$ 599",
-    description: "Para grandes operações",
-    features: [
-      "Try-ons ilimitados",
-      "300 fotos Premium/mês",
-      "White-label",
-      "Suporte dedicado",
-      "API customizada",
-    ],
-  },
-];
+import Link from 'next/link';
 
 export default function LandingPage() {
   return (
-    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", background: THEME.bg }}>
+    <div className="bg-white text-gray-800">
       {/* Header */}
-      <header style={{
-        background: THEME.bg,
-        borderBottom: `1px solid ${THEME.border}`,
-        padding: "20px 40px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        position: "sticky",
-        top: 0,
-        zIndex: 1000,
-      }}>
-        <div style={{
-          fontSize: 22,
-          fontWeight: 700,
-          color: THEME.text,
-          letterSpacing: "-0.5px",
-        }}>
-          TryOn
-        </div>
-        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-          <Link href="/login" style={{
-            color: THEME.textMuted,
-            textDecoration: "none",
-            fontSize: 15,
-            fontWeight: 500,
-          }}>
-            Entrar
-          </Link>
-          <Link href="/signup" style={{
-            padding: "10px 20px",
-            background: THEME.buttonBg,
-            color: THEME.buttonText,
-            textDecoration: "none",
-            borderRadius: 6,
-            fontSize: 14,
-            fontWeight: 600,
-          }}>
-            Começar Grátis
-          </Link>
-        </div>
+      <header className="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="text-2xl font-bold text-black">Reflexy</div>
+        <nav className="space-x-8">
+          <Link href="#features" className="hover:text-black">Features</Link>
+          <Link href="#pricing" className="hover:text-black">Preços</Link>
+          <Link href="/login" className="hover:text-black">Entrar</Link>
+          <Link href="/signup" className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800">Começar Grátis</Link>
+        </nav>
       </header>
 
-      {/* Hero */}
-      <section style={{
-        padding: "100px 40px 80px",
-        textAlign: "center",
-        maxWidth: 900,
-        margin: "0 auto",
-      }}>
-        <h1 style={{
-          fontSize: 56,
-          fontWeight: 800,
-          color: THEME.text,
-          marginBottom: 24,
-          letterSpacing: "-1.5px",
-          lineHeight: 1.1,
-        }}>
-          Provador Virtual para Shopify
-        </h1>
-        <p style={{
-          fontSize: 20,
-          color: THEME.textMuted,
-          marginBottom: 40,
-          lineHeight: 1.6,
-          maxWidth: 700,
-          margin: "0 auto 40px",
-        }}>
-          Aumente suas vendas permitindo que clientes vejam como as roupas ficam neles antes de comprar. Instalação em 2 minutos.
-        </p>
-        <Link href="/signup" style={{
-          display: "inline-block",
-          padding: "16px 32px",
-          background: THEME.buttonBg,
-          color: THEME.buttonText,
-          textDecoration: "none",
-          borderRadius: 6,
-          fontSize: 16,
-          fontWeight: 600,
-        }}>
-          Começar Grátis →
-        </Link>
-      </section>
+      {/* Hero Section */}
+      <main className="text-center py-20">
+        <h1 className="text-5xl font-bold mb-4">O reflexo da sua conversão.</h1>
+        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">A Reflexy é a tecnologia que mostra o que seu cliente faz antes de comprar — e transforma isso em vantagem competitiva.</p>
+        <div className="space-x-4">
+          <Link href="/signup" className="bg-black text-white px-6 py-3 rounded-md text-lg hover:bg-gray-800">Começar Grátis</Link>
+          <Link href="#pricing" className="border border-black text-black px-6 py-3 rounded-md text-lg hover:bg-gray-100">Ver Planos</Link>
+        </div>
+      </main>
 
-      {/* Features */}
-      <section style={{
-        padding: "80px 40px",
-        background: "#fafafa",
-        borderTop: `1px solid ${THEME.border}`,
-        borderBottom: `1px solid ${THEME.border}`,
-      }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <h2 style={{
-            fontSize: 36,
-            fontWeight: 700,
-            color: THEME.text,
-            textAlign: "center",
-            marginBottom: 60,
-            letterSpacing: "-0.5px",
-          }}>
-            Como funciona
-          </h2>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 40,
-          }}>
-            {[
-              { title: "1. Instale o plugin", desc: "Adicione o código na sua loja Shopify em menos de 2 minutos" },
-              { title: "2. Cliente envia foto", desc: "Seus clientes fazem upload de uma foto deles mesmos" },
-              { title: "3. IA gera resultado", desc: "Nossa IA cria uma imagem realista da roupa no cliente" },
-            ].map((item, i) => (
-              <div key={i} style={{
-                padding: 32,
-                background: THEME.bg,
-                borderRadius: 8,
-                border: `1px solid ${THEME.border}`,
-              }}>
-                <h3 style={{
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: THEME.text,
-                  marginBottom: 12,
-                }}>
-                  {item.title}
-                </h3>
-                <p style={{
-                  fontSize: 15,
-                  color: THEME.textMuted,
-                  lineHeight: 1.6,
-                }}>
-                  {item.desc}
-                </p>
-              </div>
-            ))}
+      {/* How It Works */}
+      <section id="how-it-works" className="py-20 bg-gray-50">
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="text-4xl font-bold mb-12">Simples, rápido e mágico. Em 3 passos.</h2>
+          <div className="grid md:grid-cols-3 gap-12">
+            <div className="text-center">
+              <div className="text-5xl font-bold text-black mb-4">1</div>
+              <h3 className="text-2xl font-bold mb-2">Envie uma foto</h3>
+              <p className="text-gray-600">Seu cliente tira uma foto ou escolhe uma da galeria.</p>
+            </div>
+            <div className="text-center">
+              <div className="text-5xl font-bold text-black mb-4">2</div>
+              <h3 className="text-2xl font-bold mb-2">Escolha a roupa</h3>
+              <p className="text-gray-600">Ele navega pela sua loja e clica no botão "Provar".</p>
+            </div>
+            <div className="text-center">
+              <div className="text-5xl font-bold text-black mb-4">3</div>
+              <h3 className="text-2xl font-bold mb-2">Veja a mágica</h3>
+              <p className="text-gray-600">Em segundos, nossa IA veste seu cliente com a roupa escolhida, com um realismo impressionante.</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section style={{
-        padding: "100px 40px",
-      }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <h2 style={{
-            fontSize: 36,
-            fontWeight: 700,
-            color: THEME.text,
-            textAlign: "center",
-            marginBottom: 16,
-            letterSpacing: "-0.5px",
-          }}>
-            Planos e Preços
-          </h2>
-          <p style={{
-            fontSize: 18,
-            color: THEME.textMuted,
-            textAlign: "center",
-            marginBottom: 60,
-          }}>
-            Escolha o plano ideal para o tamanho da sua loja
-          </p>
+      {/* Features Section */}
+      <section id="features" className="py-20">
+        <div className="container mx-auto px-6">
+          <h2 className="text-4xl font-bold text-center mb-12">Uma plataforma, quatro reflexos.</h2>
+          <div className="grid md:grid-cols-2 gap-16">
+            <div className="p-8 border rounded-lg">
+              <h3 className="text-2xl font-bold mb-4">Reflexo Visual: O Espelho Inteligente</h3>
+              <p className="text-gray-600">Nosso Virtual Try-On projeta um reflexo simulado do cliente usando a peça. É um espelho inteligente mediado por IA que aumenta a confiança e reduz devoluções.</p>
+            </div>
+            <div className="p-8 border rounded-lg">
+              <h3 className="text-2xl font-bold mb-4">Reflexo do Produto: O Estúdio Instantâneo</h3>
+              <p className="text-gray-600">O Studio Pro cria um reflexo hiper-realista do produto em 4K, mesmo sem ensaio físico. É o reflexo idealizado do produto para performance comercial e marketing.</p>
+            </div>
+            <div className="p-8 border rounded-lg">
+              <h3 className="text-2xl font-bold mb-4">Reflexo Comportamental: O Painel da Intenção</h3>
+              <p className="text-gray-600">Nosso Analytics capta reflexos invisíveis: o que o cliente prova, o que abandona, o que adiciona ao carrinho. Dados que são reflexos diretos da intenção de compra.</p>
+            </div>
+            <div className="p-8 border rounded-lg">
+              <h3 className="text-2xl font-bold mb-4">Reflexo da Conversão: A Clareza Estratégica</h3>
+              <p className="text-gray-600">A Reflexy não mostra apenas imagens, mostra padrões de decisão. Damos a você o reflexo da sua própria conversão para você vender mais e errar menos.</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: 24,
-          }}>
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                style={{
-                  background: THEME.bg,
-                  border: plan.recommended ? `2px solid ${THEME.text}` : `1px solid ${THEME.border}`,
-                  borderRadius: 8,
-                  padding: 32,
-                  position: "relative",
-                }}
-              >
-                {plan.recommended && (
-                  <div style={{
-                    position: "absolute",
-                    top: -12,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    background: THEME.text,
-                    color: THEME.buttonText,
-                    padding: "4px 12px",
-                    borderRadius: 4,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: "0.5px",
-                  }}>
-                    RECOMENDADO
-                  </div>
-                )}
-                <h3 style={{
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: THEME.text,
-                  marginBottom: 8,
-                }}>
-                  {plan.name}
-                </h3>
-                <div style={{
-                  fontSize: 40,
-                  fontWeight: 800,
-                  color: THEME.text,
-                  marginBottom: 8,
-                }}>
-                  {plan.price}
-                  <span style={{ fontSize: 16, fontWeight: 500, color: THEME.textMuted }}>/mês</span>
-                </div>
-                <p style={{
-                  fontSize: 14,
-                  color: THEME.textMuted,
-                  marginBottom: 24,
-                }}>
-                  {plan.description}
-                </p>
-                <ul style={{
-                  listStyle: "none",
-                  padding: 0,
-                  margin: "0 0 24px",
-                }}>
-                  {plan.features.map((feature, i) => (
-                    <li key={i} style={{
-                      fontSize: 14,
-                      color: THEME.text,
-                      marginBottom: 12,
-                      paddingLeft: 20,
-                      position: "relative",
-                    }}>
-                      <span style={{
-                        position: "absolute",
-                        left: 0,
-                        color: THEME.text,
-                      }}>✓</span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/signup" style={{
-                  display: "block",
-                  textAlign: "center",
-                  padding: "12px",
-                  background: plan.recommended ? THEME.buttonBg : "transparent",
-                  color: plan.recommended ? THEME.buttonText : THEME.text,
-                  border: plan.recommended ? "none" : `1px solid ${THEME.border}`,
-                  borderRadius: 6,
-                  textDecoration: "none",
-                  fontSize: 15,
-                  fontWeight: 600,
-                }}>
-                  Começar
-                </Link>
-              </div>
-            ))}
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 bg-gray-50">
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="text-4xl font-bold mb-4">Planos flexíveis para lojas de todos os tamanhos.</h2>
+          <p className="text-lg text-gray-600 mb-12">Comece grátis. Escale conforme seu negócio cresce. Cancele a qualquer momento.</p>
+          <div className="grid md:grid-cols-4 gap-8">
+            {/* Free Plan */}
+            <div className="border p-8 rounded-lg bg-white">
+              <h3 className="text-2xl font-bold mb-4">Grátis</h3>
+              <p className="text-5xl font-bold mb-4">R$0<span className="text-lg font-normal">/mês</span></p>
+              <p className="text-gray-600 mb-6">100 provadores/mês</p>
+              <Link href="/signup" className="border border-black text-black w-full block py-2 rounded-md hover:bg-gray-100">Começar</Link>
+            </div>
+            {/* Starter Plan */}
+            <div className="border p-8 rounded-lg bg-white">
+              <h3 className="text-2xl font-bold mb-4">Básico</h3>
+              <p className="text-5xl font-bold mb-4">R$99<span className="text-lg font-normal">/mês</span></p>
+              <p className="text-gray-600 mb-6">500 rápidos + 10 premium</p>
+              <Link href="/signup?plan=starter" className="border border-black text-black w-full block py-2 rounded-md hover:bg-gray-100">Escolher Plano</Link>
+            </div>
+            {/* Pro Plan */}
+            <div className="border-2 border-black p-8 rounded-lg bg-white relative">
+              <span className="bg-black text-white text-xs font-bold px-3 py-1 rounded-full absolute -top-3">MAIS POPULAR</span>
+              <h3 className="text-2xl font-bold mb-4">Profissional</h3>
+              <p className="text-5xl font-bold mb-4">R$249<span className="text-lg font-normal">/mês</span></p>
+              <p className="text-gray-600 mb-6">2.000 rápidos + 50 premium</p>
+              <Link href="/signup?plan=pro" className="bg-black text-white w-full block py-2 rounded-md hover:bg-gray-800">Escolher Plano</Link>
+            </div>
+            {/* Enterprise Plan */}
+            <div className="border p-8 rounded-lg bg-white">
+              <h3 className="text-2xl font-bold mb-4">Empresarial</h3>
+              <p className="text-2xl font-bold mb-4">Sob Consulta</p>
+              <p className="text-gray-600 mb-6">Provadores ilimitados, suporte dedicado, API customizada.</p>
+              <Link href="/contact" className="border border-black text-black w-full block py-2 rounded-md hover:bg-gray-100">Contato</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-20">
+        <div className="container mx-auto px-6 max-w-3xl">
+          <h2 className="text-4xl font-bold text-center mb-12">Perguntas Frequentes</h2>
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-xl font-bold">Como funciona a privacidade dos meus clientes?</h3>
+              <p className="text-gray-600 mt-2">A privacidade é nossa prioridade. As fotos dos clientes são processadas e deletadas imediatamente após o uso. Não armazenamos nenhuma imagem.</p>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">A Reflexy funciona em qualquer plataforma de e-commerce?</h3>
+              <p className="text-gray-600 mt-2">Sim! Oferecemos integração nativa com Shopify e WooCommerce, e nossa API flexível permite a instalação em qualquer outra plataforma.</p>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">Qual a diferença entre o modo rápido e o premium?</h3>
+              <p className="text-gray-600 mt-2">O modo rápido é ideal para uma visualização instantânea. O modo premium usa um modelo de IA mais potente para gerar imagens com qualidade de estúdio, perfeitas para marketing.</p>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">Posso customizar a aparência do botão e do modal?</h3>
+              <p className="text-gray-600 mt-2">Sim, você pode customizar cores e textos para que a Reflexy se integre perfeitamente à identidade visual da sua marca.</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer style={{
-        padding: "40px",
-        borderTop: `1px solid ${THEME.border}`,
-        textAlign: "center",
-        color: THEME.textMuted,
-        fontSize: 14,
-      }}>
-        <div style={{ marginBottom: 16 }}>
-          <span style={{ fontWeight: 700, color: THEME.text }}>TryOn</span> — Provador Virtual para Shopify
-        </div>
-        <div>
-          © 2026 TryOn. Todos os direitos reservados.
+      <footer className="bg-black text-white py-12">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="font-bold mb-4">Produto</h3>
+              <ul className="space-y-2">
+                <li><Link href="#pricing" className="hover:underline">Preços</Link></li>
+                <li><Link href="#features" className="hover:underline">Studio Pro</Link></li>
+                <li><Link href="#features" className="hover:underline">Analytics</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-bold mb-4">Soluções</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="hover:underline">Lojas Shopify</a></li>
+                <li><a href="#" className="hover:underline">Lojas WooCommerce</a></li>
+                <li><a href="#" className="hover:underline">Desenvolvedores</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-bold mb-4">Recursos</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="hover:underline">Blog</a></li>
+                <li><a href="#" className="hover:underline">Documentação da API</a></li>
+                <li><a href="/contact" className="hover:underline">Contato</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-bold mb-4">Empresa</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="hover:underline">Sobre nós</a></li>
+                <li><a href="#" className="hover:underline">Carreiras</a></li>
+                <li><a href="/terms" className="hover:underline">Termos de Serviço</a></li>
+                <li><a href="/privacy" className="hover:underline">Política de Privacidade</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-12 text-center text-sm text-gray-400">
+            <p>© 2026 Reflexy. Todos os direitos reservados.</p>
+          </div>
         </div>
       </footer>
     </div>
