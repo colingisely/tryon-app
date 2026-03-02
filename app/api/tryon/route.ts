@@ -318,9 +318,11 @@ async function tryOnMax(
 async function tryOnV16(
   modelImage: string,
   garmentImage: string,
-  category: GarmentCategory
+  category: GarmentCategory,
+  mode: "fast" | "quality" = "quality"
 ): Promise<{ resultUrl: string; model: string }> {
-  console.log(`🔄 Fallback: Try-On v1.6 (quality mode, category: ${category})...`);
+  const fashnMode = mode === "fast" ? "balanced" : "quality";
+  console.log(`🔄 Try-On v1.6 (${fashnMode} mode, category: ${category})...`);
 
   const response = await fetch(FASHN_API_URL, {
     method: "POST",
@@ -333,18 +335,20 @@ async function tryOnV16(
       inputs: {
         model_image: modelImage,
         garment_image: garmentImage,
+        // Use 'auto' for smart category detection (better than hardcoded)
+        category: category === "tops" || category === "bottoms" || category === "one-pieces" ? category : "auto",
+        // Better body shape and skin texture preservation
+        segmentation_free: true,
+        // Auto-detect photo type for best results
+        garment_photo_type: "auto",
+        // Mode: balanced for fast (8s), quality for premium fallback (12-17s)
+        mode: fashnMode,
+        // PNG for highest quality
+        output_format: "png",
+        return_base64: false,
+        // Permissive moderation for fashion items
+        moderation_level: "permissive",
       },
-      // Quality mode: best v1.6 results (12-17s)
-      mode: "quality",
-      // Explicit category from GPT Vision
-      category: category,
-      // Better body shape and skin texture preservation
-      segmentation_free: true,
-      // Product photos from Shopify are typically flat-lay
-      garment_photo_type: "flat-lay",
-      // PNG for highest quality
-      output_format: "png",
-      return_base64: false,
     }),
   });
 
@@ -415,15 +419,15 @@ export async function POST(req: Request) {
     let resultData: { resultUrl: string; model: string };
 
     if (useFast) {
-      // Fast mode: use v1.6 directly
-      resultData = await tryOnV16(image, productImage, analysis.category);
+      // Fast mode: use v1.6 in balanced mode (~8s, good quality)
+      resultData = await tryOnV16(image, productImage, analysis.category, "fast");
     } else {
-      // Premium mode (default): Try-On Max with v1.6 fallback
+      // Premium mode: Try-On Max (50s, 4K quality) with v1.6 quality fallback
       try {
         resultData = await tryOnMax(image, productImage, analysis.description);
       } catch (maxError: any) {
-        console.log("⚠️ Try-On Max failed, falling back to v1.6:", maxError?.message);
-        resultData = await tryOnV16(image, productImage, analysis.category);
+        console.log("⚠️ Try-On Max failed, falling back to v1.6 quality:", maxError?.message);
+        resultData = await tryOnV16(image, productImage, analysis.category, "quality");
       }
     }
 
