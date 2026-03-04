@@ -123,9 +123,8 @@ export default function AdminPage() {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BG, fontFamily: "'Inter','Helvetica Neue',Arial,sans-serif", padding: '20px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '400px', background: 'radial-gradient(ellipse, rgba(139,92,246,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(24px)', border: `1px solid ${BORDER}`, padding: '48px 40px', borderRadius: '24px', width: '100%', maxWidth: '420px', textAlign: 'center', position: 'relative', zIndex: 1, boxShadow: '0 0 60px rgba(139,92,246,0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '32px' }}>
-            <Image src="/logo-symbol.png" alt="Reflexy" width={32} height={32} />
-            <span style={{ fontWeight: 700, fontSize: '20px', letterSpacing: '0.08em', color: '#fff' }}>REFLEXY</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px' }}>
+            <Image src="/logos/logo-horizontal-dark.png" alt="Reflexy" width={160} height={44} style={{ height: 'auto' }} />
           </div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: '100px', padding: '5px 14px', marginBottom: '24px' }}>
             <span style={{ color: PURPLE }}>{Icons.sparkles}</span>
@@ -157,9 +156,8 @@ export default function AdminPage() {
       <div style={{ position: 'fixed', top: '10%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '400px', background: 'radial-gradient(ellipse, rgba(139,92,246,0.06) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
       
       <header style={{ position: 'sticky', top: 0, zIndex: 50, padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(8,8,15,0.85)', backdropFilter: 'blur(20px)', borderBottom: `1px solid ${BORDER}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Image src="/logo-symbol.png" alt="Reflexy" width={24} height={24} />
-          <span style={{ fontWeight: 700, fontSize: '16px', letterSpacing: '0.08em' }}>REFLEXY</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Image src="/logos/logo-horizontal-dark.png" alt="Reflexy" width={100} height={28} style={{ height: 'auto' }} />
           <span style={{ fontSize: '12px', color: TEXT_DIM, margin: '0 4px' }}>/</span>
           <span style={{ fontSize: '13px', color: TEXT_MID, fontWeight: 500 }}>Estudio Pro</span>
         </div>

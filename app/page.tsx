@@ -139,9 +139,8 @@ export default function LandingPage() {
 
       {/* NAV */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: scrolled ? 'rgba(8,8,15,0.92)' : 'transparent', backdropFilter: scrolled ? 'blur(20px)' : 'none', borderBottom: scrolled ? `1px solid ${BORDER}` : 'none', transition: 'all 0.3s ease' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Image src="/logo-symbol.png" alt="Reflexy" width={28} height={28} />
-          <span style={{ fontWeight: 700, fontSize: '18px', letterSpacing: '0.08em' }}>REFLEXY</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Image src="/logos/logo-horizontal-dark.png" alt="Reflexy" width={120} height={32} style={{ height: 'auto' }} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
           <div style={{ display: 'flex', gap: '28px' }}>
@@ -494,9 +493,8 @@ export default function LandingPage() {
       <footer style={{ borderTop: `1px solid ${BORDER}`, padding: '60px 40px 40px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '48px', marginBottom: '48px' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-              <Image src="/logo-symbol.png" alt="Reflexy" width={24} height={24} />
-              <span style={{ fontWeight: 700, fontSize: '16px', letterSpacing: '0.08em' }}>REFLEXY</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <Image src="/logos/logo-horizontal-dark.png" alt="Reflexy" width={100} height={28} style={{ height: 'auto' }} />
             </div>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '14px', lineHeight: 1.6, maxWidth: '280px' }}>{lang === 'pt' ? 'Inteligência comportamental para e-commerce de moda.' : 'Behavioral intelligence for fashion e-commerce.'}</p>
           </div>
