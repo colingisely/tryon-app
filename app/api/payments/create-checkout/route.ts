@@ -14,12 +14,12 @@ const supabase =
       )
     : null;
 
-// Stripe Price IDs — set these after creating products in Stripe Dashboard
-// Format: price_XXXXXXXXXXXXXXXXXXXX
+// Stripe Price IDs
 const STRIPE_PRICE_IDS: Record<string, string> = {
-  starter_monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY || "",
-  pro_monthly: process.env.STRIPE_PRICE_PRO_MONTHLY || "",
-  enterprise_monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY || "",
+  free_monthly: process.env.STRIPE_PRICE_FREE_MONTHLY || "price_1T76CW1oCVkpQBTzGeXwx8Xd",
+  starter_monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY || "price_1T76Ds1oCVkpQBTzm5P9bkqi",
+  pro_monthly: process.env.STRIPE_PRICE_PRO_MONTHLY || "price_1T76Ff1oCVkpQBTz1RwtClv0",
+  enterprise_monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY || "price_1T76K01oCVkpQBTz4CsbJnYG",
 };
 
 export async function POST(req: Request) {

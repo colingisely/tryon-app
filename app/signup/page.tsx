@@ -87,14 +87,8 @@ export default function SignupPage() {
         justifyContent: "space-between",
         alignItems: "center",
       }}>
-        <Link href="/" style={{
-          fontSize: 24,
-          fontWeight: 700,
-          color: THEME.text,
-          textDecoration: "none",
-          letterSpacing: "-0.5px",
-        }}>
-          Reflexy
+        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <img src="/logos/logo-horizontal-dark.png" alt="Reflexy" style={{ height: 28, width: "auto" }} />
         </Link>
         <Link href="/login" style={{
           color: THEME.textMuted,

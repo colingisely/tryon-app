@@ -164,9 +164,8 @@ export default function PricingPage() {
         alignItems: "center",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
       }}>
-        <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "10px" }}>
-          <img src="/logo-symbol.png" alt="Reflexy" style={{ height: "32px" }} />
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: "18px", letterSpacing: "0.05em" }}>REFLEXY</span>
+        <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <img src="/logos/logo-horizontal-dark.png" alt="Reflexy" style={{ height: "32px", width: "auto" }} />
         </a>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           {user ? (

@@ -306,17 +306,7 @@ export default function DashboardPage() {
       }}>
         {/* Logo */}
         <div style={{ padding: "0 24px 32px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img src="/logo-symbol-white.png" alt="Reflexy" style={{ width: 28, height: 28 }} onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }} />
-            <span style={{
-              fontSize: 20,
-              fontWeight: 700,
-              color: THEME.text,
-              letterSpacing: "-0.5px",
-            }}>Reflexy</span>
-          </div>
+          <img src="/logos/logo-horizontal-dark.png" alt="Reflexy" style={{ height: 28, width: "auto" }} />
         </div>
 
         {/* Nav */}
