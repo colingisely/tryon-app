@@ -21,13 +21,13 @@ export default function LandingPage() {
       { value: '+38%', label: 'Aumento médio em conversão' },
       { value: '-52%', label: 'Redução em devoluções' },
       { value: '4K', label: 'Imagens profissionais geradas por IA' },
-      { value: '< 8s', label: 'Tempo médio de geração' },
+      { value: '< 15s', label: 'Tempo médio de geração' },
     ],
     en: [
       { value: '+38%', label: 'Average conversion increase' },
       { value: '-52%', label: 'Return rate reduction' },
       { value: '4K', label: 'AI-generated professional images' },
-      { value: '< 8s', label: 'Average generation time' },
+      { value: '< 15s', label: 'Average generation time' },
     ],
   };
 
@@ -48,13 +48,13 @@ export default function LandingPage() {
 
   const layers = {
     pt: [
-      { number: '01', tag: 'Reflexo Visual', title: 'Provador Virtual com IA', desc: 'Seu cliente experimenta a peça antes de comprar. Em segundos, uma simulação hiper-realista gerada por IA elimina a dúvida e aumenta a confiança na decisão de compra.', bullets: ['Geração em menos de 8 segundos', 'Funciona com qualquer peça do catálogo', 'Reduz devoluções por insegurança', 'Diferenciação competitiva imediata'] },
+      { number: '01', tag: 'Reflexo Visual', title: 'Provador Virtual com IA', desc: 'Seu cliente experimenta a peça antes de comprar. Em segundos, uma simulação hiper-realista gerada por IA elimina a dúvida e aumenta a confiança na decisão de compra.', bullets: ['Geração em menos de 15 segundos', 'Funciona com qualquer peça do catálogo', 'Reduz devoluções por insegurança', 'Diferenciação competitiva imediata'] },
       { number: '02', tag: 'Reflexo do Produto', title: 'Studio Pro — Imagens 4K com IA', desc: 'Transforme qualquer peça em imagem profissional 4K sem ensaio fotográfico. Ideal para dropshipping, lançamentos rápidos e escala de produção de criativos.', bullets: ['Imagens hiper-realistas em 4K', 'Sem modelo, sem estúdio, sem custo fixo', 'Escala ilimitada de produção', 'Pronto para ads, e-commerce e campanhas'] },
       { number: '03', tag: 'Reflexo Comportamental', title: 'Analytics de Intenção', desc: 'Reflexy captura o que nenhuma métrica tradicional captura: o comportamento do cliente durante a jornada de prova. Dados que revelam intenção real de compra.', bullets: ['Peças mais provadas por produto', 'Tempo médio de interação', 'Taxa de conversão try-on → carrinho', 'Padrões de hesitação e abandono'] },
       { number: '04', tag: 'Reflexo Estratégico', title: 'Clareza para Decisões', desc: 'Com os três reflexos integrados, você passa a enxergar o reflexo da sua própria conversão. Não apenas o que vendeu — mas o que quase vendeu, e por quê não vendeu.', bullets: ['Dashboard unificado de performance', 'Insights acionáveis por produto', 'Identificação de oportunidades ocultas', 'Inteligência que cresce com o uso'] },
     ],
     en: [
-      { number: '01', tag: 'Visual Reflection', title: 'AI Virtual Try-On', desc: 'Your customer tries on the piece before buying. In seconds, a hyper-realistic AI simulation eliminates doubt and increases purchase confidence.', bullets: ['Generation in less than 8 seconds', 'Works with any catalog item', 'Reduces uncertainty-driven returns', 'Immediate competitive differentiation'] },
+      { number: '01', tag: 'Visual Reflection', title: 'AI Virtual Try-On', desc: 'Your customer tries on the piece before buying. In seconds, a hyper-realistic AI simulation eliminates doubt and increases purchase confidence.', bullets: ['Generation in less than 15 seconds', 'Works with any catalog item', 'Reduces uncertainty-driven returns', 'Immediate competitive differentiation'] },
       { number: '02', tag: 'Product Reflection', title: 'Studio Pro — 4K AI Images', desc: 'Transform any piece into a professional 4K image without a photo shoot. Ideal for dropshipping, fast launches, and creative production at scale.', bullets: ['Hyper-realistic 4K images', 'No model, no studio, no fixed cost', 'Unlimited production scale', 'Ready for ads, e-commerce, and campaigns'] },
       { number: '03', tag: 'Behavioral Reflection', title: 'Intent Analytics', desc: 'Reflexy captures what no traditional metric captures: customer behavior during the try-on journey. Data that reveals real purchase intent.', bullets: ['Most tried items by product', 'Average interaction time', 'Try-on → cart conversion rate', 'Hesitation and abandonment patterns'] },
       { number: '04', tag: 'Strategic Reflection', title: 'Clarity for Decisions', desc: "With all three reflections integrated, you start seeing the reflection of your own conversion. Not just what sold — but what almost sold, and why it didn't.", bullets: ['Unified performance dashboard', 'Actionable insights per product', 'Hidden opportunity identification', 'Intelligence that grows with use'] },
@@ -63,12 +63,12 @@ export default function LandingPage() {
 
   const steps = {
     pt: [
-      { n: '1', title: 'Instale o plugin', desc: 'Adicione o Reflexy à sua loja Shopify em menos de 5 minutos. Sem código, sem configuração técnica.' },
+      { n: '1', title: 'Instale o plugin', desc: 'Adicione o Reflexy à sua loja Shopify em menos de 5 minutos. Instalação simples com configuração básica necessária.' },
       { n: '2', title: 'Ative o provador', desc: 'O botão "Experimentar" aparece automaticamente nas páginas de produto. Seus clientes já podem usar.' },
       { n: '3', title: 'Acompanhe os dados', desc: 'Acesse o dashboard e veja em tempo real como seus clientes interagem com cada peça do catálogo.' },
     ],
     en: [
-      { n: '1', title: 'Install the plugin', desc: 'Add Reflexy to your Shopify store in less than 5 minutes. No code, no technical configuration.' },
+      { n: '1', title: 'Install the plugin', desc: 'Add Reflexy to your Shopify store in less than 5 minutes. Simple installation with basic setup required.' },
       { n: '2', title: 'Activate the try-on', desc: 'The "Try On" button appears automatically on product pages. Your customers can start using it right away.' },
       { n: '3', title: 'Track the data', desc: 'Access the dashboard and see in real time how your customers interact with each piece in your catalog.' },
     ],

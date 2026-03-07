@@ -182,7 +182,7 @@ export default function AdminPage() {
           <h1 style={{ fontSize: '32px', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '8px', background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             Estudio Profissional
           </h1>
-          <p style={{ color: TEXT_DIM, fontSize: '16px' }}>Geracao de fotos de alta fidelidade com IA — resultados em menos de 15 segundos.</p>
+          <p style={{ color: TEXT_DIM, fontSize: '16px' }}>Geracao de fotos de alta fidelidade com IA — resultados em menos de 60 segundos.</p>
         </div>
 
         {!result ? (
