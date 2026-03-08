@@ -15,11 +15,17 @@ const supabase =
     : null;
 
 // Stripe Price IDs
+// Preview = $0 (10 try-ons, sem Studio Pro)
+// Starter = $19 (100 try-ons, 5 Studio Pro)
+// Growth  = $29 (200 try-ons, 10 Studio Pro) — plano mais popular
+// Pro     = $59 (500 try-ons, 10 Studio Pro)
+// Enterprise = $109 (1000 try-ons, 10 Studio Pro)
 const STRIPE_PRICE_IDS: Record<string, string> = {
-  free_monthly: process.env.STRIPE_PRICE_FREE_MONTHLY || "price_1T76CW1oCVkpQBTzGeXwx8Xd",
-  starter_monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY || "price_1T76Ds1oCVkpQBTzm5P9bkqi",
-  pro_monthly: process.env.STRIPE_PRICE_PRO_MONTHLY || "price_1T76Ff1oCVkpQBTz1RwtClv0",
-  enterprise_monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY || "price_1T76K01oCVkpQBTz4CsbJnYG",
+  preview_monthly:    process.env.STRIPE_PRICE_PREVIEW_MONTHLY    || "price_1T76CW1oCVkpQBTzGeXwx8Xd",
+  starter_monthly:    process.env.STRIPE_PRICE_STARTER_MONTHLY    || "price_1T76Ds1oCVkpQBTzm5P9bkqi",
+  growth_monthly:     process.env.STRIPE_PRICE_GROWTH_MONTHLY     || "price_1T76Ff1oCVkpQBTz1RwtClv0",
+  pro_monthly:        process.env.STRIPE_PRICE_PRO_MONTHLY        || "price_1T76K01oCVkpQBTz4CsbJnYG",
+  enterprise_monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY || "", // Configurar no Stripe
 };
 
 export async function POST(req: Request) {

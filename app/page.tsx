@@ -88,16 +88,18 @@ export default function LandingPage() {
 
   const plans = {
     pt: [
-      { name: 'Free', price: 'R$ 0', period: '/mês', desc: 'Para começar a experimentar', features: ['100 try-ons por mês', 'Provador virtual básico', 'Dashboard simples', 'Suporte por email', 'Logo "Powered by Reflexy"'], cta: 'Começar grátis', highlight: false },
-      { name: 'Starter', price: 'R$ 99', period: '/mês', desc: 'Para lojas em crescimento', features: ['500 try-ons por mês', '10 imagens Studio Pro/mês', 'Analytics básico', 'Sem logo Reflexy', 'Suporte prioritário'], cta: 'Assinar Starter', highlight: false },
-      { name: 'Pro', price: 'R$ 249', period: '/mês', desc: 'Para lojas que querem escalar', features: ['2.000 try-ons por mês', '50 imagens Studio Pro/mês', 'Analytics comportamental completo', 'Sem logo Reflexy', 'Suporte prioritário + chat'], cta: 'Assinar Pro', highlight: true, badge: 'Mais popular' },
-      { name: 'Enterprise', price: 'R$ 599', period: '/mês', desc: 'Para operações de alto volume', features: ['Try-ons ilimitados', '300 imagens Studio Pro/mês', 'Analytics avançado + exportação', 'White-label completo', 'Suporte dedicado + SLA'], cta: 'Falar com vendas', highlight: false },
+      { name: 'Preview', price: '$0', period: '/mês', desc: 'Experimente sem compromisso', features: ['10 try-ons por mês', 'Sem Studio Pro', 'Dashboard básico', 'Marca d\'água Reflexy', 'Suporte padrão'], cta: 'Começar grátis', highlight: false },
+      { name: 'Starter', price: '$19', period: '/mês', desc: 'Para lojas que estão começando', features: ['100 try-ons por mês', '5 imagens Studio Pro/mês', 'Excedente sob demanda', 'Painel de análise de dados', 'Suporte padrão'], cta: 'Assinar Starter', highlight: false },
+      { name: 'Growth', price: '$29', period: '/mês', desc: 'Para lojas em crescimento', features: ['200 try-ons por mês', '10 imagens Studio Pro/mês', 'Excedente sob demanda', 'Analytics + dados de conversão', 'Suporte prioritário'], cta: 'Assinar Growth', highlight: true, badge: 'Mais popular' },
+      { name: 'Pro', price: '$59', period: '/mês', desc: 'Para lojas que querem escalar', features: ['500 try-ons por mês', '10 imagens Studio Pro/mês', 'Excedente sob demanda', 'Analytics comportamental completo', 'Suporte VIP'], cta: 'Assinar Pro', highlight: false },
+      { name: 'Enterprise', price: '$109', period: '/mês', desc: 'Para operações de alto volume', features: ['1.000 try-ons por mês', '10 imagens Studio Pro/mês', 'Excedente sob demanda', 'Analytics avançado completo', 'Suporte dedicado'], cta: 'Falar com vendas', highlight: false },
     ],
     en: [
-      { name: 'Free', price: 'USD 0', period: '/month', desc: 'To start experimenting', features: ['100 try-ons per month', 'Basic virtual try-on', 'Simple dashboard', 'Email support', '"Powered by Reflexy" logo'], cta: 'Start for free', highlight: false },
-      { name: 'Starter', price: 'USD 19', period: '/month', desc: 'For growing stores', features: ['500 try-ons per month', '10 Studio Pro images/month', 'Basic analytics', 'No Reflexy logo', 'Priority support'], cta: 'Get Starter', highlight: false },
-      { name: 'Pro', price: 'USD 49', period: '/month', desc: 'For stores that want to scale', features: ['2,000 try-ons per month', '50 Studio Pro images/month', 'Full behavioral analytics', 'No Reflexy logo', 'Priority support + chat'], cta: 'Get Pro', highlight: true, badge: 'Most popular' },
-      { name: 'Enterprise', price: 'USD 119', period: '/month', desc: 'For high-volume operations', features: ['Unlimited try-ons', '300 Studio Pro images/month', 'Advanced analytics + export', 'Full white-label', 'Dedicated support + SLA'], cta: 'Talk to sales', highlight: false },
+      { name: 'Preview', price: '$0', period: '/month', desc: 'Try it with no commitment', features: ['10 try-ons per month', 'No Studio Pro', 'Basic dashboard', 'Reflexy watermark', 'Standard support'], cta: 'Start for free', highlight: false },
+      { name: 'Starter', price: '$19', period: '/month', desc: 'For stores just getting started', features: ['100 try-ons per month', '5 Studio Pro images/month', 'On-demand overage', 'Data analytics panel', 'Standard support'], cta: 'Get Starter', highlight: false },
+      { name: 'Growth', price: '$29', period: '/month', desc: 'For growing stores', features: ['200 try-ons per month', '10 Studio Pro images/month', 'On-demand overage', 'Analytics + conversion data', 'Priority support'], cta: 'Get Growth', highlight: true, badge: 'Most popular' },
+      { name: 'Pro', price: '$59', period: '/month', desc: 'For stores that want to scale', features: ['500 try-ons per month', '10 Studio Pro images/month', 'On-demand overage', 'Full behavioral analytics', 'VIP support'], cta: 'Get Pro', highlight: false },
+      { name: 'Enterprise', price: '$109', period: '/month', desc: 'For high-volume operations', features: ['1,000 try-ons per month', '10 Studio Pro images/month', 'On-demand overage', 'Full advanced analytics', 'Dedicated support'], cta: 'Talk to sales', highlight: false },
     ],
   };
 

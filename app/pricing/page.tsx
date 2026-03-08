@@ -13,74 +13,89 @@ const supabase =
 
 const plans = [
   {
-    slug: "free",
-    name: "Free",
-    priceBRL: 0,
+    slug: "preview",
+    name: "Preview",
     priceUSD: 0,
-    fastCredits: 100,
-    premiumCredits: 0,
+    tryons: 10,
+    studioPro: 0,
     features: [
-      "100 try-ons rápidos/mês",
-      "Modo Premium: não incluso",
-      'Logo "Powered by Reflexy"',
-      "Suporte por email",
+      "10 try-ons por mês",
+      "Sem Studio Pro",
+      "Dashboard básico",
+      "Marca d'\u00e1gua Reflexy",
+      "Suporte padrão",
     ],
     cta: "Começar Grátis",
     highlight: false,
+    badge: null,
   },
   {
     slug: "starter",
     name: "Starter",
-    priceBRL: 99,
     priceUSD: 19,
-    fastCredits: 500,
-    premiumCredits: 10,
+    tryons: 100,
+    studioPro: 5,
     features: [
-      "500 try-ons rápidos/mês",
-      "10 fotos Premium/mês",
-      "Sem logo Reflexy",
-      "Suporte prioritário",
-      "Analytics básico",
+      "100 try-ons por mês",
+      "5 imagens Studio Pro/mês",
+      "Excedente sob demanda",
+      "Painel de análise de dados",
+      "Suporte padrão",
     ],
     cta: "Assinar Starter",
     highlight: false,
+    badge: null,
+  },
+  {
+    slug: "growth",
+    name: "Growth",
+    priceUSD: 29,
+    tryons: 200,
+    studioPro: 10,
+    features: [
+      "200 try-ons por mês",
+      "10 imagens Studio Pro/mês",
+      "Excedente sob demanda",
+      "Analytics + dados de conversão",
+      "Suporte prioritário",
+    ],
+    cta: "Assinar Growth",
+    highlight: true,
+    badge: "Mais popular",
   },
   {
     slug: "pro",
     name: "Pro",
-    priceBRL: 249,
-    priceUSD: 49,
-    fastCredits: 2000,
-    premiumCredits: 50,
+    priceUSD: 59,
+    tryons: 500,
+    studioPro: 10,
     features: [
-      "2.000 try-ons rápidos/mês",
-      "50 fotos Premium/mês",
-      "Sem logo Reflexy",
-      "Suporte prioritário",
-      "Analytics avançado",
-      "API access",
+      "500 try-ons por mês",
+      "10 imagens Studio Pro/mês",
+      "Excedente sob demanda",
+      "Analytics comportamental completo",
+      "Suporte VIP",
     ],
     cta: "Assinar Pro",
-    highlight: true,
+    highlight: false,
+    badge: null,
   },
   {
     slug: "enterprise",
     name: "Enterprise",
-    priceBRL: 599,
-    priceUSD: 119,
-    fastCredits: 999999,
-    premiumCredits: 300,
+    priceUSD: 109,
+    tryons: 1000,
+    studioPro: 10,
     features: [
-      "Try-ons rápidos ilimitados",
-      "300 fotos Premium/mês",
-      "White-label completo",
+      "1.000 try-ons por mês",
+      "10 imagens Studio Pro/mês",
+      "Excedente sob demanda",
+      "Analytics avançado completo",
       "Suporte dedicado",
-      "Analytics completo",
-      "API customizada",
-      "SLA garantido",
     ],
     cta: "Falar com Vendas",
     highlight: false,
+    badge: null,
   },
 ];
 
@@ -106,8 +121,8 @@ export default function PricingPage() {
   }, []);
 
   const handleSelectPlan = async (planSlug: string) => {
-    if (planSlug === "free") {
-      window.location.href = "/signup?plan=free";
+    if (planSlug === "preview") {
+      window.location.href = "/signup?plan=preview";
       return;
     }
 
@@ -321,11 +336,9 @@ export default function PricingPage() {
               </h3>
               <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
                 <span style={{ fontSize: "42px", fontWeight: 800, color: "#fff" }}>
-                  {currency === "BRL"
-                    ? plan.priceBRL === 0 ? "Grátis" : `R$${plan.priceBRL}`
-                    : plan.priceUSD === 0 ? "Free" : `$${plan.priceUSD}`}
+                  {plan.priceUSD === 0 ? (currency === "BRL" ? "Grátis" : "Free") : `$${plan.priceUSD}`}
                 </span>
-                {(currency === "BRL" ? plan.priceBRL : plan.priceUSD) > 0 && (
+                {plan.priceUSD > 0 && (
                   <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px" }}>/mês</span>
                 )}
               </div>
@@ -339,15 +352,15 @@ export default function PricingPage() {
               marginBottom: "24px",
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "13px" }}>Try-ons Rápidos</span>
+                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "13px" }}>Provador Virtual</span>
                 <span style={{ color: "#fff", fontWeight: 700, fontSize: "13px" }}>
-                  {plan.fastCredits >= 999999 ? "∞" : plan.fastCredits.toLocaleString()}
+                  {plan.tryons.toLocaleString()}/mês
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "13px" }}>Fotos Premium</span>
-                <span style={{ color: plan.premiumCredits > 0 ? "#a78bfa" : "rgba(255,255,255,0.3)", fontWeight: 700, fontSize: "13px" }}>
-                  {plan.premiumCredits === 0 ? "—" : plan.premiumCredits}
+                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "13px" }}>Studio Pro</span>
+                <span style={{ color: plan.studioPro > 0 ? "#a78bfa" : "rgba(255,255,255,0.3)", fontWeight: 700, fontSize: "13px" }}>
+                  {plan.studioPro === 0 ? "—" : `${plan.studioPro}/mês`}
                 </span>
               </div>
             </div>
