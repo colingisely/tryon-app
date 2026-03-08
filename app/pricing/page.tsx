@@ -38,7 +38,7 @@ const plans = [
     features: [
       "100 try-ons por mês",
       "5 imagens Studio Pro/mês",
-      "Excedente sob demanda",
+      "Excedente: $0,17 prova / $0,15 imagem",
       "Painel de análise de dados",
       "Suporte padrão",
     ],
@@ -55,7 +55,7 @@ const plans = [
     features: [
       "200 try-ons por mês",
       "10 imagens Studio Pro/mês",
-      "Excedente sob demanda",
+      "Excedente: $0,15 prova / $0,15 imagem",
       "Analytics + dados de conversão",
       "Suporte prioritário",
     ],
@@ -72,7 +72,7 @@ const plans = [
     features: [
       "500 try-ons por mês",
       "10 imagens Studio Pro/mês",
-      "Excedente sob demanda",
+      "Excedente: $0,12 prova / $0,15 imagem",
       "Analytics comportamental completo",
       "Suporte VIP",
     ],
@@ -89,7 +89,7 @@ const plans = [
     features: [
       "1.000 try-ons por mês",
       "10 imagens Studio Pro/mês",
-      "Excedente sob demanda",
+      "Excedente: $0,10 prova / $0,15 imagem",
       "Analytics avançado completo",
       "Suporte dedicado",
     ],
