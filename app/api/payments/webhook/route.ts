@@ -2,17 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import {
-  stripe, getMerchantIdByCustomer, cancelScheduledSuspension,
+  getMerchantIdByCustomer, cancelScheduledSuspension,
   scheduleSuspension, suspendMerchant, reactivateMerchant,
 } from '@/lib/overage';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? 'placeholder', {
+      apiVersion: '2026-02-25.clover' as any,
+    });
+  }
+  return _stripe;
+}
+
+let _supabase: ReturnType<typeof createClient> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSupabase(): any {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+  }
+  return _supabase;
+}
 
 async function getPlanByPriceId(priceId: string) {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from('plans')
     .select('id, slug, fast_credits_monthly, premium_credits_monthly, price_usd')
     .eq('stripe_price_id', priceId)
@@ -21,7 +38,8 @@ async function getPlanByPriceId(priceId: string) {
 }
 
 async function logAndDedup(eventId: string, eventType: string): Promise<boolean> {
-  const { error } = await supabase.from('stripe_webhook_log').insert({ event_id: eventId, event_type: eventType });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (getSupabase() as any).from('stripe_webhook_log').insert({ event_id: eventId, event_type: eventType });
   return !error;
 }
 
@@ -32,7 +50,7 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = getStripe().webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
   } catch (err) {
     console.error('[webhook] Invalid signature:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
@@ -53,7 +71,7 @@ export async function POST(req: NextRequest) {
         if (!plan) break;
         const merchantId = await getMerchantIdByCustomer(customerId) ?? session.metadata?.merchant_id ?? null;
         if (!merchantId) break;
-        await supabase.from('merchants').update({
+        await getSupabase().from('merchants').update({
           plan_id: plan.id, stripe_customer_id: customerId,
           stripe_subscription_id: session.subscription as string,
           subscription_status: 'active', subscription_started_at: new Date().toISOString(),
@@ -73,10 +91,10 @@ export async function POST(req: NextRequest) {
         if ((invoice as any).billing_reason === 'subscription_create') break;
         const merchantId = await getMerchantIdByCustomer(customerId);
         if (!merchantId) break;
-        const sub  = await stripe.subscriptions.retrieve((invoice as any).subscription as string);
+        const sub  = await getStripe().subscriptions.retrieve((invoice as any).subscription as string);
         const plan = await getPlanByPriceId(sub.items.data[0]?.price?.id);
         if (plan) {
-          await supabase.from('merchants').update({
+          await getSupabase().from('merchants').update({
             fast_credits_remaining: plan.fast_credits_monthly,
             premium_credits_remaining: plan.premium_credits_monthly,
             subscription_status: 'active', updated_at: new Date().toISOString(),
@@ -92,7 +110,7 @@ export async function POST(req: NextRequest) {
         if (!customerId) break;
         const merchantId = await getMerchantIdByCustomer(customerId);
         if (!merchantId) break;
-        await supabase.from('merchants').update({
+        await getSupabase().from('merchants').update({
           overage_status: 'payment_failed', payment_failed_at: new Date().toISOString(),
           subscription_status: 'past_due', updated_at: new Date().toISOString(),
         }).eq('id', merchantId);
@@ -106,7 +124,7 @@ export async function POST(req: NextRequest) {
         if (!customerId) break;
         const merchantId = await getMerchantIdByCustomer(customerId);
         if (!merchantId) break;
-        await supabase.from('merchants').update({
+        await getSupabase().from('merchants').update({
           subscription_status: 'canceled',
           fast_credits_remaining: 0, premium_credits_remaining: 0,
           updated_at: new Date().toISOString(),
@@ -122,7 +140,7 @@ export async function POST(req: NextRequest) {
         const merchantId = await getMerchantIdByCustomer(customerId);
         if (!merchantId) break;
         const plan = await getPlanByPriceId(sub.items.data[0]?.price?.id);
-        if (plan) await supabase.from('merchants').update({ plan_id: plan.id, updated_at: new Date().toISOString() }).eq('id', merchantId);
+        if (plan) await getSupabase().from('merchants').update({ plan_id: plan.id, updated_at: new Date().toISOString() }).eq('id', merchantId);
         break;
       }
 
@@ -131,7 +149,7 @@ export async function POST(req: NextRequest) {
         if (intent.metadata?.type !== 'overage_preauth') break;
         const merchantId = intent.metadata?.merchant_id;
         if (!merchantId) break;
-        await supabase.from('merchants').update({
+        await getSupabase().from('merchants').update({
           overage_status: 'payment_failed', payment_failed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }).eq('id', merchantId);

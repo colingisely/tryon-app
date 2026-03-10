@@ -6,14 +6,27 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-02-25.clover',
-});
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? 'placeholder', {
+      apiVersion: '2026-02-25.clover' as any,
+    });
+  }
+  return _stripe;
+}
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let _supabase: ReturnType<typeof createClient> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSupabase(): any {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+  }
+  return _supabase;
+}
 
 const OVERAGE_RATES: Record<string, { fast_cents: number; premium_cents: number }> = {
   free:       { fast_cents: 0,  premium_cents: 0  },
@@ -29,7 +42,7 @@ export function getOverageRate(planSlug: string, type: 'fast' | 'premium'): numb
 }
 
 export async function getMerchantBillingState(merchantId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('merchants')
     .select(`
       id, stripe_customer_id, stripe_subscription_id,
@@ -57,7 +70,7 @@ export async function activateOverage(
   const planPriceCents = Math.round(Number(plan.price_usd) * 100);
   if (!merchant.stripe_customer_id) return 'failed';
 
-  await supabase.from('merchants').update({
+  await getSupabase().from('merchants').update({
     overage_status: 'preauth_pending',
     overage_cap_cents: planPriceCents,
     overage_used_cents: 0,
@@ -65,11 +78,11 @@ export async function activateOverage(
   }).eq('id', merchantId);
 
   try {
-    const customer = await stripe.customers.retrieve(merchant.stripe_customer_id) as Stripe.Customer;
+    const customer = await getStripe().customers.retrieve(merchant.stripe_customer_id) as Stripe.Customer;
     const paymentMethodId = customer.invoice_settings?.default_payment_method as string;
     if (!paymentMethodId) throw new Error('No default payment method on customer');
 
-    const intent = await stripe.paymentIntents.create({
+    const intent = await getStripe().paymentIntents.create({
       amount: planPriceCents,
       currency: 'usd',
       customer: merchant.stripe_customer_id,
@@ -82,7 +95,7 @@ export async function activateOverage(
     });
 
     if (intent.status === 'requires_capture') {
-      await supabase.from('merchants').update({
+      await getSupabase().from('merchants').update({
         overage_status: 'active',
         overage_cap_cents: planPriceCents,
         overage_used_cents: 0,
@@ -95,7 +108,7 @@ export async function activateOverage(
     throw new Error(`Unexpected PaymentIntent status: ${intent.status}`);
 
   } catch (err) {
-    await supabase.from('merchants').update({
+    await getSupabase().from('merchants').update({
       overage_status: 'payment_failed',
       payment_failed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -116,7 +129,7 @@ export async function checkOverageCap(
   if (['suspended','payment_failed','cap_reached','preauth_pending','inactive','free_plan'].includes(merchant.overage_status)) return 'blocked';
   if (merchant.overage_status !== 'active') return 'blocked';
 
-  const plan = Array.isArray(merchant.plans) ? merchant.plans[0] : merchant.plans as any;
+  const plan = Array.isArray((merchant as any).plans) ? (merchant as any).plans[0] : (merchant as any).plans;
   const costCents = getOverageRate(plan?.slug ?? 'starter', type);
   const newUsed = merchant.overage_used_cents + costCents;
 
@@ -125,7 +138,7 @@ export async function checkOverageCap(
     return 'cap_reached';
   }
 
-  await supabase.from('merchants').update({
+  await getSupabase().from('merchants').update({
     overage_used_cents: newUsed,
     updated_at: new Date().toISOString(),
   }).eq('id', merchantId);
@@ -144,14 +157,14 @@ export async function checkOverageCap(
 async function captureAndBlock(merchantId: string, merchant: any) {
   if (merchant.overage_payment_intent_id) {
     try {
-      await stripe.paymentIntents.capture(merchant.overage_payment_intent_id, {
+      await getStripe().paymentIntents.capture(merchant.overage_payment_intent_id, {
         amount_to_capture: merchant.overage_used_cents,
       });
     } catch (err) {
       console.error(`[overage] Capture failed for merchant ${merchantId}:`, err);
     }
   }
-  await supabase.from('merchants').update({
+  await getSupabase().from('merchants').update({
     overage_status: 'cap_reached',
     overage_payment_intent_id: null,
     updated_at: new Date().toISOString(),
@@ -162,7 +175,7 @@ async function captureAndBlock(merchantId: string, merchant: any) {
 export async function scheduleSuspension(merchantId: string) {
   const suspendAt = new Date();
   suspendAt.setDate(suspendAt.getDate() + 3);
-  await supabase.from('billing_suspension_queue').upsert({
+  await getSupabase().from('billing_suspension_queue').upsert({
     merchant_id: merchantId,
     suspend_at: suspendAt.toISOString(),
     reason: 'payment_failed',
@@ -171,14 +184,14 @@ export async function scheduleSuspension(merchantId: string) {
 }
 
 export async function cancelScheduledSuspension(merchantId: string) {
-  await supabase.from('billing_suspension_queue')
+  await getSupabase().from('billing_suspension_queue')
     .update({ processed: true })
     .eq('merchant_id', merchantId)
     .eq('processed', false);
 }
 
 export async function suspendMerchant(merchantId: string) {
-  await supabase.from('merchants').update({
+  await getSupabase().from('merchants').update({
     overage_status: 'suspended',
     suspended_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -188,7 +201,7 @@ export async function suspendMerchant(merchantId: string) {
 
 export async function reactivateMerchant(merchantId: string) {
   await cancelScheduledSuspension(merchantId);
-  await supabase.from('merchants').update({
+  await getSupabase().from('merchants').update({
     overage_status: 'inactive',
     overage_used_cents: 0,
     overage_payment_intent_id: null,
@@ -200,7 +213,7 @@ export async function reactivateMerchant(merchantId: string) {
 }
 
 export async function getMerchantIdByCustomer(customerId: string): Promise<string | null> {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from('merchants')
     .select('id')
     .eq('stripe_customer_id', customerId)
@@ -210,5 +223,5 @@ export async function getMerchantIdByCustomer(customerId: string): Promise<strin
 
 async function logNotification(merchantId: string, event: string, payload: Record<string, string>) {
   console.log(`[notify] merchant=${merchantId} event=${event}`, payload);
-  await supabase.from('billing_notifications').insert({ merchant_id: merchantId, event, payload }).then(() => {});
+  await getSupabase().from('billing_notifications').insert({ merchant_id: merchantId, event, payload }).then(() => {});
 }
