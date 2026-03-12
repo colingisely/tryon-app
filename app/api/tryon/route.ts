@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { checkBillingAndDeduct, type GenerationType } from "@/lib/billing-check";
 
 const FASHN_API_URL = "https://api.fashn.ai/v1/run";
 const FASHN_API_KEY = process.env.FASHN_API_KEY;
@@ -10,7 +11,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const supabase = supabaseUrl && supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey)
+  ? createClient(supabaseUrl, supabaseServiceKey) as any
   : null;
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -22,80 +23,22 @@ interface GarmentAnalysis {
   description: string; // Used as prompt hint for Try-On Max
 }
 
-// ─── Credit Management ─────────────────────────────────────────────────────
+// ─── Merchant Lookup ────────────────────────────────────────────────────────
 
-async function validateAndDeductCredits(
-  apiKey: string | null,
-  mode: "fast" | "premium"
-): Promise<{ success: boolean; error?: string; merchantId?: string }> {
-  // If no API key provided, allow for testing (will be removed in production)
-  if (!apiKey) {
-    console.log("⚠️ No API key provided - allowing for testing");
-    return { success: true };
-  }
+async function getMerchantByApiKey(apiKey: string): Promise<{ id: string; subscription_status: string } | null> {
+  if (!supabase) return null;
 
-  if (!supabase) {
-    console.log("⚠️ Supabase not configured - allowing for testing");
-    return { success: true };
-  }
+  const { data: merchant, error } = await supabase
+    .from("merchants")
+    .select("id, subscription_status")
+    .eq("api_key", apiKey)
+    .single();
 
-  try {
-    // 1. Find merchant by API key
-    const { data: merchant, error: merchantError } = await supabase
-      .from("merchants")
-      .select("id, fast_credits_remaining, premium_credits_remaining, fast_credits_used_total, premium_credits_used_total, subscription_status")
-      .eq("api_key", apiKey)
-      .single();
-
-    if (merchantError || !merchant) {
-      return { success: false, error: "API key inválida" };
-    }
-
-    if (merchant.subscription_status !== "active" && merchant.subscription_status !== "trial") {
-      return { success: false, error: "Assinatura inativa" };
-    }
-
-    // 2. Check if merchant has enough credits
-    const creditsNeeded = mode === "premium" ? 1 : 1; // Both modes cost 1 credit for now
-    const creditsAvailable = mode === "premium"
-      ? merchant.premium_credits_remaining
-      : merchant.fast_credits_remaining;
-
-    if (creditsAvailable < creditsNeeded) {
-      return {
-        success: false,
-        error: `Créditos ${mode === "premium" ? "Premium" : "Fast"} insuficientes. Você tem ${creditsAvailable}, precisa de ${creditsNeeded}.`,
-      };
-    }
-
-    // 3. Deduct credits
-    const updateField = mode === "premium"
-      ? "premium_credits_remaining"
-      : "fast_credits_remaining";
-    const usedField = mode === "premium"
-      ? "premium_credits_used_total"
-      : "fast_credits_used_total";
-
-    const { error: updateError } = await supabase
-      .from("merchants")
-      .update({
-        [updateField]: creditsAvailable - creditsNeeded,
-        [usedField]: (merchant as any)[usedField] + creditsNeeded,
-      })
-      .eq("id", merchant.id);
-
-    if (updateError) {
-      console.error("Error updating credits:", updateError);
-      return { success: false, error: "Erro ao atualizar créditos" };
-    }
-
-    console.log(`✅ Credits deducted: ${creditsNeeded} ${mode} credits from merchant ${merchant.id}`);
-    return { success: true, merchantId: merchant.id };
-  } catch (error) {
-    console.error("Error in credit validation:", error);
-    return { success: false, error: "Erro ao validar créditos" };
-  }
+  if (error || !merchant) return null;
+  return merchant;
 }
+
+// ─── Usage Logging ──────────────────────────────────────────────────────────
 
 async function logUsage(
   merchantId: string | undefined,
@@ -300,8 +243,7 @@ async function tryOnMax(
   const { id: predictionId } = await response.json();
   console.log("📋 Try-On Max Prediction ID:", predictionId);
 
-  // Poll for result (Try-On Max takes ~50 seconds)
-  console.log("⏳ Aguardando resultado (Try-On Max ~50s)...");
+  console.log("⏳ Aguardando resultado (tryon-max ~50s)...");
   const result = await pollFashnStatus(predictionId, 120);
 
   if (!result.output || !Array.isArray(result.output) || result.output.length === 0) {
@@ -399,30 +341,115 @@ export async function POST(req: Request) {
 
     console.log("✅ Imagens recebidas do frontend");
 
-    // Step 1: Validate API key and check credits
-    const useFast = mode === "fast";
-    const creditCheck = await validateAndDeductCredits(apiKey, useFast ? "fast" : "premium");
+    // Step 1: Validate API key and get merchant
+    let merchantId: string | undefined;
 
-    if (!creditCheck.success) {
-      return NextResponse.json(
-        { error: creditCheck.error || "Erro ao validar créditos" },
-        { status: 403, headers: { "Access-Control-Allow-Origin": "*" } }
-      );
+    if (apiKey) {
+      if (!supabase) {
+        console.log("⚠️ Supabase not configured - allowing for testing");
+      } else {
+        const merchant = await getMerchantByApiKey(apiKey);
+
+        if (!merchant) {
+          return NextResponse.json(
+            { error: "API key inválida", code: "INVALID_API_KEY" },
+            { status: 401, headers: { "Access-Control-Allow-Origin": "*" } }
+          );
+        }
+
+        if (merchant.subscription_status !== "active" && merchant.subscription_status !== "trial") {
+          return NextResponse.json(
+            { error: "Assinatura inativa", code: "SUBSCRIPTION_INACTIVE" },
+            { status: 403, headers: { "Access-Control-Allow-Origin": "*" } }
+          );
+        }
+
+        merchantId = merchant.id;
+
+        // ── BILLING CHECK ──────────────────────────────────────────────
+        // Determina o tipo de geração com base no modo solicitado.
+        // "tryon-max" = Studio Pro (premium), qualquer outro modo = fast.
+        const generationType: GenerationType = mode === "tryon-max" ? "premium" : "fast";
+
+        const billing = await checkBillingAndDeduct(merchantId, generationType);
+
+        if (!billing.allowed) {
+          return NextResponse.json(
+            { error: billing.error!.message, code: billing.error!.code },
+            { status: billing.error!.status, headers: { "Access-Control-Allow-Origin": "*" } }
+          );
+        }
+        // ── FIM BILLING CHECK ───────────────────────────────────────────
+
+        // Step 2: Analyze garment (category + styling prompt)
+        const analysis = await analyzeGarment(productImage);
+        console.log(`👗 Categoria: ${analysis.category}`);
+        console.log(`💡 Prompt: ${analysis.description}`);
+
+        // Step 3: Choose endpoint based on mode
+        const useFast = mode !== "tryon-max";
+        let resultData: { resultUrl: string; model: string };
+
+        if (useFast) {
+          // Fast mode: use v1.6 in balanced mode (~8s, good quality)
+          resultData = await tryOnV16(image, productImage, analysis.category, "fast");
+        } else {
+          // Premium mode: Try-On Max (50s, 4K quality) with v1.6 quality fallback
+          try {
+            resultData = await tryOnMax(image, productImage, analysis.description);
+          } catch (maxError: any) {
+            console.log("⚠️ Try-On Max failed, falling back to v1.6 quality:", maxError?.message);
+            resultData = await tryOnV16(image, productImage, analysis.category, "quality");
+          }
+        }
+
+        console.log("✅ Resultado gerado com sucesso");
+        console.log(`   Modelo: ${resultData.model} | Categoria: ${analysis.category}`);
+
+        // Deduz o crédito após geração bem-sucedida
+        await billing.deductCredit();
+
+        // Step 4: Log usage
+        await logUsage(
+          merchantId,
+          useFast ? "fast" : "premium",
+          image,
+          productImage,
+          resultData.resultUrl,
+          req
+        );
+
+        return NextResponse.json(
+          {
+            resultUrl: resultData.resultUrl,
+            category: analysis.category,
+            model: resultData.model,
+            prompt: analysis.description,
+          },
+          {
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type",
+            },
+          }
+        );
+      }
     }
 
-    // Step 2: Analyze garment (category + styling prompt)
+    // No API key provided — allow for testing (legacy behavior)
+    console.log("⚠️ No API key provided - allowing for testing");
+
     const analysis = await analyzeGarment(productImage);
     console.log(`👗 Categoria: ${analysis.category}`);
     console.log(`💡 Prompt: ${analysis.description}`);
 
-    // Step 3: Choose endpoint based on mode
+    const useFast = mode !== "tryon-max";
     let resultData: { resultUrl: string; model: string };
 
     if (useFast) {
-      // Fast mode: use v1.6 in balanced mode (~8s, good quality)
       resultData = await tryOnV16(image, productImage, analysis.category, "fast");
     } else {
-      // Premium mode: Try-On Max (50s, 4K quality) with v1.6 quality fallback
       try {
         resultData = await tryOnMax(image, productImage, analysis.description);
       } catch (maxError: any) {
@@ -431,18 +458,7 @@ export async function POST(req: Request) {
       }
     }
 
-    console.log("✅ Resultado gerado com sucesso");
-    console.log(`   Modelo: ${resultData.model} | Categoria: ${analysis.category}`);
-
-    // Step 4: Log usage
-    await logUsage(
-      creditCheck.merchantId,
-      useFast ? "fast" : "premium",
-      image,
-      productImage,
-      resultData.resultUrl,
-      req
-    );
+    console.log("✅ Resultado gerado com sucesso (sem API key)");
 
     return NextResponse.json(
       {
@@ -459,6 +475,7 @@ export async function POST(req: Request) {
         },
       }
     );
+
   } catch (err: any) {
     console.error("❌ Erro no try-on:", err?.message || err);
     return NextResponse.json(
