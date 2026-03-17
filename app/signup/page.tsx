@@ -11,7 +11,7 @@
  *     Se confirmação pendente → estado de sucesso inline
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -85,6 +85,11 @@ function measureStrength(pwd: string): StrengthResult {
 export default function SignupPage() {
   const router   = useRouter()
   const supabase = createClient()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const [form,    setForm]    = useState<FormValues>({ storeName: '', email: '', password: '' })
   const [showPwd, setShowPwd] = useState(false)
@@ -189,6 +194,10 @@ export default function SignupPage() {
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
+
+  if (!mounted) {
+    return null
+  }
 
   return (
     <main

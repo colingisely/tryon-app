@@ -16,7 +16,7 @@
  *  Serif       → --f-serif Instrument Serif (descritores emotivos)
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -73,6 +73,11 @@ function parseError(raw: string): AuthError {
 export default function LoginPage() {
   const router   = useRouter()
   const supabase = createClient()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -105,6 +110,10 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!mounted) {
+    return null
   }
 
   return (
