@@ -12,12 +12,9 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   BarChart,
   Bar,
-  Legend,
+  Cell,
 } from "recharts";
 
 const THEME = {
@@ -52,31 +49,16 @@ interface MerchantData {
   premium_credits_used_total: number;
 }
 
-// Mock data for charts (will be replaced with real analytics data)
-const usageData = [
-  { day: "Seg", fast: 12, premium: 2 },
-  { day: "Ter", fast: 19, premium: 4 },
-  { day: "Qua", fast: 8, premium: 1 },
-  { day: "Qui", fast: 25, premium: 6 },
-  { day: "Sex", fast: 31, premium: 8 },
-  { day: "Sáb", fast: 18, premium: 3 },
-  { day: "Dom", fast: 14, premium: 2 },
-];
+interface DailyUsage {
+  day: string;
+  fast: number;
+  premium: number;
+}
 
-const conversionData = [
-  { name: "Visualizaram", value: 100, color: THEME.purple },
-  { name: "Fizeram Try-On", value: 62, color: THEME.purpleLight },
-  { name: "Adicionaram ao Carrinho", value: 38, color: THEME.blue },
-  { name: "Compraram", value: 21, color: THEME.green },
-];
-
-const topProducts = [
-  { name: "Vestido Floral", tryons: 48 },
-  { name: "Blusa Listrada", tryons: 36 },
-  { name: "Calça Jeans", tryons: 29 },
-  { name: "Jaqueta Couro", tryons: 22 },
-  { name: "Saia Midi", tryons: 18 },
-];
+interface TopProduct {
+  name: string;
+  tryons: number;
+}
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -106,23 +88,24 @@ export default function DashboardPage() {
   const [merchant, setMerchant] = useState<MerchantData | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [activeNav, setActiveNav] = useState("dashboard");
+  const [activeNav] = useState("dashboard");
+  const [usageData, setUsageData] = useState<DailyUsage[]>([]);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [weeklyTryons, setWeeklyTryons] = useState(0);
+  const [conversionRate, setConversionRate] = useState(0);
 
   useEffect(() => {
     checkAuth();
   }, []);
 
   async function checkAuth() {
-    if (!supabase) {
-      router.push("/login");
-      return;
-    }
+    if (!supabase) { router.push("/login"); return; }
     const { data: { user } } = await supabase!.auth.getUser();
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-    await loadMerchantData(user.id);
+    if (!user) { router.push("/login"); return; }
+    await Promise.all([
+      loadMerchantData(user.id),
+      loadAnalyticsData(user.id),
+    ]);
   }
 
   async function loadMerchantData(userId: string) {
@@ -134,10 +117,7 @@ export default function DashboardPage() {
         .eq("id", userId)
         .single();
 
-      if (error) {
-        await createMerchant(userId);
-        return;
-      }
+      if (error) { await createMerchant(userId); return; }
 
       setMerchant({
         email: data.email,
@@ -146,15 +126,71 @@ export default function DashboardPage() {
         api_key: data.api_key,
         plan_name: data.plans?.name || "Free",
         subscription_status: data.subscription_status,
-        fast_credits_remaining: data.fast_credits_remaining,
-        premium_credits_remaining: data.premium_credits_remaining,
-        fast_credits_used_total: data.fast_credits_used_total,
-        premium_credits_used_total: data.premium_credits_used_total,
+        fast_credits_remaining: data.fast_credits_remaining ?? 0,
+        premium_credits_remaining: data.premium_credits_remaining ?? 0,
+        fast_credits_used_total: data.fast_credits_used_total ?? 0,
+        premium_credits_used_total: data.premium_credits_used_total ?? 0,
       });
     } catch (err) {
       console.error("Error:", err);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadAnalyticsData(userId: string) {
+    if (!supabase) return;
+    try {
+      const since = new Date();
+      since.setDate(since.getDate() - 7);
+
+      const { data: events } = await supabase!
+        .from("analytics_events")
+        .select("event_type, product_id, product_name, created_at")
+        .eq("merchant_id", userId)
+        .gte("created_at", since.toISOString())
+        .limit(1000);
+
+      if (!events) return;
+
+      // Daily usage
+      const dayMap: Record<string, { fast: number; premium: number }> = {};
+      events.forEach((e: any) => {
+        const day = e.created_at.substring(0, 10);
+        if (!dayMap[day]) dayMap[day] = { fast: 0, premium: 0 };
+        if (e.event_type === 'tryon_completed') dayMap[day].fast++;
+        if (e.event_type === 'studio_pro_generated') dayMap[day].premium++;
+      });
+
+      const daily: DailyUsage[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().substring(0, 10);
+        const label = d.toLocaleDateString('pt-BR', { weekday: 'short' });
+        daily.push({ day: label.charAt(0).toUpperCase() + label.slice(1), fast: dayMap[key]?.fast || 0, premium: dayMap[key]?.premium || 0 });
+      }
+      setUsageData(daily);
+
+      // Weekly tryons total
+      const total = events.filter((e: any) => e.event_type === 'tryon_completed' || e.event_type === 'tryon_initiated').length;
+      setWeeklyTryons(total);
+
+      // Conversion rate
+      const initiated = events.filter((e: any) => e.event_type === 'tryon_initiated').length;
+      const completed = events.filter((e: any) => e.event_type === 'tryon_completed').length;
+      setConversionRate(initiated > 0 ? Math.round((completed / initiated) * 100) : 0);
+
+      // Top products
+      const productMap: Record<string, { name: string; count: number }> = {};
+      events.filter((e: any) => e.event_type === 'tryon_completed' && e.product_id).forEach((e: any) => {
+        if (!productMap[e.product_id]) productMap[e.product_id] = { name: e.product_name || e.product_id, count: 0 };
+        productMap[e.product_id].count++;
+      });
+      setTopProducts(Object.values(productMap).sort((a, b) => b.count - a.count).slice(0, 5).map(p => ({ name: p.name, tryons: p.count })));
+
+    } catch (err) {
+      console.error("Analytics error:", err);
     }
   }
 
@@ -172,21 +208,17 @@ export default function DashboardPage() {
 
       if (!freePlan) return;
 
-      const apiKey = `tk_${Array.from(crypto.getRandomValues(new Uint8Array(32)))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('')}`;
+      const apiKey = `tk_${Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2, '0')).join('')}`;
 
-      const { error } = await supabase!
-        .from("merchants")
-        .insert({
-          id: userId,
-          email: user.email!,
-          api_key: apiKey,
-          plan_id: freePlan.id,
-          subscription_status: "active",
-          fast_credits_remaining: freePlan.fast_credits_monthly,
-          premium_credits_remaining: freePlan.premium_credits_monthly,
-        });
+      const { error } = await supabase!.from("merchants").insert({
+        id: userId,
+        email: user.email!,
+        api_key: apiKey,
+        plan_id: freePlan.id,
+        subscription_status: "active",
+        fast_credits_remaining: freePlan.fast_credits_monthly,
+        premium_credits_remaining: freePlan.premium_credits_monthly,
+      });
 
       if (!error) await loadMerchantData(userId);
     } catch (err) {
@@ -207,34 +239,16 @@ export default function DashboardPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const fastUsagePercent = merchant
-    ? Math.round((merchant.fast_credits_used_total / (merchant.fast_credits_remaining + merchant.fast_credits_used_total || 1)) * 100)
-    : 0;
-
-  const premiumUsagePercent = merchant
-    ? Math.round((merchant.premium_credits_used_total / (merchant.premium_credits_remaining + merchant.premium_credits_used_total || 1)) * 100)
-    : 0;
+  const fastTotal = merchant ? (merchant.fast_credits_remaining + merchant.fast_credits_used_total) || 1 : 1;
+  const fastUsagePercent = merchant ? Math.round((merchant.fast_credits_used_total / fastTotal) * 100) : 0;
+  const premiumTotal = merchant ? (merchant.premium_credits_remaining + merchant.premium_credits_used_total) || 1 : 1;
+  const premiumUsagePercent = merchant ? Math.round((merchant.premium_credits_used_total / premiumTotal) * 100) : 0;
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: THEME.bg,
-      }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: THEME.bg }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{
-            width: 44,
-            height: 44,
-            border: `2px solid rgba(139,92,246,0.2)`,
-            borderTopColor: THEME.purple,
-            borderRadius: "50%",
-            animation: "spin 0.8s linear infinite",
-            margin: "0 auto 16px",
-            boxShadow: `0 0 20px ${THEME.purpleGlow}`,
-          }} />
+          <div style={{ width: 44, height: 44, border: `2px solid rgba(139,92,246,0.2)`, borderTopColor: THEME.purple, borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px", boxShadow: `0 0 20px ${THEME.purpleGlow}` }} />
           <p style={{ color: THEME.textMuted, fontSize: 14 }}>Carregando...</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -244,292 +258,107 @@ export default function DashboardPage() {
 
   if (!merchant) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: THEME.bg,
-      }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: THEME.bg }}>
         <div style={{ textAlign: "center", maxWidth: 400, padding: 40 }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12, color: THEME.text }}>Erro ao carregar dados</h2>
-          <p style={{ color: THEME.textMuted, marginBottom: 24, fontSize: 15 }}>Não foi possível carregar seus dados.</p>
-          <button onClick={() => window.location.reload()} style={{
-            padding: "12px 24px",
-            background: THEME.purple,
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            fontWeight: 600,
-            cursor: "pointer",
-            fontSize: 15,
-          }}>Recarregar</button>
+          <p style={{ color: THEME.textMuted, marginBottom: 24, fontSize: 15 }}>Nao foi possivel carregar seus dados.</p>
+          <button onClick={() => window.location.reload()} style={{ padding: "12px 24px", background: THEME.purple, color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 15 }}>Recarregar</button>
         </div>
       </div>
     );
   }
 
+  const navItems = [
+    { id: "dashboard", label: "Dashboard", icon: "⊞", href: "/dashboard" },
+    { id: "analytics", label: "Analytics", icon: "◈", href: "/analytics" },
+    { id: "studio", label: "Estudio Pro", icon: "◉", href: "/admin" },
+    { id: "pricing", label: "Planos", icon: "◇", href: "/pricing" },
+  ];
+
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: THEME.bg,
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      color: THEME.text,
-    }}>
-      {/* Ambient glow */}
-      <div style={{
-        position: "fixed",
-        top: -200,
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: 800,
-        height: 400,
-        background: "radial-gradient(ellipse, rgba(139,92,246,0.12) 0%, transparent 70%)",
-        pointerEvents: "none",
-        zIndex: 0,
-      }} />
+    <div style={{ minHeight: "100vh", background: THEME.bg, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: THEME.text }}>
+      <div style={{ position: "fixed", top: -200, left: "50%", transform: "translateX(-50%)", width: 800, height: 400, background: "radial-gradient(ellipse, rgba(139,92,246,0.12) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 
       {/* Sidebar */}
-      <div style={{
-        position: "fixed",
-        left: 0,
-        top: 0,
-        bottom: 0,
-        width: 240,
-        background: "rgba(10,10,20,0.95)",
-        borderRight: `1px solid ${THEME.border}`,
-        backdropFilter: "blur(20px)",
-        display: "flex",
-        flexDirection: "column",
-        zIndex: 100,
-        padding: "24px 0",
-      }}>
-        {/* Logo */}
+      <div style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 240, background: "rgba(10,10,20,0.95)", borderRight: `1px solid ${THEME.border}`, backdropFilter: "blur(20px)", display: "flex", flexDirection: "column", zIndex: 100, padding: "24px 0" }}>
         <div style={{ padding: "0 24px 32px" }}>
           <img src="/logos/logo-horizontal-dark.png" alt="Reflexy" style={{ height: 28, width: "auto" }} />
         </div>
-
-        {/* Nav */}
         <nav style={{ flex: 1, padding: "0 12px" }}>
-          {[
-            { id: "dashboard", label: "Dashboard", icon: "⊞", href: "/dashboard" },
-            { id: "analytics", label: "Analytics", icon: "◈", href: "/analytics" },
-            { id: "studio", label: "Estúdio Pro", icon: "◉", href: "/admin" },
-            { id: "pricing", label: "Planos", icon: "◇", href: "/pricing" },
-          ].map(item => (
+          {navItems.map(item => (
             <Link key={item.id} href={item.href} style={{ textDecoration: "none" }}>
-              <div
-                onClick={() => setActiveNav(item.id)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "11px 14px",
-                  borderRadius: 8,
-                  marginBottom: 4,
-                  cursor: "pointer",
-                  background: activeNav === item.id ? THEME.bgGlass : "transparent",
-                  border: activeNav === item.id ? `1px solid ${THEME.borderPurple}` : "1px solid transparent",
-                  color: activeNav === item.id ? THEME.purpleLight : THEME.textMuted,
-                  fontSize: 14,
-                  fontWeight: activeNav === item.id ? 600 : 400,
-                  transition: "all 0.2s",
-                }}
-              >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 8, marginBottom: 4, cursor: "pointer", background: activeNav === item.id ? THEME.bgGlass : "transparent", border: activeNav === item.id ? `1px solid ${THEME.borderPurple}` : "1px solid transparent", color: activeNav === item.id ? THEME.purpleLight : THEME.textMuted, fontSize: 14, fontWeight: activeNav === item.id ? 600 : 400 }}>
                 <span style={{ fontSize: 16 }}>{item.icon}</span>
                 {item.label}
               </div>
             </Link>
           ))}
         </nav>
-
-        {/* User info */}
-        <div style={{
-          padding: "16px 16px 0",
-          borderTop: `1px solid ${THEME.border}`,
-        }}>
-          <div style={{
-            padding: "12px 14px",
-            borderRadius: 8,
-            background: THEME.bgCard,
-            marginBottom: 8,
-          }}>
+        <div style={{ padding: "16px 16px 0", borderTop: `1px solid ${THEME.border}` }}>
+          <div style={{ padding: "12px 14px", borderRadius: 8, background: THEME.bgCard, marginBottom: 8 }}>
             <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 2px" }}>Logado como</p>
-            <p style={{ fontSize: 13, color: THEME.text, margin: 0, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {merchant.email}
-            </p>
+            <p style={{ fontSize: 13, color: THEME.text, margin: 0, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{merchant.email}</p>
           </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              width: "100%",
-              padding: "10px 14px",
-              background: "transparent",
-              color: THEME.textMuted,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 8,
-              fontWeight: 500,
-              fontSize: 13,
-              cursor: "pointer",
-              textAlign: "left",
-            }}
-          >
-            Sair
-          </button>
+          <button onClick={handleLogout} style={{ width: "100%", padding: "10px 14px", background: "transparent", color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, fontWeight: 500, fontSize: 13, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>Sair</button>
         </div>
       </div>
 
       {/* Main content */}
-      <main style={{
-        marginLeft: 240,
-        padding: "40px 40px",
-        position: "relative",
-        zIndex: 1,
-      }}>
+      <main style={{ marginLeft: 240, padding: "40px 40px", position: "relative", zIndex: 1 }}>
         {/* Header */}
         <div style={{ marginBottom: 36 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <h1 style={{ fontSize: 26, fontWeight: 700, margin: "0 0 6px", letterSpacing: "-0.5px" }}>
-                Olá, {merchant.store_name || merchant.email.split('@')[0]} 👋
+                Ola, {merchant.store_name || merchant.email.split('@')[0]} 👋
               </h1>
-              <p style={{ fontSize: 14, margin: 0, color: THEME.textMuted }}>
-                Aqui está o resumo da sua loja hoje.
-              </p>
+              <p style={{ fontSize: 14, margin: 0, color: THEME.textMuted }}>Aqui esta o resumo da sua loja hoje.</p>
             </div>
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "8px 16px",
-              background: THEME.bgGlass,
-              border: `1px solid ${THEME.borderPurple}`,
-              borderRadius: 20,
-            }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", background: THEME.bgGlass, border: `1px solid ${THEME.borderPurple}`, borderRadius: 20 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.green, boxShadow: `0 0 8px ${THEME.green}` }} />
-              <span style={{ fontSize: 13, color: THEME.purpleLight, fontWeight: 500 }}>
-                Plano {merchant.plan_name} • Ativo
-              </span>
+              <span style={{ fontSize: 13, color: THEME.purpleLight, fontWeight: 500 }}>Plano {merchant.plan_name} · Ativo</span>
             </div>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 16,
-          marginBottom: 28,
-        }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
           {[
-            {
-              label: "Créditos Fast",
-              value: merchant.fast_credits_remaining,
-              sub: `${merchant.fast_credits_used_total} usados`,
-              color: THEME.purple,
-              percent: fastUsagePercent,
-              icon: "⚡",
-            },
-            {
-              label: "Créditos Premium",
-              value: merchant.premium_credits_remaining,
-              sub: `${merchant.premium_credits_used_total} usados`,
-              color: THEME.blue,
-              percent: premiumUsagePercent,
-              icon: "✦",
-            },
-            {
-              label: "Try-Ons Esta Semana",
-              value: usageData.reduce((a, b) => a + b.fast + b.premium, 0),
-              sub: "+18% vs semana anterior",
-              color: THEME.green,
-              percent: 72,
-              icon: "◈",
-            },
-            {
-              label: "Taxa de Conversão",
-              value: "21%",
-              sub: "Try-on → Compra",
-              color: THEME.orange,
-              percent: 21,
-              icon: "◇",
-            },
+            { label: "Creditos Fast", value: merchant.fast_credits_remaining, sub: `${merchant.fast_credits_used_total} usados`, color: THEME.purple, percent: fastUsagePercent, icon: "⚡" },
+            { label: "Creditos Premium", value: merchant.premium_credits_remaining, sub: `${merchant.premium_credits_used_total} usados`, color: THEME.blue, percent: premiumUsagePercent, icon: "✦" },
+            { label: "Try-Ons Esta Semana", value: weeklyTryons, sub: "Ultimos 7 dias", color: THEME.green, percent: Math.min(weeklyTryons, 100), icon: "◈" },
+            { label: "Taxa de Conversao", value: `${conversionRate}%`, sub: "Try-on → Completo", color: THEME.orange, percent: conversionRate, icon: "◇" },
           ].map((stat, i) => (
-            <div key={i} style={{
-              background: THEME.bgCard,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 12,
-              padding: "22px 22px",
-              backdropFilter: "blur(10px)",
-              position: "relative",
-              overflow: "hidden",
-            }}>
-              <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 2,
-                background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`,
-                opacity: 0.6,
-              }} />
+            <div key={i} style={{ background: THEME.bgCard, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "22px 22px", backdropFilter: "blur(10px)", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`, opacity: 0.6 }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <p style={{ fontSize: 12, color: THEME.textMuted, margin: 0, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>
-                  {stat.label}
-                </p>
+                <p style={{ fontSize: 12, color: THEME.textMuted, margin: 0, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>{stat.label}</p>
                 <span style={{ fontSize: 18, opacity: 0.7 }}>{stat.icon}</span>
               </div>
-              <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 6, color: THEME.text }}>
-                {stat.value}
-              </div>
+              <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 6, color: THEME.text }}>{stat.value}</div>
               <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 12px" }}>{stat.sub}</p>
-              {/* Progress bar */}
               <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
-                <div style={{
-                  height: "100%",
-                  width: `${stat.percent}%`,
-                  background: `linear-gradient(90deg, ${stat.color}, ${stat.color}88)`,
-                  borderRadius: 2,
-                  transition: "width 1s ease",
-                }} />
+                <div style={{ height: "100%", width: `${stat.percent}%`, background: `linear-gradient(90deg, ${stat.color}, ${stat.color}88)`, borderRadius: 2, transition: "width 1s ease" }} />
               </div>
             </div>
           ))}
         </div>
 
         {/* Charts Row */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr",
-          gap: 20,
-          marginBottom: 24,
-        }}>
-          {/* Usage Area Chart */}
-          <div style={{
-            background: THEME.bgCard,
-            border: `1px solid ${THEME.border}`,
-            borderRadius: 12,
-            padding: "24px",
-            backdropFilter: "blur(10px)",
-          }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20, marginBottom: 24 }}>
+          <div style={{ background: THEME.bgCard, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
               <div>
-                <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Uso de Créditos</h3>
-                <p style={{ fontSize: 12, color: THEME.textMuted, margin: 0 }}>Últimos 7 dias</p>
+                <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Uso de Creditos</h3>
+                <p style={{ fontSize: 12, color: THEME.textMuted, margin: 0 }}>Ultimos 7 dias</p>
               </div>
               <div style={{ display: "flex", gap: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.purple }} />
-                  <span style={{ fontSize: 12, color: THEME.textMuted }}>Fast</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.blue }} />
-                  <span style={{ fontSize: 12, color: THEME.textMuted }}>Premium</span>
-                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.purple }} /><span style={{ fontSize: 12, color: THEME.textMuted }}>Fast</span></div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.blue }} /><span style={{ fontSize: 12, color: THEME.textMuted }}>Premium</span></div>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={usageData}>
+              <AreaChart data={usageData.length > 0 ? usageData : [{ day: "—", fast: 0, premium: 0 }]}>
                 <defs>
                   <linearGradient id="fastGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={THEME.purple} stopOpacity={0.3} />
@@ -550,154 +379,50 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Conversion Funnel */}
-          <div style={{
-            background: THEME.bgCard,
-            border: `1px solid ${THEME.border}`,
-            borderRadius: 12,
-            padding: "24px",
-            backdropFilter: "blur(10px)",
-          }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Funil de Conversão</h3>
-            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 20px" }}>Esta semana</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {conversionData.map((item, i) => (
-                <div key={i}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, color: THEME.textMuted }}>{item.name}</span>
-                    <span style={{ fontSize: 12, color: item.color, fontWeight: 600 }}>{item.value}%</span>
-                  </div>
-                  <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3 }}>
-                    <div style={{
-                      height: "100%",
-                      width: `${item.value}%`,
-                      background: item.color,
-                      borderRadius: 3,
-                      boxShadow: `0 0 8px ${item.color}66`,
-                    }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div style={{ background: THEME.bgCard, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Top Produtos</h3>
+            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 20px" }}>Mais provados esta semana</p>
+            {topProducts.length === 0 ? (
+              <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", color: THEME.textMuted, fontSize: 13, textAlign: "center" }}>
+                Nenhum try-on<br />esta semana ainda
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={topProducts} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
+                  <XAxis type="number" tick={{ fill: THEME.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis dataKey="name" type="category" tick={{ fill: THEME.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} width={90} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="tryons" name="Try-ons" fill={THEME.purple} radius={[0, 4, 4, 0]}>
+                    {topProducts.map((_, index) => (
+                      <Cell key={index} fill={`rgba(139,92,246,${1 - index * 0.15})`} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
-        {/* Bottom Row */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 20,
-          marginBottom: 24,
-        }}>
-          {/* Top Products Bar Chart */}
-          <div style={{
-            background: THEME.bgCard,
-            border: `1px solid ${THEME.border}`,
-            borderRadius: 12,
-            padding: "24px",
-            backdropFilter: "blur(10px)",
-          }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Produtos Mais Provados</h3>
-            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 20px" }}>Top 5 esta semana</p>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={topProducts} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
-                <XAxis type="number" tick={{ fill: THEME.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="name" type="category" tick={{ fill: THEME.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} width={90} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="tryons" name="Try-ons" fill={THEME.purple} radius={[0, 4, 4, 0]}>
-                  {topProducts.map((_, index) => (
-                    <Cell key={index} fill={`rgba(139,92,246,${1 - index * 0.15})`} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* API Key + Install */}
-          <div style={{
-            background: THEME.bgCard,
-            border: `1px solid ${THEME.border}`,
-            borderRadius: 12,
-            padding: "24px",
-            backdropFilter: "blur(10px)",
-          }}>
+        {/* API Key + Install */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+          <div style={{ background: THEME.bgCard, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
             <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Sua API Key</h3>
-            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 16px" }}>
-              Use esta chave para integrar o provador na sua loja
-            </p>
-            <div style={{
-              display: "flex",
-              gap: 8,
-              alignItems: "center",
-              padding: "12px 14px",
-              background: "rgba(0,0,0,0.3)",
-              borderRadius: 8,
-              border: `1px solid ${THEME.border}`,
-              marginBottom: 12,
-            }}>
-              <code style={{
-                flex: 1,
-                fontFamily: "monospace",
-                fontSize: 12,
-                color: THEME.purpleLight,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}>
+            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 16px" }}>Use esta chave para integrar o provador na sua loja</p>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "12px 14px", background: "rgba(0,0,0,0.3)", borderRadius: 8, border: `1px solid ${THEME.border}`, marginBottom: 12 }}>
+              <code style={{ flex: 1, fontFamily: "monospace", fontSize: 12, color: THEME.purpleLight, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {showApiKey ? merchant.api_key : "tk_••••••••••••••••••••••••••••••••"}
               </code>
-              <button
-                onClick={() => setShowApiKey(!showApiKey)}
-                style={{
-                  padding: "5px 10px",
-                  background: "transparent",
-                  color: THEME.textMuted,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 5,
-                  cursor: "pointer",
-                  fontSize: 11,
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <button onClick={() => setShowApiKey(!showApiKey)} style={{ padding: "5px 10px", background: "transparent", color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 5, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap", fontFamily: "inherit" }}>
                 {showApiKey ? "Ocultar" : "Mostrar"}
               </button>
-              <button
-                onClick={copyApiKey}
-                style={{
-                  padding: "5px 10px",
-                  background: copied ? THEME.green : THEME.purple,
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 5,
-                  cursor: "pointer",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  whiteSpace: "nowrap",
-                  transition: "background 0.2s",
-                }}
-              >
+              <button onClick={copyApiKey} style={{ padding: "5px 10px", background: copied ? THEME.green : THEME.purple, color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", transition: "background 0.2s", fontFamily: "inherit" }}>
                 {copied ? "✓ Copiado" : "Copiar"}
               </button>
             </div>
-
-            <div style={{
-              background: "rgba(0,0,0,0.3)",
-              borderRadius: 8,
-              padding: 14,
-              border: `1px solid ${THEME.border}`,
-            }}>
-              <p style={{ fontSize: 11, color: THEME.textMuted, margin: "0 0 8px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Instalação Shopify
-              </p>
-              <pre style={{
-                fontSize: 11,
-                color: THEME.purpleLight,
-                margin: 0,
-                overflow: "auto",
-                lineHeight: 1.6,
-                fontFamily: "monospace",
-              }}>
+            <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: 14, border: `1px solid ${THEME.border}` }}>
+              <p style={{ fontSize: 11, color: THEME.textMuted, margin: "0 0 8px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>Instalacao Shopify</p>
+              <pre style={{ fontSize: 11, color: THEME.purpleLight, margin: 0, overflow: "auto", lineHeight: 1.6, fontFamily: "monospace" }}>
 {`<script>
   window.ReflexyConfig = {
     apiKey: "${showApiKey ? merchant.api_key : 'SUA_API_KEY'}",
@@ -707,84 +432,31 @@ export default function DashboardPage() {
               </pre>
             </div>
           </div>
-        </div>
 
-        {/* Quick Actions */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 16,
-        }}>
-          {[
-            {
-              title: "Estúdio Profissional",
-              desc: "Gere fotos de produto com IA em segundos",
-              href: "/admin",
-              color: THEME.purple,
-              icon: "◉",
-              active: true,
-            },
-            {
-              title: "Ver Analytics",
-              desc: "Comportamento dos clientes em tempo real",
-              href: "/analytics",
-              color: THEME.blue,
-              icon: "◈",
-              active: true,
-            },
-            {
-              title: "Fazer Upgrade",
-              desc: "Mais créditos e recursos avançados",
-              href: "/pricing",
-              color: THEME.orange,
-              icon: "◇",
-              active: true,
-            },
-          ].map((action, i) => (
-            <Link key={i} href={action.href} style={{ textDecoration: "none" }}>
-              <div style={{
-                background: THEME.bgCard,
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 12,
-                padding: "20px 22px",
-                cursor: "pointer",
-                transition: "all 0.2s",
-                backdropFilter: "blur(10px)",
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLDivElement).style.border = `1px solid ${action.color}44`;
-                (e.currentTarget as HTMLDivElement).style.background = `rgba(${action.color === THEME.purple ? '139,92,246' : action.color === THEME.blue ? '59,130,246' : '245,158,11'},0.06)`;
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLDivElement).style.border = `1px solid ${THEME.border}`;
-                (e.currentTarget as HTMLDivElement).style.background = THEME.bgCard;
-              }}
-              >
-                <div style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 10,
-                  background: `${action.color}22`,
-                  border: `1px solid ${action.color}44`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 18,
-                  color: action.color,
-                  flexShrink: 0,
-                }}>
-                  {action.icon}
-                </div>
-                <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 600, margin: "0 0 3px", color: THEME.text }}>{action.title}</h4>
-                  <p style={{ fontSize: 12, color: THEME.textMuted, margin: 0 }}>{action.desc}</p>
-                </div>
-              </div>
-            </Link>
-          ))}
+          {/* Quick Actions */}
+          <div style={{ background: THEME.bgCard, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Acoes Rapidas</h3>
+            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 20px" }}>Acesse as principais funcionalidades</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { title: "Ver Analytics Completo", desc: "Funil, produtos e comportamento dos clientes", href: "/analytics", color: THEME.blue, icon: "◈" },
+                { title: "Estudio Profissional", desc: "Gere fotos de produto com IA em segundos", href: "/admin", color: THEME.purple, icon: "◉" },
+                { title: "Fazer Upgrade de Plano", desc: "Mais creditos e recursos avancados", href: "/pricing", color: THEME.orange, icon: "◇" },
+              ].map((action, i) => (
+                <Link key={i} href={action.href} style={{ textDecoration: "none" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 10, border: `1px solid ${THEME.border}`, background: "rgba(255,255,255,0.02)", cursor: "pointer" }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 8, background: `${action.color}22`, border: `1px solid ${action.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: action.color, flexShrink: 0 }}>
+                      {action.icon}
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: 13, fontWeight: 600, margin: "0 0 2px", color: THEME.text }}>{action.title}</h4>
+                      <p style={{ fontSize: 11, color: THEME.textMuted, margin: 0 }}>{action.desc}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </main>
 

@@ -1,407 +1,566 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { supabase } from "@/lib/supabase";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+/**
+ * Reflexy — app/signup/page.tsx
+ * Brand System V5 · Deep Amethyst
+ *
+ * Fluxo Supabase:
+ *  1. supabase.auth.signUp()  → cria usuário
+ *  2. supabase.from('merchants').insert({ plan_id: 'preview' })
+ *  3. Se session ativa → redirect /dashboard
+ *     Se confirmação pendente → estado de sucesso inline
+ */
 
-// Clean aesthetic matching the try-on modal
-const THEME = {
-  bg: "#ffffff",
-  text: "#333333",
-  textMuted: "#666666",
-  textLight: "#999999",
-  border: "#e0e0e0",
-  buttonBg: "#000000",
-  buttonText: "#ffffff",
-  error: "#dc2626",
-  success: "#16a34a",
-};
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import {
+  Store,
+  Mail,
+  Lock,
+  AlertCircle,
+  CheckCircle2,
+  ArrowRight,
+  Eye,
+  EyeOff,
+} from 'lucide-react'
 
-const plans = [
-  { name: "Free", slug: "free", price: "R$ 0", credits: "100 try-ons/mês" },
-  { name: "Starter", slug: "starter", price: "R$ 99", credits: "500 rápidos + 10 premium" },
-  { name: "Pro", slug: "pro", price: "R$ 249", credits: "2.000 rápidos + 50 premium", recommended: true },
-  { name: "Enterprise", slug: "enterprise", price: "R$ 599", credits: "Ilimitado + 300 premium" },
-];
+import {
+  Eyebrow,
+  FieldLabel,
+  FieldIcon,
+  InputField,
+  CTAPrimary,
+  CardFooter,
+  FooterNavLink,
+  GrainOverlay,
+  AmbientGlow,
+  GlobalKeyframes,
+  INPUT_STYLE,
+  PWD_TOGGLE_STYLE,
+  SPINNER_STYLE,
+} from '@/app/login/page'
+import ReflexGem from '@/components/ui/ReflexGem'
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+/** Ajuste para corresponder ao valor real na tabela plans do Supabase */
+const PREVIEW_PLAN_ID = 'preview'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface FormValues {
+  storeName: string
+  email:     string
+  password:  string
+}
+
+interface StrengthResult {
+  score: 0 | 1 | 2 | 3
+  label: string
+  color: string
+}
+
+// ─── Password strength ────────────────────────────────────────────────────────
+
+function measureStrength(pwd: string): StrengthResult {
+  if (!pwd) return { score: 0, label: '', color: 'transparent' }
+
+  let score = 0
+  if (pwd.length >= 8)             score++
+  if (/[A-Z]/.test(pwd))           score++
+  if (/[0-9!@#$%^&*]/.test(pwd))  score++
+
+  const map: Record<number, StrengthResult> = {
+    1: { score: 1, label: 'Fraca',    color: '#FF5A5A' },
+    2: { score: 2, label: 'Razoável', color: '#FFB432' },
+    3: { score: 3, label: 'Forte',    color: '#0CC89E' },
+  }
+  return map[score] ?? { score: 0, label: '', color: 'transparent' }
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function SignupPage() {
-  const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [selectedPlan, setSelectedPlan] = useState("free");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [storeName, setStoreName] = useState("");
-  const [storeUrl, setStoreUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const router   = useRouter()
+  const supabase = createClient()
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  const [form,    setForm]    = useState<FormValues>({ storeName: '', email: '', password: '' })
+  const [showPwd, setShowPwd] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
-    if (!supabase) {
-      setError("Sistema de autenticação não configurado.");
-      setLoading(false);
-      return;
+  const strength = measureStrength(form.password)
+
+  function patch(key: keyof FormValues) {
+    return (value: string) => setForm(prev => ({ ...prev, [key]: value }))
+  }
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+
+    // Client-side guards
+    if (!form.storeName.trim()) {
+      setError('Informe o nome da sua loja.')
+      return
     }
+    if (!form.email.trim()) {
+      setError('Informe um e-mail válido.')
+      return
+    }
+    if (form.password.length < 8) {
+      setError('A senha deve ter pelo menos 8 caracteres.')
+      return
+    }
+
+    setLoading(true)
 
     try {
-      const { data: authData, error: authError } = await supabase!.auth.signUp({
-        email,
-        password,
-      });
+      // ── Step 1: Supabase Auth ──────────────────────────────────────────────
+      const { data, error: authError } = await supabase.auth.signUp({
+        email:    form.email.trim().toLowerCase(),
+        password: form.password,
+        options: {
+          data: {
+            store_name: form.storeName.trim(),
+          },
+        },
+      })
 
       if (authError) {
-        setError(authError.message);
-        setLoading(false);
-        return;
+        const msg = authError.message.toLowerCase()
+        if (msg.includes('already registered') || msg.includes('already been registered')) {
+          setError(
+            'Já existe uma conta com esse e-mail. Faça login ou recupere sua senha.',
+          )
+        } else {
+          setError(authError.message)
+        }
+        return
       }
 
-      if (!authData.user) {
-        setError("Erro ao criar usuário.");
-        setLoading(false);
-        return;
+      if (!data.user) {
+        setError('Não foi possível criar sua conta. Tente novamente.')
+        return
       }
 
-      router.push("/dashboard?welcome=true");
-    } catch (err: any) {
-      setError("Erro de conexão. Tente novamente.");
-      setLoading(false);
+      // ── Step 2: Criar merchant com plano free ───────────────────────────
+      // Primeiro, buscar o ID do plano 'free'
+      const { data: planData } = await supabase
+        .from('plans')
+        .select('id')
+        .eq('slug', 'free')
+        .single()
+
+      const { error: merchantError } = await supabase.from('merchants').insert({
+        id:         data.user.id,
+        store_name: form.storeName.trim(),
+        email:      form.email.trim().toLowerCase(),
+        plan_id:    planData?.id || null,
+        api_key:    'tk_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+        created_at: new Date().toISOString(),
+      })
+
+      if (merchantError) {
+        // Não bloqueia o fluxo — usuário já foi criado no Auth
+        // O registro pode ser criado via trigger no banco ou tentado novamente
+        console.error('[Reflexy] merchants insert error:', merchantError.message)
+      }
+
+      // ── Step 3: Redirect ou estado de sucesso ─────────────────────────────
+      if (data.session) {
+        // Confirmação de e-mail desabilitada → session imediata
+        router.push('/dashboard')
+        router.refresh()
+      } else {
+        // Confirmação de e-mail habilitada → mostrar instrução
+        setSuccess(true)
+      }
+    } catch {
+      setError('Algo deu errado. Tente novamente em instantes.')
+    } finally {
+      setLoading(false)
     }
-  };
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: THEME.bg,
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-      padding: "40px 20px",
-    }}>
-      {/* Header */}
-      <div style={{
-        maxWidth: 1000,
-        margin: "0 auto 60px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-      }}>
-        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
-          <img src="/logos/logo-horizontal-dark.png" alt="Reflexy" style={{ height: 28, width: "auto" }} />
-        </Link>
-        <Link href="/login" style={{
-          color: THEME.textMuted,
-          textDecoration: "none",
-          fontSize: 15,
-          fontWeight: 500,
-        }}>
-          Já tem conta? <span style={{ color: THEME.text, fontWeight: 600 }}>Entrar</span>
-        </Link>
-      </div>
+    <main
+      className="relative min-h-screen flex items-center justify-center px-4 py-16 overflow-hidden"
+      style={{ background: '#06050F' /* --abyss */ }}
+    >
+      <GrainOverlay />
+      <AmbientGlow />
 
-      {/* Progress */}
-      <div style={{ maxWidth: 600, margin: "0 auto 50px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-          {["Escolha o plano", "Crie sua conta"].map((label, i) => (
-            <div key={i} style={{
-              flex: 1,
-              textAlign: "center",
-              fontSize: 13,
-              fontWeight: 600,
-              color: step > i ? THEME.text : THEME.textMuted,
-            }}>
-              {label}
-            </div>
-          ))}
-        </div>
-        <div style={{
-          height: 2,
-          background: THEME.border,
-          borderRadius: 2,
-          overflow: "hidden",
-        }}>
-          <div style={{
-            height: "100%",
-            background: THEME.text,
-            width: `${(step / 2) * 100}%`,
-            transition: "width 0.3s",
-          }} />
-        </div>
-      </div>
+      <div className="relative z-10 w-full" style={{ maxWidth: 440 }}>
 
-      {/* Content */}
-      <div style={{ maxWidth: step === 1 ? 900 : 480, margin: "0 auto" }}>
-        {step === 1 && (
-          <div>
-            <h1 style={{
-              fontSize: 32,
-              fontWeight: 700,
-              textAlign: "center",
-              marginBottom: 12,
-              color: THEME.text,
-              letterSpacing: "-0.5px",
-            }}>
-              Escolha seu plano
-            </h1>
-            <p style={{
-              fontSize: 16,
-              textAlign: "center",
-              color: THEME.textMuted,
-              marginBottom: 48,
-            }}>
-              Comece grátis e faça upgrade quando precisar
-            </p>
+        {/* ── Brand header ── */}
+        <header className="flex flex-col items-center mb-10">
+          <ReflexGem size={64} uid="signup" />
 
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: 16,
-            }}>
-              {plans.map((plan) => (
-                <div
-                  key={plan.slug}
-                  onClick={() => setSelectedPlan(plan.slug)}
-                  style={{
-                    background: THEME.bg,
-                    border: selectedPlan === plan.slug ? `2px solid ${THEME.text}` : `1px solid ${THEME.border}`,
-                    padding: 24,
-                    borderRadius: 8,
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    position: "relative",
-                  }}
-                >
-                  {plan.recommended && (
-                    <div style={{
-                      position: "absolute",
-                      top: -10,
-                      right: 16,
-                      background: THEME.text,
-                      color: THEME.buttonText,
-                      padding: "3px 10px",
-                      borderRadius: 4,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: "0.5px",
-                    }}>
-                      RECOMENDADO
+          <p
+            className="mt-5 tracking-[.22em] uppercase"
+            style={{
+              fontFamily:  "'Bricolage Grotesque', sans-serif",
+              fontWeight:   700,
+              fontSize:     22,
+              background:
+                'linear-gradient(160deg, #EDEBF5 0%, rgba(237,235,245,.75) 60%, #B8AEDD 100%)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip:       'text',
+              WebkitTextFillColor:  'transparent',
+            }}
+          >
+            Reflexy
+          </p>
+
+          <p
+            style={{
+              fontFamily: "'Instrument Serif', serif",
+              fontStyle:  'italic',
+              fontSize:    14,
+              color:       '#A09CC0',
+              marginTop:   4,
+            }}
+          >
+            Comece grátis. Sem cartão de crédito.
+          </p>
+        </header>
+
+        {/* ── Glass card ── */}
+        <div
+          style={{
+            background:           'rgba(15,13,30,.65)',
+            backdropFilter:       'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border:               '1px solid rgba(184,174,221,.14)',
+            borderRadius:          0,
+          }}
+        >
+          {success ? (
+            <SuccessState email={form.email} />
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} noValidate>
+                <div className="p-8 flex flex-col gap-5">
+
+                  <Eyebrow text="Criar conta" />
+
+                  <h1
+                    style={{
+                      fontFamily:    "'Bricolage Grotesque', sans-serif",
+                      fontWeight:     600,
+                      fontSize:       22,
+                      color:          '#EDEBF5',
+                      letterSpacing: '-.01em',
+                      lineHeight:     1.15,
+                    }}
+                  >
+                    Configure sua loja
+                  </h1>
+
+                  {/* Preview plan badge */}
+                  <PreviewBadge />
+
+                  {/* Error banner */}
+                  {error && (
+                    <div
+                      role="alert"
+                      className="flex items-start gap-3 p-4"
+                      style={{
+                        background: 'rgba(255,90,90,.07)',
+                        border:     '1px solid rgba(255,90,90,.22)',
+                      }}
+                    >
+                      <AlertCircle
+                        size={14}
+                        className="mt-0.5 shrink-0"
+                        style={{ color: '#FF5A5A' }}
+                      />
+                      <p
+                        style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize:   13,
+                          color:      '#FF5A5A',
+                          lineHeight: 1.65,
+                        }}
+                      >
+                        {error}
+                      </p>
                     </div>
                   )}
-                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6, color: THEME.text }}>{plan.name}</h3>
-                  <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8, color: THEME.text }}>{plan.price}</div>
-                  <p style={{ fontSize: 13, color: THEME.textMuted, marginBottom: 16 }}>{plan.credits}</p>
-                  <div style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: "50%",
-                    border: `2px solid ${selectedPlan === plan.slug ? THEME.text : THEME.border}`,
-                    background: selectedPlan === plan.slug ? THEME.text : "transparent",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}>
-                    {selectedPlan === plan.slug && <span style={{ color: THEME.buttonText, fontSize: 12 }}>✓</span>}
+
+                  {/* Nome da Loja */}
+                  <InputField
+                    id="storeName"
+                    label="Nome da Loja"
+                    type="text"
+                    value={form.storeName}
+                    onChange={patch('storeName')}
+                    placeholder="Ex.: Boutique Lumina"
+                    autoComplete="organization"
+                    icon={<Store size={14} />}
+                    disabled={loading}
+                  />
+
+                  {/* E-mail */}
+                  <InputField
+                    id="email"
+                    label="E-mail"
+                    type="email"
+                    value={form.email}
+                    onChange={patch('email')}
+                    placeholder="voce@exemplo.com"
+                    autoComplete="email"
+                    icon={<Mail size={14} />}
+                    disabled={loading}
+                  />
+
+                  {/* Senha + strength indicator */}
+                  <div className="flex flex-col gap-1.5">
+                    <FieldLabel htmlFor="password">Senha</FieldLabel>
+                    <div className="relative">
+                      <FieldIcon><Lock size={14} /></FieldIcon>
+                      <input
+                        id="password"
+                        type={showPwd ? 'text' : 'password'}
+                        value={form.password}
+                        onChange={e => patch('password')(e.target.value)}
+                        placeholder="Mínimo 8 caracteres"
+                        autoComplete="new-password"
+                        required
+                        disabled={loading}
+                        className="w-full outline-none transition-[border-color] duration-200"
+                        style={INPUT_STYLE}
+                        onFocus={e => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.40)')}
+                        onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)')}
+                      />
+                      <button
+                        type="button"
+                        aria-label={showPwd ? 'Ocultar senha' : 'Mostrar senha'}
+                        onClick={() => setShowPwd(v => !v)}
+                        style={PWD_TOGGLE_STYLE}
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
+                        onMouseEnter={e => (e.currentTarget.style.color = '#B8AEDD')}
+                        onMouseLeave={e => (e.currentTarget.style.color = '#A09CC0')}
+                      >
+                        {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+
+                    {/* Strength bars */}
+                    {form.password.length > 0 && (
+                      <StrengthMeter strength={strength} />
+                    )}
                   </div>
+
+                  {/* Terms */}
+                  <p
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize:   12,
+                      color:      '#A09CC0',
+                      lineHeight: 1.75,
+                    }}
+                  >
+                    Ao criar uma conta, você concorda com os{' '}
+                    <Link
+                      href="/terms"
+                      style={{ color: '#B8AEDD', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                    >
+                      Termos de Uso
+                    </Link>{' '}
+                    e a{' '}
+                    <Link
+                      href="/privacy"
+                      style={{ color: '#B8AEDD', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                    >
+                      Política de Privacidade
+                    </Link>
+                    .
+                  </p>
+
+                  {/* CTA Primary */}
+                  <CTAPrimary loading={loading}>
+                    Criar minha conta
+                  </CTAPrimary>
+
                 </div>
-              ))}
-            </div>
+              </form>
 
-            <button
-              onClick={() => setStep(2)}
-              style={{
-                display: "block",
-                margin: "40px auto 0",
-                padding: "14px 40px",
-                background: THEME.buttonBg,
-                color: THEME.buttonText,
-                border: "none",
-                borderRadius: 6,
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Continuar →
-            </button>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div style={{
-            background: THEME.bg,
-            padding: 40,
-            borderRadius: 8,
-            border: `1px solid ${THEME.border}`,
-          }}>
-            <h1 style={{
-              fontSize: 28,
-              fontWeight: 700,
-              marginBottom: 8,
-              color: THEME.text,
-              letterSpacing: "-0.5px",
-            }}>
-              Crie sua conta
-            </h1>
-            <p style={{
-              fontSize: 14,
-              color: THEME.textMuted,
-              marginBottom: 32,
-            }}>
-              Plano selecionado: <strong style={{ color: THEME.text }}>{plans.find(p => p.slug === selectedPlan)?.name}</strong>
-            </p>
-
-            <form onSubmit={handleSignup}>
-              <label style={{ display: "block", marginBottom: 16 }}>
-                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 6 }}>
-                  E-mail
-                </span>
-                <input
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+              <CardFooter>
+                <span
                   style={{
-                    width: "100%",
-                    padding: "12px",
-                    border: `1px solid ${THEME.border}`,
-                    borderRadius: 6,
-                    fontSize: 15,
-                    outline: "none",
-                    boxSizing: "border-box",
-                    background: THEME.bg,
-                    color: THEME.text,
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize:   13,
+                    color:      '#A09CC0',
                   }}
-                />
-              </label>
-
-              <label style={{ display: "block", marginBottom: 16 }}>
-                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 6 }}>
-                  Senha
+                >
+                  Já tem conta?
                 </span>
-                <input
-                  type="password"
-                  placeholder="Mínimo 6 caracteres"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    border: `1px solid ${THEME.border}`,
-                    borderRadius: 6,
-                    fontSize: 15,
-                    outline: "none",
-                    boxSizing: "border-box",
-                    background: THEME.bg,
-                    color: THEME.text,
-                  }}
-                />
-              </label>
-
-              <label style={{ display: "block", marginBottom: 16 }}>
-                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 6 }}>
-                  Nome da loja
-                </span>
-                <input
-                  type="text"
-                  placeholder="Minha Loja"
-                  value={storeName}
-                  onChange={(e) => setStoreName(e.target.value)}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    border: `1px solid ${THEME.border}`,
-                    borderRadius: 6,
-                    fontSize: 15,
-                    outline: "none",
-                    boxSizing: "border-box",
-                    background: THEME.bg,
-                    color: THEME.text,
-                  }}
-                />
-              </label>
-
-              <label style={{ display: "block", marginBottom: 24 }}>
-                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: THEME.text, marginBottom: 6 }}>
-                  URL da loja (opcional)
-                </span>
-                <input
-                  type="url"
-                  placeholder="https://minhaloja.com"
-                  value={storeUrl}
-                  onChange={(e) => setStoreUrl(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    border: `1px solid ${THEME.border}`,
-                    borderRadius: 6,
-                    fontSize: 15,
-                    outline: "none",
-                    boxSizing: "border-box",
-                    background: THEME.bg,
-                    color: THEME.text,
-                  }}
-                />
-              </label>
-
-              {error && (
-                <div style={{
-                  color: THEME.error,
-                  fontSize: 13,
-                  marginBottom: 16,
-                  fontWeight: 500,
-                  padding: "10px 12px",
-                  background: "#fef2f2",
-                  borderRadius: 6,
-                  border: "1px solid #fee2e2",
-                }}>
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  background: loading ? THEME.border : THEME.buttonBg,
-                  color: THEME.buttonText,
-                  border: "none",
-                  borderRadius: 6,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  cursor: loading ? "not-allowed" : "pointer",
-                  marginBottom: 12,
-                }}
-              >
-                {loading ? "Criando conta..." : "Criar conta grátis"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  background: "transparent",
-                  color: THEME.textMuted,
-                  border: "none",
-                  fontSize: 14,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                }}
-              >
-                ← Voltar
-              </button>
-            </form>
-          </div>
-        )}
+                <FooterNavLink href="/login">Entrar</FooterNavLink>
+              </CardFooter>
+            </>
+          )}
+        </div>
       </div>
+
+      <GlobalKeyframes />
+    </main>
+  )
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function PreviewBadge() {
+  return (
+    <div
+      className="inline-flex items-center gap-2 self-start"
+      style={{
+        background: 'rgba(12,200,158,.07)',
+        border:     '1px solid rgba(12,200,158,.22)',
+        padding:    '5px 11px',
+      }}
+    >
+      {/* Pulsing dot */}
+      <span
+        style={{
+          display:     'block',
+          width:        6,
+          height:       6,
+          borderRadius: '50%',
+          background:   '#0CC89E',
+          boxShadow:   '0 0 6px #0CC89E',
+          animation:   'ambientBreath 2.5s ease-in-out infinite',
+        }}
+      />
+      <span
+        style={{
+          fontFamily:    "'IBM Plex Mono', monospace",
+          fontSize:       9,
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+          color:          '#0CC89E',
+        }}
+      >
+        Plano Preview — grátis
+      </span>
     </div>
-  );
+  )
+}
+
+function StrengthMeter({ strength }: { strength: StrengthResult }) {
+  return (
+    <div>
+      <div className="flex gap-1 mt-1">
+        {[1, 2, 3].map(i => (
+          <div
+            key={i}
+            style={{
+              flex:       1,
+              height:     2,
+              background: i <= strength.score
+                ? strength.color
+                : 'rgba(184,174,221,.12)',
+              transition: 'background .25s ease',
+            }}
+          />
+        ))}
+      </div>
+      {strength.label && (
+        <p
+          style={{
+            fontFamily:    "'IBM Plex Mono', monospace",
+            fontSize:       9,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color:          strength.color,
+            marginTop:      4,
+            transition:    'color .25s',
+          }}
+        >
+          {strength.label}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function SuccessState({ email }: { email: string }) {
+  return (
+    <div
+      className="flex flex-col items-center text-center gap-4 p-10"
+      style={{ animation: 'fadeSlideUp .45s ease both' }}
+    >
+      {/* Icon circle */}
+      <div
+        className="flex items-center justify-center"
+        style={{
+          width:        56,
+          height:       56,
+          borderRadius: '50%',
+          background:   'rgba(12,200,158,.09)',
+          border:       '1px solid rgba(12,200,158,.26)',
+        }}
+      >
+        <CheckCircle2 size={24} style={{ color: '#0CC89E' }} />
+      </div>
+
+      <h2
+        style={{
+          fontFamily:  "'Bricolage Grotesque', sans-serif",
+          fontWeight:   600,
+          fontSize:     20,
+          color:        '#EDEBF5',
+          lineHeight:   1.2,
+        }}
+      >
+        Conta criada com sucesso!
+      </h2>
+
+      <p
+        style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize:   14,
+          color:      '#A09CC0',
+          lineHeight: 1.75,
+          maxWidth:   300,
+        }}
+      >
+        Enviamos um link de confirmação para{' '}
+        <span style={{ color: '#B8AEDD', fontWeight: 500 }}>{email}</span>.
+        {' '}Confirme seu e-mail para ativar sua conta.
+      </p>
+
+      {/* Tip */}
+      <div
+        style={{
+          width:      '100%',
+          background: 'rgba(12,200,158,.05)',
+          border:     '1px solid rgba(12,200,158,.14)',
+          padding:    '11px 16px',
+        }}
+      >
+        <p
+          style={{
+            fontFamily:    "'IBM Plex Mono', monospace",
+            fontSize:       9,
+            letterSpacing: '0.20em',
+            textTransform: 'uppercase',
+            color:          '#0CC89E',
+          }}
+        >
+          Verifique também a pasta de spam
+        </p>
+      </div>
+
+      <FooterNavLink href="/login">Ir para o login</FooterNavLink>
+    </div>
+  )
 }

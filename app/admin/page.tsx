@@ -90,12 +90,50 @@ export default function AdminPage() {
       });
     }, 600);
     try {
+      const startTime = Date.now();
       const response = await fetch("/api/tryon", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: modelImage, productImage, mode: "premium" }) });
+      const durationMs = Date.now() - startTime;
       clearInterval(progressInterval); setProgress(100); setStatusText("Concluido!");
       if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || "Erro ao gerar try-on"); }
       const data = await response.json();
       setResult(data.resultUrl);
-    } catch (err: any) { alert(`Erro: ${err.message}`); clearInterval(progressInterval); setStatusText("Erro na geracao"); } finally { setIsGenerating(false); }
+      
+      // Rastrear evento de geração bem-sucedida do Studio Pro
+      if (navigator.sendBeacon) {
+        const payload = JSON.stringify({
+          event_type: 'studio_pro_generated',
+          product_id: 'studio-pro-manual',
+          session_id: 'admin-' + Date.now(),
+          metadata: {
+            duration_ms: durationMs,
+            render_mode: 'tryon-max',
+            output_format: 'jpeg',
+            success: true,
+            duration_bucket: durationMs < 15000 ? 'fast' : durationMs < 40000 ? 'normal' : 'slow'
+          }
+        });
+        navigator.sendBeacon('/api/analytics', new Blob([payload], { type: 'application/json' }));
+      }
+    } catch (err: any) { 
+      const durationMs = Date.now() - (window as any).__studioProStartTime || 0;
+      // Rastrear evento de falha do Studio Pro
+      if (navigator.sendBeacon) {
+        const payload = JSON.stringify({
+          event_type: 'studio_pro_generated',
+          product_id: 'studio-pro-manual',
+          session_id: 'admin-' + Date.now(),
+          metadata: {
+            duration_ms: durationMs,
+            render_mode: 'tryon-max',
+            output_format: 'jpeg',
+            success: false,
+            duration_bucket: durationMs < 15000 ? 'fast' : durationMs < 40000 ? 'normal' : 'slow'
+          }
+        });
+        navigator.sendBeacon('/api/analytics', new Blob([payload], { type: 'application/json' }));
+      }
+      alert(`Erro: ${err.message}`); clearInterval(progressInterval); setStatusText("Erro na geracao"); 
+    } finally { setIsGenerating(false); }
   };
 
   const handleDownload = async () => {
