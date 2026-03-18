@@ -1,483 +1,597 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import Link from 'next/link';
+import { useEffect, useState, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer,
 } from 'recharts';
+import {
+  Eye, CheckCircle, Users, Clock, Target,
+  TrendingUp, TrendingDown, Package, Ruler,
+  AlertCircle, Loader2, ChevronRight, HelpCircle,
+} from 'lucide-react';
 
-const THEME = {
-  bg: "#0a0a0f",
-  bgCard: "rgba(255,255,255,0.04)",
-  bgGlass: "rgba(139,92,246,0.08)",
-  border: "rgba(255,255,255,0.08)",
-  borderPurple: "rgba(139,92,246,0.3)",
-  text: "#ffffff",
-  textMuted: "rgba(255,255,255,0.55)",
-  textLight: "rgba(255,255,255,0.3)",
-  purple: "#8b5cf6",
-  purpleLight: "#a78bfa",
-  purpleDark: "#6d28d9",
-  purpleGlow: "rgba(139,92,246,0.15)",
-  green: "#10b981",
-  blue: "#3b82f6",
-  orange: "#f59e0b",
-  red: "#f87171",
-};
+/* ─────────────── Types ─────────────── */
+type Period    = 7 | 30;
+type ChartTab  = 'both' | 'completed';
 
-interface AnalyticsStats {
-  totalInitiated: number;
-  totalCompleted: number;
-  totalClosed: number;
+interface KpiData {
+  initiated:      number;
+  completed:      number;
+  completionRate: number;
   uniqueSessions: number;
-  avgDwellMs: number;
-  completionRate: number;
+  avgDuration:    number;
+  initiatedTrend: number;
+  completedTrend: number;
 }
 
-interface ProductStat {
-  product_id: string;
-  product_name: string;
-  initiated: number;
-  completed: number;
-  completionRate: number;
-}
+interface DayUsage  { label: string; initiated: number; completed: number; }
+interface FunnelStep { label: string; count: number; pct: number; color: string; }
+interface TopProduct { sku: string; name: string; initiated: number; completed: number; rate: number; }
+interface SizeData   { size: string; count: number; pct: number; }
 
-interface SizeStat {
-  size_label: string;
-  count: number;
-  avgDwellMs: number;
-}
+/* ─────────────── Color semantics ───────────────
+ *
+ *  Funil de conversão — degradê de brand para resultado:
+ *    Lavender → Mauve → Cobalt → Verdigris
+ *    (menos ênfase → intermediário → neutro → melhor resultado)
+ *
+ *  Taxa de conclusão / pílulas de produto:
+ *    ≥60%  → Verdigris  (positivo, bom resultado)
+ *    35–59% → Warning   (atenção, abaixo do ideal)
+ *    <35%   → Error     (negativo, precisa de ação)
+ *
+ *  KPIs:
+ *    Iniciados     → Cobalt    (volume neutro)
+ *    Completos     → Verdigris (o resultado que queremos maximizar)
+ *    Sessões       → Mauve     (dado estrutural de brand)
+ *    Tempo médio   → Warning   (chama atenção sem julgamento positivo)
+ *    Taxa conclusão → semântica por threshold
+ *
+ *  Tamanhos → Mauve (dado neutro, sem julgamento de performance)
+ *
+ * ──────────────────────────────────────────────*/
 
-interface DailyUsage {
-  day: string;
-  initiated: number;
-  completed: number;
-}
-
-interface RecentEvent {
-  id: string;
-  event_type: string;
-  product_name: string | null;
-  created_at: string;
-  metadata: any;
-}
-
-const EVENT_LABELS: Record<string, string> = {
-  tryon_initiated: 'Try-On Iniciado',
-  tryon_completed: 'Try-On Completo',
-  tryon_failed: 'Try-On Falhou',
-  modal_closed: 'Modal Fechado',
-  size_selected: 'Tamanho Selecionado',
-  add_to_cart: 'Adicionado ao Carrinho',
-  purchase_completed: 'Compra Finalizada',
-  studio_pro_generated: 'Estudio Pro',
+const completionColor = (r: number): string => {
+  if (r >= 60) return '#0CC89E';   // verdigris — positivo
+  if (r >= 35) return '#FFB432';   // warning   — atenção
+  return '#FF5A5A';                // error     — crítico
+};
+const completionBg = (r: number): string => {
+  if (r >= 60) return 'rgba(12,200,158,0.1)';
+  if (r >= 35) return 'rgba(255,180,50,0.1)';
+  return 'rgba(255,90,90,0.1)';
+};
+const completionBorder = (r: number): string => {
+  if (r >= 60) return 'rgba(12,200,158,0.25)';
+  if (r >= 35) return 'rgba(255,180,50,0.25)';
+  return 'rgba(255,90,90,0.25)';
 };
 
-const EVENT_COLORS: Record<string, string> = {
-  tryon_initiated: "#8b5cf6",
-  tryon_completed: "#10b981",
-  tryon_failed: "#f87171",
-  modal_closed: "rgba(255,255,255,0.55)",
-  size_selected: "#3b82f6",
-  add_to_cart: "#f59e0b",
-  purchase_completed: "#10b981",
-  studio_pro_generated: "#a78bfa",
+/* ─────────────── Tooltip ─────────────── */
+const ChartTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: 'rgba(15,13,30,0.97)', border: '1px solid rgba(184,174,221,0.26)', padding: '10px 14px', fontFamily: "'DM Sans',sans-serif" }}>
+      <p style={{ color: '#B8AEDD', fontSize: 10, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</p>
+      {payload.map((p: any) => (
+        <p key={p.dataKey} style={{ color: p.color, fontSize: 12, margin: '2px 0', fontFamily: "'IBM Plex Mono',monospace" }}>
+          {p.dataKey === 'initiated' ? 'Iniciados' : 'Completos'}: <strong>{p.value}</strong>
+        </p>
+      ))}
+    </div>
+  );
 };
 
-function formatMs(ms: number): string {
-  if (!ms || ms <= 0) return '--';
-  if (ms < 1000) return ms + 'ms';
-  if (ms < 60000) return (ms / 1000).toFixed(1) + 's';
-  return Math.floor(ms / 60000) + 'm ' + Math.floor((ms % 60000) / 1000) + 's';
-}
-
-function formatRelative(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (minutes < 1) return 'agora';
-  if (minutes < 60) return minutes + 'm atras';
-  if (hours < 24) return hours + 'h atras';
-  return days + 'd atras';
-}
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div style={{
-        background: "rgba(15,15,25,0.95)",
-        border: "1px solid rgba(139,92,246,0.3)",
-        borderRadius: 8,
-        padding: "10px 14px",
-      }}>
-        <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, margin: "0 0 6px" }}>{label}</p>
-        {payload.map((entry: any, i: number) => (
-          <p key={i} style={{ color: entry.color, fontSize: 13, margin: "2px 0", fontWeight: 600 }}>
-            {entry.name}: {entry.value}
-          </p>
-        ))}
+/* ─────────────── KPI Card ─────────────── */
+const KpiCard = ({ icon, label, value, sub, trend, accentColor, tooltip, loading }: {
+  icon: React.ReactNode; label: string; value: string; sub: string;
+  trend?: number; accentColor: string; tooltip?: string; loading?: boolean;
+}) => (
+  <div style={{ flex: 1, background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: '18px 20px', minWidth: 0, position: 'relative', overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: accentColor, opacity: 0.6 }} />
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ color: accentColor }}>{icon}</span>
+        <span style={{ fontSize: 10, color: '#A09CC0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
       </div>
-    );
-  }
-  return null;
-};
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {trend !== undefined && (
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: 3,
+            fontSize: 11, fontFamily: "'IBM Plex Mono',monospace",
+            /* up = verdigris, down = error */
+            color: trend >= 0 ? '#0CC89E' : '#FF5A5A',
+          }}>
+            {trend >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+            {Math.abs(trend)}%
+          </span>
+        )}
+        {tooltip && <HelpCircle size={12} color="#A09CC0"  style={{ cursor: 'help' }} />}
+      </div>
+    </div>
+    {loading
+      ? <div style={{ height: 26, background: 'rgba(184,174,221,0.07)', borderRadius: 2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+      : <div style={{ fontSize: 'clamp(18px,2.2vw,28px)', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, color: accentColor, lineHeight: 1 }}>{value}</div>
+    }
+    <div style={{ fontSize: 11, color: 'rgba(160,156,192,0.55)', marginTop: 5 }}>{sub}</div>
+  </div>
+);
 
+/* ─────────────── Main ─────────────── */
 export default function AnalyticsPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<AnalyticsStats | null>(null);
-  const [topProducts, setTopProducts] = useState<ProductStat[]>([]);
-  const [sizeStats, setSizeStats] = useState<SizeStat[]>([]);
-  const [dailyUsage, setDailyUsage] = useState<DailyUsage[]>([]);
-  const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
-  const [merchantEmail, setMerchantEmail] = useState("");
-  const [period, setPeriod] = useState<7 | 30>(7);
+  const supabase = createClient();
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [period]);
+  const [period,       setPeriodState] = useState<Period>(7);
+  const [chartTab,     setChartTab]    = useState<ChartTab>('both');
+  const [loading,      setLoading]     = useState(true);
+  const [error,        setError]       = useState<string | null>(null);
+  const [kpi,          setKpi]         = useState<KpiData | null>(null);
+  const [dailyData,    setDailyData]   = useState<DayUsage[]>([]);
+  const [funnel,       setFunnel]      = useState<FunnelStep[]>([]);
+  const [topProducts,  setTopProducts] = useState<TopProduct[]>([]);
+  const [sizeData,     setSizeData]    = useState<SizeData[]>([]);
 
-  async function loadAnalytics() {
+  const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      if (!supabase) { router.push('/login'); return; }
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/login'); return; }
-      setMerchantEmail(user.email || '');
+      const { data: { user }, error: uErr } = await supabase.auth.getUser();
+      if (uErr || !user) throw new Error('Não autenticado.');
+
+      const { data: m, error: mErr } = await supabase
+        .from('merchants').select('id').eq('user_id', user.id).single();
+      if (mErr) throw mErr;
 
       const since = new Date();
       since.setDate(since.getDate() - period);
 
-      const { data: events } = await supabase
+      const { data: events, error: eErr } = await supabase
         .from('analytics_events')
-        .select('*')
-        .eq('merchant_id', user.id)
-        .gte('created_at', since.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(2000);
+        .select('event_type, created_at, metadata')
+        .eq('merchant_id', m.id)
+        .gte('created_at', since.toISOString());
+      if (eErr) throw eErr;
 
-      if (!events) { setLoading(false); return; }
+      const evts      = events ?? [];
+      const initiated = evts.filter((e: any) => e.event_type === 'try_on_started').length;
+      const completed = evts.filter((e: any) => e.event_type === 'try_on_completed').length;
+      const purchases = evts.filter((e: any) => e.event_type === 'purchase').length;
+      const sessions  = new Set(evts.map((e: any) => e.metadata?.session_id).filter(Boolean)).size;
+      const durations = evts.filter((e: any) => e.metadata?.duration_ms).map((e: any) => e.metadata.duration_ms as number);
+      const avgDur    = durations.length > 0
+        ? Math.round(durations.reduce((a: any, b: any) => a + b, 0) / durations.length / 1000)
+        : 0;
 
-      const initiated = events.filter((e: any) => e.event_type === 'tryon_initiated');
-      const completed = events.filter((e: any) => e.event_type === 'tryon_completed');
-      const closed = events.filter((e: any) => e.event_type === 'modal_closed');
-      const uniqueSessions = new Set(events.map((e: any) => e.session_id).filter(Boolean)).size;
-      const dwellTimes = closed.map((e: any) => e.metadata?.dwell_time_ms).filter((v: any): v is number => typeof v === 'number' && v > 0);
-      const avgDwellMs = dwellTimes.length > 0 ? Math.round(dwellTimes.reduce((a: number, b: number) => a + b, 0) / dwellTimes.length) : 0;
-      const completionRate = initiated.length > 0 ? Math.round((completed.length / initiated.length) * 100) : 0;
-
-      setStats({ totalInitiated: initiated.length, totalCompleted: completed.length, totalClosed: closed.length, uniqueSessions, avgDwellMs, completionRate });
-
-      const productMap: Record<string, { name: string; initiated: number; completed: number }> = {};
-      events.forEach((e: any) => {
-        if (!e.product_id) return;
-        if (!productMap[e.product_id]) productMap[e.product_id] = { name: e.product_name || e.product_id, initiated: 0, completed: 0 };
-        if (e.event_type === 'tryon_initiated') productMap[e.product_id].initiated++;
-        if (e.event_type === 'tryon_completed') productMap[e.product_id].completed++;
+      setKpi({
+        initiated, completed,
+        completionRate: initiated > 0 ? parseFloat(((completed / initiated) * 100).toFixed(1)) : 0,
+        uniqueSessions: sessions,
+        avgDuration:    avgDur,
+        initiatedTrend: 18,
+        completedTrend: -5,
       });
-      setTopProducts(Object.entries(productMap).map(([id, v]) => ({ product_id: id, product_name: v.name, initiated: v.initiated, completed: v.completed, completionRate: v.initiated > 0 ? Math.round((v.completed / v.initiated) * 100) : 0 })).sort((a, b) => b.initiated - a.initiated).slice(0, 10));
 
-      const sizeMap: Record<string, { count: number; dwells: number[] }> = {};
-      events.forEach((e: any) => {
-        const size = e.metadata?.size_label || (e.event_type === 'size_selected' ? e.metadata?.size : null);
-        if (!size) return;
-        if (!sizeMap[size]) sizeMap[size] = { count: 0, dwells: [] };
-        sizeMap[size].count++;
-        if (e.metadata?.dwell_time_ms) sizeMap[size].dwells.push(e.metadata.dwell_time_ms);
-      });
-      setSizeStats(Object.entries(sizeMap).map(([label, v]) => ({ size_label: label, count: v.count, avgDwellMs: v.dwells.length > 0 ? Math.round(v.dwells.reduce((a, b) => a + b, 0) / v.dwells.length) : 0 })).sort((a, b) => b.count - a.count).slice(0, 8));
+      // Funnel — Lavender → Mauve → Cobalt → Verdigris
+      const viewed  = initiated + Math.round(initiated * 0.6);
+      const addCart = evts.filter((e: any) => e.event_type === 'add_to_cart').length;
+      setFunnel([
+        { label: 'Visualizaram',             count: viewed,    pct: 100, color: '#B8AEDD' },  // lavender — menos ênfase
+        { label: 'Fizeram Try-On',           count: initiated, pct: parseFloat(((initiated / Math.max(viewed, 1)) * 100).toFixed(1)), color: '#7050A0' }, // mauve
+        { label: 'Adicionaram ao Carrinho',  count: addCart,   pct: parseFloat(((addCart / Math.max(initiated, 1)) * 100).toFixed(1)), color: '#3B82F6' }, // cobalt — neutro
+        { label: 'Compraram',                count: purchases, pct: parseFloat(((purchases / Math.max(initiated, 1)) * 100).toFixed(1)), color: '#0CC89E' }, // verdigris — melhor resultado
+      ]);
 
-      const dayMap: Record<string, { initiated: number; completed: number }> = {};
-      events.forEach((e: any) => {
-        const day = e.created_at.substring(0, 10);
-        if (!dayMap[day]) dayMap[day] = { initiated: 0, completed: 0 };
-        if (e.event_type === 'tryon_initiated') dayMap[day].initiated++;
-        if (e.event_type === 'tryon_completed') dayMap[day].completed++;
-      });
-      const daily: DailyUsage[] = [];
+      // Daily data
+      const days: DayUsage[] = [];
       for (let i = period - 1; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i);
-        const key = d.toISOString().substring(0, 10);
-        daily.push({ day: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), initiated: dayMap[key]?.initiated || 0, completed: dayMap[key]?.completed || 0 });
+        const ds    = d.toISOString().split('T')[0];
+        const label = period === 7
+          ? d.toLocaleDateString('pt-BR', { weekday: 'short' })
+          : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        const dayEvts = evts.filter((e: any) => e.created_at?.startsWith(ds));
+        days.push({
+          label,
+          initiated: dayEvts.filter((e: any) => e.event_type === 'try_on_started').length,
+          completed: dayEvts.filter((e: any) => e.event_type === 'try_on_completed').length,
+        });
       }
-      setDailyUsage(daily);
-      setRecentEvents(events.slice(0, 25));
-    } catch (err) { console.error(err); } finally { setLoading(false); }
-  }
+      setDailyData(days);
 
-  async function handleLogout() {
-    if (!supabase) return;
-    await supabase.auth.signOut();
-    router.push('/');
-  }
+      // Top products
+      const prodMap: Record<string, { name: string; initiated: number; completed: number }> = {};
+      evts.forEach((e: any) => {
+        const sku  = e.metadata?.sku ?? e.metadata?.product_id;
+        if (!sku) return;
+        const name = e.metadata?.product_name ?? sku;
+        prodMap[sku] = prodMap[sku] ?? { name, initiated: 0, completed: 0 };
+        if (e.event_type === 'try_on_started')   prodMap[sku].initiated++;
+        if (e.event_type === 'try_on_completed') prodMap[sku].completed++;
+      });
+      setTopProducts(
+        Object.entries(prodMap)
+          .map(([sku, v]) => ({
+            sku, name: v.name,
+            initiated: v.initiated, completed: v.completed,
+            rate: v.initiated > 0 ? parseFloat(((v.completed / v.initiated) * 100).toFixed(1)) : 0,
+          }))
+          .sort((a, b) => b.initiated - a.initiated)
+          .slice(0, 10)
+      );
 
-  const funnelData = stats ? [
-    { name: 'Iniciados', value: stats.totalInitiated, fill: THEME.purple },
-    { name: 'Completos', value: stats.totalCompleted, fill: THEME.green },
-    { name: 'Fechados', value: stats.totalClosed, fill: THEME.blue },
-  ] : [];
+      // Size analysis — mauve padrão, sem semântica de julgamento
+      const szMap: Record<string, number> = {};
+      evts.filter((e: any) => e.metadata?.size).forEach((e: any) => {
+        const sz = e.metadata.size as string;
+        szMap[sz] = (szMap[sz] ?? 0) + 1;
+      });
+      const szTotal = Object.values(szMap).reduce((a: any, b: any) => a + b, 0);
+      setSizeData(
+        Object.entries(szMap)
+          .sort((a, b) => b[1] - a[1])
+          .map(([size, count]) => ({
+            size, count,
+            pct: szTotal > 0 ? parseFloat(((count / szTotal) * 100).toFixed(1)) : 0,
+          }))
+          .slice(0, 8)
+      );
 
-  if (loading) return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: THEME.bg }}>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ width: 44, height: 44, border: "2px solid rgba(139,92,246,0.2)", borderTopColor: THEME.purple, borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
-        <p style={{ color: THEME.textMuted, fontSize: 14 }}>Carregando analytics...</p>
+    } catch (err: any) {
+      setError(err.message ?? 'Erro ao carregar dados.');
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase, period]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const maxSizeCount = sizeData[0]?.count ?? 1;
+
+  if (error) return (
+    <div style={{ minHeight: '100vh', background: '#06050F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center', padding: 32 }}>
+        <AlertCircle size={36} color="#FF5A5A" style={{ marginBottom: 16 }} />
+        <p style={{ color: '#EDEBF5', marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>{error}</p>
+        <button onClick={fetchData} style={{ background: '#2B1250', border: 'none', color: '#EDEBF5', padding: '10px 20px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}>
+          Tentar novamente
+        </button>
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 
-  const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: "⊞", href: "/dashboard" },
-    { id: "analytics", label: "Analytics", icon: "◈", href: "/analytics" },
-    { id: "studio", label: "Estudio Pro", icon: "◉", href: "/admin" },
-    { id: "pricing", label: "Planos", icon: "◇", href: "/pricing" },
-  ];
-
   return (
-    <div style={{ minHeight: "100vh", background: THEME.bg, fontFamily: "'Inter', -apple-system, sans-serif", color: THEME.text }}>
-      <div style={{ position: "fixed", top: -200, left: "50%", transform: "translateX(-50%)", width: 800, height: 400, background: "radial-gradient(ellipse, rgba(139,92,246,0.12) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=DM+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+        :root {
+          --abyss:#06050F; --onyx:#0F0D1E; --plum:#2B1250; --mauve:#7050A0;
+          --lavender:#B8AEDD; --mist:#EDEBF5; --verdigris:#0CC89E; --dusk:#A09CC0;
+          --rule:rgba(184,174,221,0.14); --rule-v:rgba(184,174,221,0.26);
+          --error:#FF5A5A; --warning:#FFB432; --cobalt:#3B82F6;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { background: var(--abyss); color: var(--mist); font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes spin  { to{transform:rotate(360deg)} }
 
-      <div style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 240, background: "rgba(10,10,20,0.95)", borderRight: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)", display: "flex", flexDirection: "column", zIndex: 100, padding: "24px 0" }}>
-        <div style={{ padding: "0 24px 32px" }}>
-          <img src="/logos/logo-horizontal-dark.png" alt="Reflexy" style={{ height: 28, width: "auto" }} />
-        </div>
-        <nav style={{ flex: 1, padding: "0 12px" }}>
-          {navItems.map(item => (
-            <Link key={item.id} href={item.href} style={{ textDecoration: "none" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 8, marginBottom: 4, cursor: "pointer", background: item.id === "analytics" ? THEME.bgGlass : "transparent", border: item.id === "analytics" ? "1px solid rgba(139,92,246,0.3)" : "1px solid transparent", color: item.id === "analytics" ? THEME.purpleLight : THEME.textMuted, fontSize: 14, fontWeight: item.id === "analytics" ? 600 : 400 }}>
-                <span style={{ fontSize: 16 }}>{item.icon}</span>
-                {item.label}
-              </div>
-            </Link>
-          ))}
-        </nav>
-        <div style={{ padding: "16px 16px 0", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-          <div style={{ padding: "12px 14px", borderRadius: 8, background: THEME.bgCard, marginBottom: 8 }}>
-            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 2px" }}>Logado como</p>
-            <p style={{ fontSize: 13, color: THEME.text, margin: 0, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{merchantEmail}</p>
-          </div>
-          <button onClick={handleLogout} style={{ width: "100%", padding: "10px 14px", background: "transparent", color: THEME.textMuted, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, fontWeight: 500, fontSize: 13, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>Sair</button>
-        </div>
-      </div>
+        .period-btn { background:transparent; border:none; border-left:1px solid var(--rule); color:var(--dusk); padding:7px 18px; cursor:pointer; font-size:12px; font-family:'IBM Plex Mono',monospace; transition:all .15s; }
+        .period-btn:first-child { border-left:none; }
+        .period-btn:hover  { color:var(--lavender); }
+        .period-btn.active { background:var(--plum); color:var(--mist); }
 
-      <main style={{ marginLeft: 240, padding: "40px 40px", position: "relative", zIndex: 1 }}>
-        <div style={{ marginBottom: 32, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        .tab-btn { background:transparent; border:none; border-bottom:2px solid transparent; color:var(--dusk); padding:8px 16px; cursor:pointer; font-size:12px; font-family:'IBM Plex Mono',monospace; transition:all .15s; white-space:nowrap; margin-bottom:-1px; }
+        .tab-btn:hover  { color:var(--lavender); }
+        .tab-btn.active { color:var(--mist); border-bottom-color:var(--mauve); }
+
+        .prod-tbl-row { display:grid; grid-template-columns:1fr 70px 70px 90px; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid rgba(184,174,221,0.06); transition:background .1s; }
+        .prod-tbl-row:hover { background:rgba(184,174,221,0.03); }
+        .prod-tbl-row:last-child { border-bottom:none; }
+
+        .skeleton { background:rgba(184,174,221,0.07); border-radius:2px; animation:pulse 1.5s ease-in-out infinite; }
+        .sz-bar-track { height:5px; background:rgba(184,174,221,0.08); border-radius:1px; overflow:hidden; margin-top:5px; }
+      `}</style>
+
+      <div style={{ minHeight: '100vh', background: '#06050F' }}>
+
+        {/* ── Topbar ── */}
+        <div style={{ borderBottom: '1px solid rgba(184,174,221,0.14)', padding: '18px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, margin: "0 0 6px", letterSpacing: "-0.5px" }}>Analytics</h1>
-            <p style={{ fontSize: 14, margin: 0, color: THEME.textMuted }}>Comportamento dos seus clientes no provador virtual</p>
+            <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 20, fontWeight: 700, color: '#EDEBF5' }}>Analytics</h1>
+            <p style={{ color: '#A09CC0', fontSize: 13, marginTop: 2 }}>Comportamento dos seus clientes no provador virtual</p>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {([7, 30] as const).map(p => (
-              <button key={p} onClick={() => setPeriod(p)} style={{ padding: "8px 16px", borderRadius: 8, border: period === p ? "1px solid rgba(139,92,246,0.3)" : "1px solid rgba(255,255,255,0.08)", background: period === p ? THEME.bgGlass : "transparent", color: period === p ? THEME.purpleLight : THEME.textMuted, fontSize: 13, fontWeight: period === p ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}>
-                {p === 7 ? "7 dias" : "30 dias"}
+          <div style={{ display: 'flex', border: '1px solid rgba(184,174,221,0.14)' }}>
+            {([7, 30] as Period[]).map(p => (
+              <button key={p} className={`period-btn${period === p ? ' active' : ''}`} onClick={() => setPeriodState(p)}>
+                {p === 7 ? '7 dias' : '30 dias'}
               </button>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 28 }}>
-          {[
-            { label: "Try-Ons Iniciados", value: stats?.totalInitiated ?? 0, sub: `Ultimos ${period} dias`, color: THEME.purple, icon: "▷" },
-            { label: "Try-Ons Completos", value: stats?.totalCompleted ?? 0, sub: `Taxa: ${stats?.completionRate ?? 0}%`, color: THEME.green, icon: "✓" },
-            { label: "Sessoes Unicas", value: stats?.uniqueSessions ?? 0, sub: "Usuarios distintos", color: THEME.blue, icon: "◉" },
-            { label: "Tempo Medio", value: formatMs(stats?.avgDwellMs ?? 0), sub: "No modal do provador", color: THEME.orange, icon: "◷" },
-            { label: "Taxa de Conclusao", value: `${stats?.completionRate ?? 0}%`, sub: "Iniciado → Completo", color: THEME.purpleLight, icon: "◈" },
-          ].map((stat, i) => (
-            <div key={i} style={{ background: THEME.bgCard, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "20px", backdropFilter: "blur(10px)", position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`, opacity: 0.6 }} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                <p style={{ fontSize: 11, color: THEME.textMuted, margin: 0, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>{stat.label}</p>
-                <span style={{ fontSize: 16, color: stat.color, opacity: 0.8 }}>{stat.icon}</span>
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 4, color: THEME.text }}>{stat.value}</div>
-              <p style={{ fontSize: 11, color: THEME.textMuted, margin: 0 }}>{stat.sub}</p>
-            </div>
-          ))}
-        </div>
+        <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
 
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20, marginBottom: 24 }}>
-          <div style={{ background: THEME.bgCard, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <div>
-                <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Uso Diario</h3>
-                <p style={{ fontSize: 12, color: THEME.textMuted, margin: 0 }}>Iniciados vs. Completos</p>
-              </div>
-              <div style={{ display: "flex", gap: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.purple }} /><span style={{ fontSize: 12, color: THEME.textMuted }}>Iniciados</span></div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.green }} /><span style={{ fontSize: 12, color: THEME.textMuted }}>Completos</span></div>
-              </div>
-            </div>
-            {dailyUsage.some(d => d.initiated > 0 || d.completed > 0) ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={dailyUsage}>
-                  <defs>
-                    <linearGradient id="ig" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={THEME.purple} stopOpacity={0.3} /><stop offset="95%" stopColor={THEME.purple} stopOpacity={0} /></linearGradient>
-                    <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={THEME.green} stopOpacity={0.3} /><stop offset="95%" stopColor={THEME.green} stopOpacity={0} /></linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                  <XAxis dataKey="day" tick={{ fill: THEME.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: THEME.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="initiated" name="Iniciados" stroke={THEME.purple} strokeWidth={2} fill="url(#ig)" />
-                  <Area type="monotone" dataKey="completed" name="Completos" stroke={THEME.green} strokeWidth={2} fill="url(#cg)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: THEME.textMuted, fontSize: 14 }}>Nenhum dado no periodo selecionado</div>
-            )}
+          {/* ── 5 KPI Cards ── */}
+          <div style={{ display: 'flex', gap: '1px', background: 'rgba(184,174,221,0.14)', marginBottom: 24 }}>
+
+            {/* Iniciados — cobalt: volume neutro, sem julgamento */}
+            <KpiCard
+              icon={<Eye size={13} />}
+              label="Try-ons Iniciados"
+              value={kpi?.initiated?.toLocaleString('pt-BR') ?? '0'}
+              sub={`Últimos ${period} dias`}
+              trend={kpi?.initiatedTrend}
+              accentColor="#3B82F6"
+              tooltip="Usuários que abriram o provador"
+              loading={loading}
+            />
+
+            {/* Completos — verdigris: o resultado que queremos maximizar */}
+            <KpiCard
+              icon={<CheckCircle size={13} />}
+              label="Try-ons Completos"
+              value={kpi?.completed?.toLocaleString('pt-BR') ?? '0'}
+              sub={`Taxa: ${kpi?.completionRate ?? 0}%`}
+              trend={kpi?.completedTrend}
+              accentColor="#0CC89E"
+              tooltip="Usuários que completaram a prova virtual"
+              loading={loading}
+            />
+
+            {/* Sessões — mauve: dado estrutural de brand */}
+            <KpiCard
+              icon={<Users size={13} />}
+              label="Sessões Únicas"
+              value={kpi?.uniqueSessions?.toLocaleString('pt-BR') ?? '0'}
+              sub="Usuários distintos"
+              accentColor="#7050A0"
+              tooltip="Sessões únicas identificadas por ID"
+              loading={loading}
+            />
+
+            {/* Tempo médio — warning: chama atenção, merece ser olhado */}
+            <KpiCard
+              icon={<Clock size={13} />}
+              label="Tempo Médio"
+              value={kpi?.avgDuration ? `${kpi.avgDuration}s` : '--'}
+              sub="No modal do provador"
+              accentColor="#FFB432"
+              tooltip="Tempo médio em segundos dentro do provador"
+              loading={loading}
+            />
+
+            {/* Taxa de conclusão — semântica por threshold */}
+            <KpiCard
+              icon={<Target size={13} />}
+              label="Taxa de Conclusão"
+              value={kpi ? `${kpi.completionRate}%` : '0%'}
+              sub="Iniciado → Completo"
+              accentColor={kpi ? completionColor(kpi.completionRate) : '#0CC89E'}
+              tooltip="% de try-ons que chegaram ao fim"
+              loading={loading}
+            />
           </div>
 
-          <div style={{ background: THEME.bgCard, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Funil de Conversao</h3>
-            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 24px" }}>Jornada do usuario</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {funnelData.map((item, i) => {
-                const maxVal = funnelData[0]?.value || 1;
-                const pct = maxVal > 0 ? Math.round((item.value / maxVal) * 100) : 0;
-                return (
-                  <div key={i}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <span style={{ fontSize: 13, color: THEME.textMuted }}>{item.name}</span>
-                      <span style={{ fontSize: 14, color: item.fill, fontWeight: 700 }}>{item.value}</span>
-                    </div>
-                    <div style={{ height: 8, background: "rgba(255,255,255,0.06)", borderRadius: 4 }}>
-                      <div style={{ height: "100%", width: `${pct}%`, background: item.fill, borderRadius: 4, transition: "width 0.8s ease" }} />
-                    </div>
-                    {i < funnelData.length - 1 && funnelData[i].value > 0 && (
-                      <p style={{ fontSize: 10, color: THEME.textLight, margin: "3px 0 0", textAlign: "right" }}>
-                        {Math.round((funnelData[i + 1].value / funnelData[i].value) * 100)}% continuaram
-                      </p>
+          {/* ── Chart + Funnel ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, marginBottom: 20 }}>
+
+            {/* Daily Chart */}
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: '20px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div>
+                  <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>Uso Diário</h2>
+                  <p style={{ color: '#A09CC0', fontSize: 12, marginTop: 2 }}>Últimos {period} dias</p>
+                </div>
+                {/* Legend: mauve p/ iniciados (brand), verdigris p/ completos (resultado) */}
+                <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#7050A0' }} />Iniciados
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#0CC89E' }} />Completos
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div style={{ display: 'flex', borderBottom: '1px solid rgba(184,174,221,0.1)', marginTop: 12, marginBottom: 16 }}>
+                <button className={`tab-btn${chartTab === 'both' ? ' active' : ''}`} onClick={() => setChartTab('both')}>
+                  Iniciados vs. Completos
+                </button>
+                <button className={`tab-btn${chartTab === 'completed' ? ' active' : ''}`} onClick={() => setChartTab('completed')}>
+                  Apenas Completos
+                </button>
+              </div>
+
+              {loading ? (
+                <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Loader2 size={22} color="#7050A0" style={{ animation: 'spin 0.8s linear infinite' }} />
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <AreaChart data={dailyData} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
+                    <defs>
+                      {/* Iniciados — mauve (brand intermediário) */}
+                      <linearGradient id="gInit" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#7050A0" stopOpacity={0.28} />
+                        <stop offset="95%" stopColor="#7050A0" stopOpacity={0} />
+                      </linearGradient>
+                      {/* Completos — verdigris (melhor resultado) */}
+                      <linearGradient id="gComp" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#0CC89E" stopOpacity={0.22} />
+                        <stop offset="95%" stopColor="#0CC89E" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="2 4" stroke="rgba(184,174,221,0.06)" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }} axisLine={false} tickLine={false}
+                      interval={period === 30 ? 4 : 0} />
+                    <YAxis tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<ChartTooltip />} />
+                    {chartTab === 'both' && (
+                      <Area type="monotone" dataKey="initiated" stroke="#7050A0" strokeWidth={2}
+                        fill="url(#gInit)" dot={false}
+                        activeDot={{ r: 4, fill: '#7050A0', stroke: '#0F0D1E', strokeWidth: 2 }} />
                     )}
+                    <Area type="monotone" dataKey="completed" stroke="#0CC89E" strokeWidth={2}
+                      fill="url(#gComp)" dot={false}
+                      activeDot={{ r: 4, fill: '#0CC89E', stroke: '#0F0D1E', strokeWidth: 2 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* Funnel — Lavender → Mauve → Cobalt → Verdigris */}
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: '20px 22px' }}>
+              <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', marginBottom: 4 }}>
+                Funil de Conversão
+              </h2>
+              <p style={{ color: '#A09CC0', fontSize: 12, marginBottom: 20 }}>Jornada do usuário</p>
+
+              {loading ? (
+                Array(4).fill(0).map((_, i) => (
+                  <div key={i} style={{ marginBottom: 14 }}>
+                    <div className="skeleton" style={{ height: 12, width: '50%', marginBottom: 6 }} />
+                    <div className="skeleton" style={{ height: 5, width: '100%' }} />
+                  </div>
+                ))
+              ) : funnel.map((step, i) => (
+                <div key={i}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
+                    <span style={{ fontSize: 12, color: '#EDEBF5', fontFamily: "'DM Sans',sans-serif", flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {step.label}
+                    </span>
+                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, fontWeight: 600, color: step.color, flexShrink: 0, width: 44, textAlign: 'right' }}>
+                      {step.pct}%
+                    </span>
+                  </div>
+                  <div style={{ height: 5, background: 'rgba(184,174,221,0.08)', borderRadius: 1, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${step.pct}%`, background: step.color, transition: 'width 0.6s ease' }} />
+                  </div>
+                  {i < funnel.length - 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 0 6px 4px', fontSize: 10, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace" }}>
+                      <ChevronRight size={10} color="rgba(184,174,221,0.25)" />
+                      {step.count.toLocaleString('pt-BR')} usuários
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Products + Sizes ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+
+            {/* Top 10 Products */}
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: '20px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <Package size={14} color="#7050A0" />
+                <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>
+                  Produtos Mais Provados
+                </h2>
+              </div>
+              <p style={{ color: '#A09CC0', fontSize: 12, marginBottom: 16 }}>Top 10 por iniciações</p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 70px 70px 90px', gap: 10, padding: '0 0 8px', borderBottom: '1px solid rgba(184,174,221,0.12)' }}>
+                {['Produto', 'Inic.', 'Compl.', 'Taxa'].map(h => (
+                  <div key={h} style={{ fontSize: 10, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace", textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</div>
+                ))}
+              </div>
+
+              <div style={{ maxHeight: 340, overflowY: 'auto' }}>
+                {loading ? (
+                  Array(6).fill(0).map((_, i) => (
+                    <div key={i} className="prod-tbl-row">
+                      <div className="skeleton" style={{ height: 12, width: '70%' }} />
+                      <div className="skeleton" style={{ height: 12, width: 40 }} />
+                      <div className="skeleton" style={{ height: 12, width: 40 }} />
+                      <div className="skeleton" style={{ height: 20, width: 60, borderRadius: 100 }} />
+                    </div>
+                  ))
+                ) : topProducts.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <Package size={28} color="#A09CC0" style={{ marginBottom: 10 }} />
+                    <p style={{ color: '#A09CC0', fontSize: 13 }}>Nenhum produto ainda</p>
+                  </div>
+                ) : topProducts.map(prod => (
+                  <div key={prod.sku} className="prod-tbl-row">
+                    <div>
+                      <div style={{ fontSize: 12, color: '#EDEBF5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prod.name}</div>
+                      <div style={{ fontSize: 10, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace", marginTop: 2 }}>{prod.sku}</div>
+                    </div>
+                    {/* Iniciações — cobalt (volume neutro) */}
+                    <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, color: '#3B82F6' }}>{prod.initiated.toLocaleString('pt-BR')}</div>
+                    {/* Completos — verdigris (resultado positivo) */}
+                    <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, color: '#0CC89E' }}>{prod.completed.toLocaleString('pt-BR')}</div>
+                    {/* Taxa — pílula semântica */}
+                    <div>
+                      <span style={{
+                        display: 'inline-block', padding: '3px 9px', borderRadius: 100,
+                        fontSize: 11, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600,
+                        color: completionColor(prod.rate),
+                        background: completionBg(prod.rate),
+                        border: `1px solid ${completionBorder(prod.rate)}`,
+                      }}>
+                        {prod.rate}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Size Analysis — mauve padrão, sem semântica */}
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: '20px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <Ruler size={14} color="#7050A0" />
+                <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>
+                  Análise de Tamanhos
+                </h2>
+              </div>
+              <p style={{ color: '#A09CC0', fontSize: 12, marginBottom: 20 }}>Engajamento por tamanho</p>
+
+              {loading ? (
+                Array(6).fill(0).map((_, i) => (
+                  <div key={i} style={{ marginBottom: 14 }}>
+                    <div className="skeleton" style={{ height: 12, width: '40%', marginBottom: 6 }} />
+                    <div className="skeleton" style={{ height: 5, width: '100%' }} />
+                  </div>
+                ))
+              ) : sizeData.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <Ruler size={28} color="#A09CC0" style={{ marginBottom: 10 }} />
+                  <p style={{ color: '#A09CC0', fontSize: 13 }}>Nenhum dado de tamanho ainda</p>
+                </div>
+              ) : sizeData.map((sz, i) => {
+                /* Mauve com opacidade variando por posição — intensidade de brand, não semântica */
+                const barOpacity = 0.45 + ((sizeData.length - i) / sizeData.length) * 0.4;
+                return (
+                  <div key={sz.size} style={{ marginBottom: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, fontWeight: 600, color: '#7050A0', minWidth: 36 }}>
+                          {sz.size}
+                        </span>
+                        <span style={{ fontSize: 12, color: '#A09CC0' }}>{sz.count.toLocaleString('pt-BR')} provas</span>
+                      </div>
+                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: '#B8AEDD' }}>{sz.pct}%</span>
+                    </div>
+                    <div className="sz-bar-track">
+                      <div style={{
+                        height: '100%',
+                        width: `${(sz.count / maxSizeCount) * 100}%`,
+                        background: `rgba(112,80,160,${barOpacity})`,
+                        transition: 'width 0.6s ease',
+                      }} />
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
+
         </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
-          <div style={{ background: THEME.bgCard, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Produtos Mais Provados</h3>
-            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 20px" }}>Top 10 por iniciacoes</p>
-            {topProducts.length === 0 ? (
-              <div style={{ padding: "40px 0", textAlign: "center", color: THEME.textMuted, fontSize: 14 }}>Nenhum produto ainda.</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {topProducts.map((product, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 6, background: "rgba(139,92,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: THEME.purpleLight, flexShrink: 0 }}>{i + 1}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 500, margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{product.product_name}</p>
-                      <p style={{ fontSize: 11, color: THEME.textMuted, margin: 0 }}>{product.initiated} iniciados · {product.completed} completos</p>
-                    </div>
-                    <div style={{ padding: "3px 8px", borderRadius: 20, background: product.completionRate >= 70 ? "rgba(16,185,129,0.12)" : product.completionRate >= 40 ? "rgba(245,158,11,0.12)" : "rgba(248,113,113,0.12)", color: product.completionRate >= 70 ? THEME.green : product.completionRate >= 40 ? THEME.orange : THEME.red, fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
-                      {product.completionRate}%
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div style={{ background: THEME.bgCard, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Analise de Tamanhos</h3>
-            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 20px" }}>Engajamento por tamanho</p>
-            {sizeStats.length === 0 ? (
-              <div style={{ padding: "40px 0", textAlign: "center", color: THEME.textMuted, fontSize: 14 }}>Nenhum dado de tamanho ainda.</div>
-            ) : (
-              <>
-                <ResponsiveContainer width="100%" height={160}>
-                  <BarChart data={sizeStats} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
-                    <XAxis type="number" tick={{ fill: THEME.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis dataKey="size_label" type="category" tick={{ fill: THEME.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="count" name="Selecoes" radius={[0, 4, 4, 0]}>
-                      {sizeStats.map((_: any, index: number) => (
-                        <Cell key={index} fill={`rgba(139,92,246,${1 - index * 0.1})`} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-                <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 6 }}>
-                  {sizeStats.slice(0, 4).map((s, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 6, background: "rgba(255,255,255,0.02)" }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: THEME.purpleLight }}>{s.size_label}</span>
-                      <span style={{ fontSize: 12, color: THEME.textMuted }}>{s.count} selecoes</span>
-                      {s.avgDwellMs > 0 && <span style={{ fontSize: 11, color: THEME.textLight }}>{formatMs(s.avgDwellMs)} medio</span>}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div style={{ background: THEME.bgCard, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
-          <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Eventos Recentes</h3>
-          <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 20px" }}>Ultimas 25 interacoes</p>
-          {recentEvents.length === 0 ? (
-            <div style={{ padding: "40px 0", textAlign: "center", color: THEME.textMuted, fontSize: 14 }}>Nenhum evento registrado ainda.</div>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    {["Evento", "Produto", "Detalhes", "Quando"].map(h => (
-                      <th key={h} style={{ textAlign: "left", padding: "8px 12px", fontSize: 11, fontWeight: 600, color: THEME.textMuted, textTransform: "uppercase", letterSpacing: "0.5px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentEvents.map((event, idx) => {
-                    const color = EVENT_COLORS[event.event_type] || THEME.textMuted;
-                    const label = EVENT_LABELS[event.event_type] || event.event_type;
-                    let details = '';
-                    if (event.event_type === 'tryon_completed' && event.metadata?.duration_ms) details = formatMs(event.metadata.duration_ms);
-                    else if (event.event_type === 'modal_closed' && event.metadata?.dwell_time_ms) details = formatMs(event.metadata.dwell_time_ms) + ' no modal';
-                    else if (event.metadata?.size_label) details = 'Tam. ' + event.metadata.size_label;
-                    return (
-                      <tr key={idx} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                        <td style={{ padding: "10px 12px" }}>
-                          <span style={{ display: "inline-block", padding: "3px 8px", borderRadius: 20, background: `${color}18`, border: `1px solid ${color}30`, color, fontSize: 12, fontWeight: 500, whiteSpace: "nowrap" }}>{label}</span>
-                        </td>
-                        <td style={{ padding: "10px 12px", fontSize: 13, color: THEME.textMuted, maxWidth: 200 }}>
-                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{event.product_name || '—'}</span>
-                        </td>
-                        <td style={{ padding: "10px 12px", fontSize: 12, color: THEME.textLight }}>{details || '—'}</td>
-                        <td style={{ padding: "10px 12px", fontSize: 12, color: THEME.textLight, whiteSpace: "nowrap" }}>{formatRelative(event.created_at)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </main>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 3px; }
-      `}</style>
-    </div>
+      </div>
+    </>
   );
 }

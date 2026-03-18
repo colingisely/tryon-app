@@ -1,0 +1,23 @@
+<svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gemF" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stopColor="#C4B8E4" stopOpacity=".9"/>
+      <stop offset="100%" stopColor="#7050A0" stopOpacity=".7"/>
+    </linearGradient>
+    <linearGradient id="gemT" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stopColor="#E8E2F8" stopOpacity=".95"/>
+      <stop offset="100%" stopColor="#B090D8" stopOpacity=".8"/>
+    </linearGradient>
+    <linearGradient id="gemP" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="#0CC89E" stopOpacity=".4"/>
+      <stop offset="100%" stopColor="#0CC89E" stopOpacity=".05"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,22 28,50 3,50 50,3" fill="url(#gemF)"/>
+  <polygon points="50,22 72,50 97,50 50,3" fill="url(#gemF)"/>
+  <polygon points="50,78 28,50 3,50 50,97" fill="url(#gemP)"/>
+  <polygon points="50,78 72,50 97,50 50,97" fill="url(#gemP)"/>
+  <polygon points="50,22 72,50 50,78 28,50" fill="url(#gemT)"/>
+  <circle cx="50" cy="50" r="2.5" fill="#EDEBF5" opacity=".9"/>
+  <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="#B8AEDD" strokeWidth=".5" opacity=".35"/>
+</svg>

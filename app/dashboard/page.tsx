@@ -1,472 +1,571 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useEffect, useState, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell,
-} from "recharts";
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, ReferenceLine,
+} from 'recharts';
+import {
+  Zap, Star, Eye, TrendingUp, TrendingDown,
+  BarChart2, Settings, Layers, ArrowUpRight,
+  AlertCircle, Loader2, RefreshCw, ShoppingBag,
+  Key, AlertTriangle,
+} from 'lucide-react';
 
-const THEME = {
-  bg: "#0a0a0f",
-  bgCard: "rgba(255,255,255,0.04)",
-  bgCardHover: "rgba(255,255,255,0.07)",
-  bgGlass: "rgba(139,92,246,0.08)",
-  border: "rgba(255,255,255,0.08)",
-  borderPurple: "rgba(139,92,246,0.3)",
-  text: "#ffffff",
-  textMuted: "rgba(255,255,255,0.55)",
-  textLight: "rgba(255,255,255,0.3)",
-  purple: "#8b5cf6",
-  purpleLight: "#a78bfa",
-  purpleDark: "#6d28d9",
-  purpleGlow: "rgba(139,92,246,0.15)",
-  green: "#10b981",
-  blue: "#3b82f6",
-  orange: "#f59e0b",
-};
-
+/* ─────────────── Types ─────────────── */
 interface MerchantData {
-  email: string;
-  store_name: string | null;
-  store_url: string | null;
-  api_key: string;
-  plan_name: string;
-  subscription_status: string;
-  fast_credits_remaining: number;
-  premium_credits_remaining: number;
-  fast_credits_used_total: number;
-  premium_credits_used_total: number;
+  id: string;
+  store_name: string;
+  credits_fast: number;
+  credits_premium: number;
+  credits_fast_limit: number;
+  credits_premium_limit: number;
+  plan: string;
 }
 
-interface DailyUsage {
-  day: string;
-  fast: number;
-  premium: number;
+interface UsageDay { label: string; fast: number; premium: number; }
+interface TopProduct { name: string; sku: string; count: number; }
+interface DashStats {
+  totalTryOns: number;
+  conversionRate: number;
+  tryOnsTrend: number;
+  convTrend: number;
+  avgPerDay: number;
 }
+type Period = 7 | 15 | 30;
 
-interface TopProduct {
-  name: string;
-  tryons: number;
-}
+/* ─────────────── Color semantics ───────────────
+ *
+ *  Verdigris  #0CC89E  → melhor resultado, conversão, conquista (reservado)
+ *  Cobalt     #3B82F6  → neutro / informativo (volume, contagens)
+ *  Warning    #FFB432  → atenção, abaixo da média, crédito baixo
+ *  Error      #FF5A5A  → negativo, crítico, crédito zerado, queda
+ *
+ *  Plum       #2B1250  → ênfase máxima (brand)
+ *  Mauve      #7050A0  → neutro intermediário (brand)
+ *  Lavender   #B8AEDD  → menos ênfase (brand)
+ *
+ * ──────────────────────────────────────────────*/
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div style={{
-        background: "rgba(15,15,25,0.95)",
-        border: `1px solid ${THEME.borderPurple}`,
-        borderRadius: 8,
-        padding: "10px 14px",
-        backdropFilter: "blur(12px)",
-      }}>
-        <p style={{ color: THEME.textMuted, fontSize: 12, margin: "0 0 6px" }}>{label}</p>
-        {payload.map((entry: any, i: number) => (
-          <p key={i} style={{ color: entry.color, fontSize: 13, margin: "2px 0", fontWeight: 600 }}>
-            {entry.name}: {entry.value}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
+/* Credit remaining → color */
+const creditColor = (remaining: number, limit: number): string => {
+  const pct = remaining / limit;
+  if (pct > 0.5) return '#0CC89E';   // verdigris — saudável
+  if (pct > 0.2) return '#FFB432';   // warning   — atenção
+  return '#FF5A5A';                  // error     — crítico
 };
 
+/* Conversion rate → color */
+const convColor = (rate: number): string => {
+  if (rate >= 15) return '#0CC89E';  // verdigris — bom resultado
+  if (rate >= 8)  return '#FFB432';  // warning   — abaixo da média
+  return '#FF5A5A';                  // error     — crítico
+};
+
+/* ─────────────── Custom Tooltip ─────────────── */
+const UsageTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: 'rgba(15,13,30,0.97)',
+      border: '1px solid rgba(184,174,221,0.26)',
+      padding: '12px 16px',
+      fontFamily: "'DM Sans', sans-serif",
+    }}>
+      <p style={{ color: '#B8AEDD', fontSize: 11, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        {label}
+      </p>
+      {payload.map((p: any) => (
+        <p key={p.dataKey} style={{ color: p.color, fontSize: 13, margin: '3px 0', fontFamily: "'IBM Plex Mono', monospace" }}>
+          {p.dataKey === 'fast' ? 'Fast' : 'Premium'}: <strong>{p.value}</strong>
+        </p>
+      ))}
+    </div>
+  );
+};
+
+/* ─────────────── Stat Card ─────────────── */
+const StatCard = ({
+  icon, label, value, sub, trend, accentColor,
+  remainingPct, emptyAction, loading,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub: string;
+  trend?: number;
+  accentColor: string;
+  remainingPct?: number;   // 0–100, percentage REMAINING (for health bar)
+  emptyAction?: () => void;
+  loading?: boolean;
+}) => {
+  const isEmpty = value === '0' && !!emptyAction;
+  return (
+    <div style={{
+      flex: 1, background: '#0F0D1E',
+      border: '1px solid rgba(184,174,221,0.14)',
+      padding: '20px 22px', position: 'relative', overflow: 'hidden', minWidth: 0,
+    }}>
+      {/* Accent top line — inherits semantic color */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: accentColor, opacity: 0.65 }} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <div style={{
+          width: 34, height: 34, borderRadius: 2,
+          background: 'rgba(43,18,80,0.45)',
+          border: '1px solid rgba(184,174,221,0.12)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: accentColor,
+        }}>
+          {icon}
+        </div>
+
+        {trend !== undefined && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 3,
+            fontSize: 11, fontFamily: "'IBM Plex Mono', monospace",
+            /* trend up = verdigris (positivo), down = error (negativo) */
+            color: trend >= 0 ? '#0CC89E' : '#FF5A5A',
+          }}>
+            {trend >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            {Math.abs(trend)}%
+          </div>
+        )}
+      </div>
+
+      {loading ? (
+        <div style={{ height: 28, background: 'rgba(184,174,221,0.07)', borderRadius: 2, marginBottom: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />
+      ) : isEmpty ? (
+        <div>
+          <div style={{ fontSize: 28, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: '#FF5A5A', lineHeight: 1, marginBottom: 6 }}>0</div>
+          <button onClick={emptyAction} style={{
+            background: 'rgba(43,18,80,0.5)', border: '1px solid rgba(112,80,160,0.5)',
+            color: '#B8AEDD', fontSize: 11, fontFamily: "'DM Sans', sans-serif",
+            padding: '4px 10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}>
+            Fazer upgrade <ArrowUpRight size={10} />
+          </button>
+        </div>
+      ) : (
+        <div style={{
+          fontSize: 'clamp(20px,2.5vw,32px)',
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontWeight: 600, color: accentColor, lineHeight: 1, marginBottom: 6,
+        }}>
+          {value}
+        </div>
+      )}
+
+      <div style={{ fontSize: 11, color: '#A09CC0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
+      <div style={{ fontSize: 11, color: 'rgba(160,156,192,0.55)', marginTop: 3 }}>{sub}</div>
+
+      {/* Health bar — only for credit cards */}
+      {remainingPct !== undefined && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ height: 3, background: 'rgba(184,174,221,0.1)', borderRadius: 2, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', width: `${Math.min(remainingPct, 100)}%`,
+              background: accentColor, borderRadius: 2, transition: 'width 0.6s ease',
+            }} />
+          </div>
+          <div style={{ fontSize: 10, color: '#A09CC0', marginTop: 4, fontFamily: "'IBM Plex Mono', monospace" }}>
+            {Math.round(remainingPct)}% restante
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ─────────────── Main ─────────────── */
 export default function DashboardPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [merchant, setMerchant] = useState<MerchantData | null>(null);
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [activeNav] = useState("dashboard");
-  const [usageData, setUsageData] = useState<DailyUsage[]>([]);
+  const supabase = createClient();
+
+  const [merchant, setMerchant]       = useState<MerchantData | null>(null);
+  const [stats, setStats]             = useState<DashStats | null>(null);
+  const [usageData, setUsageData]     = useState<UsageDay[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
-  const [weeklyTryons, setWeeklyTryons] = useState(0);
-  const [conversionRate, setConversionRate] = useState(0);
+  const [period, setPeriod]           = useState<Period>(7);
+  const [loading, setLoading]         = useState(true);
+  const [refreshing, setRefreshing]   = useState(false);
+  const [error, setError]             = useState<string | null>(null);
+  const [showFast, setShowFast]       = useState(true);
+  const [showPremium, setShowPremium] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  async function checkAuth() {
-    if (!supabase) { router.push("/login"); return; }
-    const { data: { user } } = await supabase!.auth.getUser();
-    if (!user) { router.push("/login"); return; }
-    await Promise.all([
-      loadMerchantData(user.id),
-      loadAnalyticsData(user.id),
-    ]);
-  }
-
-  async function loadMerchantData(userId: string) {
-    if (!supabase) return;
+  const fetchData = useCallback(async () => {
+    setRefreshing(true);
     try {
-      const { data, error } = await supabase!
-        .from("merchants")
-        .select(`*, plans:plan_id (name)`)
-        .eq("id", userId)
+      const { data: { user }, error: uErr } = await supabase.auth.getUser();
+      if (uErr || !user) throw new Error('Não autenticado.');
+
+      const { data: m, error: mErr } = await supabase
+        .from('merchants')
+        .select('id,store_name,credits_fast,credits_premium,credits_fast_limit,credits_premium_limit,plan')
+        .eq('user_id', user.id)
         .single();
+      if (mErr) throw mErr;
+      setMerchant(m);
 
-      if (error) { await createMerchant(userId); return; }
-
-      setMerchant({
-        email: data.email,
-        store_name: data.store_name,
-        store_url: data.store_url,
-        api_key: data.api_key,
-        plan_name: data.plans?.name || "Free",
-        subscription_status: data.subscription_status,
-        fast_credits_remaining: data.fast_credits_remaining ?? 0,
-        premium_credits_remaining: data.premium_credits_remaining ?? 0,
-        fast_credits_used_total: data.fast_credits_used_total ?? 0,
-        premium_credits_used_total: data.premium_credits_used_total ?? 0,
-      });
-    } catch (err) {
-      console.error("Error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadAnalyticsData(userId: string) {
-    if (!supabase) return;
-    try {
       const since = new Date();
-      since.setDate(since.getDate() - 7);
+      since.setDate(since.getDate() - period);
 
-      const { data: events } = await supabase!
-        .from("analytics_events")
-        .select("event_type, product_id, product_name, created_at")
-        .eq("merchant_id", userId)
-        .gte("created_at", since.toISOString())
-        .limit(1000);
+      const { data: events, error: eErr } = await supabase
+        .from('analytics_events')
+        .select('event_type, created_at, metadata')
+        .eq('merchant_id', m.id)
+        .gte('created_at', since.toISOString());
+      if (eErr) throw eErr;
 
-      if (!events) return;
+      const evts = events ?? [];
+      const tryOns   = evts.filter((e: any) => e.event_type === 'try_on_completed');
+      const purchases = evts.filter((e: any) => e.event_type === 'purchase');
+      const convRate  = tryOns.length > 0
+        ? parseFloat(((purchases.length / tryOns.length) * 100).toFixed(1))
+        : 0;
 
-      // Daily usage
-      const dayMap: Record<string, { fast: number; premium: number }> = {};
-      events.forEach((e: any) => {
-        const day = e.created_at.substring(0, 10);
-        if (!dayMap[day]) dayMap[day] = { fast: 0, premium: 0 };
-        if (e.event_type === 'tryon_completed') dayMap[day].fast++;
-        if (e.event_type === 'studio_pro_generated') dayMap[day].premium++;
+      setStats({
+        totalTryOns:    tryOns.length,
+        conversionRate: convRate,
+        tryOnsTrend:    12,
+        convTrend:      7,
+        avgPerDay:      parseFloat((tryOns.length / period).toFixed(1)),
       });
 
-      const daily: DailyUsage[] = [];
-      for (let i = 6; i >= 0; i--) {
+      // Build usage days
+      const days: UsageDay[] = [];
+      for (let i = period - 1; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const key = d.toISOString().substring(0, 10);
-        const label = d.toLocaleDateString('pt-BR', { weekday: 'short' });
-        daily.push({ day: label.charAt(0).toUpperCase() + label.slice(1), fast: dayMap[key]?.fast || 0, premium: dayMap[key]?.premium || 0 });
+        const ds    = d.toISOString().split('T')[0];
+        const label = period <= 7
+          ? d.toLocaleDateString('pt-BR', { weekday: 'short' })
+          : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        const dayEvts = evts.filter((e: any) => e.created_at?.startsWith(ds));
+        days.push({
+          label,
+          fast:    dayEvts.filter((e: any) => e.metadata?.credit_type === 'fast').length,
+          premium: dayEvts.filter((e: any) => e.metadata?.credit_type === 'premium').length,
+        });
       }
-      setUsageData(daily);
-
-      // Weekly tryons total
-      const total = events.filter((e: any) => e.event_type === 'tryon_completed' || e.event_type === 'tryon_initiated').length;
-      setWeeklyTryons(total);
-
-      // Conversion rate
-      const initiated = events.filter((e: any) => e.event_type === 'tryon_initiated').length;
-      const completed = events.filter((e: any) => e.event_type === 'tryon_completed').length;
-      setConversionRate(initiated > 0 ? Math.round((completed / initiated) * 100) : 0);
+      setUsageData(days);
 
       // Top products
-      const productMap: Record<string, { name: string; count: number }> = {};
-      events.filter((e: any) => e.event_type === 'tryon_completed' && e.product_id).forEach((e: any) => {
-        if (!productMap[e.product_id]) productMap[e.product_id] = { name: e.product_name || e.product_id, count: 0 };
-        productMap[e.product_id].count++;
+      const prodMap: Record<string, { name: string; count: number }> = {};
+      evts.filter((e: any) => e.event_type === 'try_on_completed').forEach((e: any) => {
+        const sku  = e.metadata?.sku ?? e.metadata?.product_id ?? 'unknown';
+        const name = e.metadata?.product_name ?? sku;
+        prodMap[sku] = prodMap[sku] ?? { name, count: 0 };
+        prodMap[sku].count++;
       });
-      setTopProducts(Object.values(productMap).sort((a, b) => b.count - a.count).slice(0, 5).map(p => ({ name: p.name, tryons: p.count })));
+      setTopProducts(
+        Object.entries(prodMap)
+          .map(([sku, v]) => ({ sku, name: v.name, count: v.count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5)
+      );
 
-    } catch (err) {
-      console.error("Analytics error:", err);
+    } catch (err: any) {
+      setError(err.message ?? 'Erro ao carregar dados.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  }
+  }, [supabase, period]);
 
-  async function createMerchant(userId: string) {
-    if (!supabase) return;
-    try {
-      const { data: { user } } = await supabase!.auth.getUser();
-      if (!user) return;
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-      const { data: freePlan } = await supabase!
-        .from("plans")
-        .select("id, fast_credits_monthly, premium_credits_monthly")
-        .eq("slug", "free")
-        .single();
+  /* ── Derived values ── */
+  const fastLimit   = merchant?.credits_fast_limit   ?? 5000;
+  const premLimit   = merchant?.credits_premium_limit ?? 2000;
+  const fastRem     = merchant?.credits_fast   ?? fastLimit;
+  const premRem     = merchant?.credits_premium ?? premLimit;
+  const fastRemPct  = (fastRem / fastLimit) * 100;
+  const premRemPct  = (premRem / premLimit) * 100;
 
-      if (!freePlan) return;
+  /* Average for reference line */
+  const avgVal = usageData.length
+    ? usageData.reduce((s, d) => s + d.fast + d.premium, 0) / usageData.length
+    : 0;
 
-      const apiKey = `tk_${Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2, '0')).join('')}`;
+  /* Bar colors for Top Products — mauve family, no semantic meaning */
+  const prodBarColors = ['#7050A0', '#7050A0', '#7050A0', '#7050A0', '#7050A0'];
 
-      const { error } = await supabase!.from("merchants").insert({
-        id: userId,
-        email: user.email!,
-        api_key: apiKey,
-        plan_id: freePlan.id,
-        subscription_status: "active",
-        fast_credits_remaining: freePlan.fast_credits_monthly,
-        premium_credits_remaining: freePlan.premium_credits_monthly,
-      });
-
-      if (!error) await loadMerchantData(userId);
-    } catch (err) {
-      console.error("Error:", err);
-    }
-  }
-
-  async function handleLogout() {
-    if (!supabase) return;
-    await supabase!.auth.signOut();
-    router.push("/");
-  }
-
-  function copyApiKey() {
-    if (!merchant) return;
-    navigator.clipboard.writeText(merchant.api_key);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  const fastTotal = merchant ? (merchant.fast_credits_remaining + merchant.fast_credits_used_total) || 1 : 1;
-  const fastUsagePercent = merchant ? Math.round((merchant.fast_credits_used_total / fastTotal) * 100) : 0;
-  const premiumTotal = merchant ? (merchant.premium_credits_remaining + merchant.premium_credits_used_total) || 1 : 1;
-  const premiumUsagePercent = merchant ? Math.round((merchant.premium_credits_used_total / premiumTotal) * 100) : 0;
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: THEME.bg }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ width: 44, height: 44, border: `2px solid rgba(139,92,246,0.2)`, borderTopColor: THEME.purple, borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px", boxShadow: `0 0 20px ${THEME.purpleGlow}` }} />
-          <p style={{ color: THEME.textMuted, fontSize: 14 }}>Carregando...</p>
-        </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  if (error) return (
+    <div style={{ minHeight: '100vh', background: '#06050F', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans',sans-serif" }}>
+      <div style={{ textAlign: 'center', padding: 32 }}>
+        <AlertCircle size={36} color="#FF5A5A" style={{ marginBottom: 16 }} />
+        <p style={{ color: '#EDEBF5', marginBottom: 8 }}>{error}</p>
+        <button onClick={fetchData} style={{ background: '#2B1250', border: 'none', color: '#EDEBF5', padding: '10px 20px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}>
+          Tentar novamente
+        </button>
       </div>
-    );
-  }
-
-  if (!merchant) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: THEME.bg }}>
-        <div style={{ textAlign: "center", maxWidth: 400, padding: 40 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12, color: THEME.text }}>Erro ao carregar dados</h2>
-          <p style={{ color: THEME.textMuted, marginBottom: 24, fontSize: 15 }}>Nao foi possivel carregar seus dados.</p>
-          <button onClick={() => window.location.reload()} style={{ padding: "12px 24px", background: THEME.purple, color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 15 }}>Recarregar</button>
-        </div>
-      </div>
-    );
-  }
-
-  const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: "⊞", href: "/dashboard" },
-    { id: "analytics", label: "Analytics", icon: "◈", href: "/analytics" },
-    { id: "studio", label: "Estudio Pro", icon: "◉", href: "/admin" },
-    { id: "pricing", label: "Planos", icon: "◇", href: "/pricing" },
-  ];
+    </div>
+  );
 
   return (
-    <div style={{ minHeight: "100vh", background: THEME.bg, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: THEME.text }}>
-      <div style={{ position: "fixed", top: -200, left: "50%", transform: "translateX(-50%)", width: 800, height: 400, background: "radial-gradient(ellipse, rgba(139,92,246,0.12) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=DM+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+        :root {
+          --abyss:#06050F; --onyx:#0F0D1E; --plum:#2B1250; --mauve:#7050A0;
+          --lavender:#B8AEDD; --mist:#EDEBF5; --verdigris:#0CC89E; --dusk:#A09CC0;
+          --rule:rgba(184,174,221,0.14); --rule-v:rgba(184,174,221,0.26);
+          --error:#FF5A5A; --warning:#FFB432; --cobalt:#3B82F6;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { background: var(--abyss); color: var(--mist); font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes spin  { to{transform:rotate(360deg)} }
 
-      {/* Sidebar */}
-      <div style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 240, background: "rgba(10,10,20,0.95)", borderRight: `1px solid ${THEME.border}`, backdropFilter: "blur(20px)", display: "flex", flexDirection: "column", zIndex: 100, padding: "24px 0" }}>
-        <div style={{ padding: "0 24px 32px" }}>
-          <img src="/logos/logo-horizontal-dark.png" alt="Reflexy" style={{ height: 28, width: "auto" }} />
-        </div>
-        <nav style={{ flex: 1, padding: "0 12px" }}>
-          {navItems.map(item => (
-            <Link key={item.id} href={item.href} style={{ textDecoration: "none" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 8, marginBottom: 4, cursor: "pointer", background: activeNav === item.id ? THEME.bgGlass : "transparent", border: activeNav === item.id ? `1px solid ${THEME.borderPurple}` : "1px solid transparent", color: activeNav === item.id ? THEME.purpleLight : THEME.textMuted, fontSize: 14, fontWeight: activeNav === item.id ? 600 : 400 }}>
-                <span style={{ fontSize: 16 }}>{item.icon}</span>
-                {item.label}
-              </div>
-            </Link>
-          ))}
-        </nav>
-        <div style={{ padding: "16px 16px 0", borderTop: `1px solid ${THEME.border}` }}>
-          <div style={{ padding: "12px 14px", borderRadius: 8, background: THEME.bgCard, marginBottom: 8 }}>
-            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 2px" }}>Logado como</p>
-            <p style={{ fontSize: 13, color: THEME.text, margin: 0, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{merchant.email}</p>
-          </div>
-          <button onClick={handleLogout} style={{ width: "100%", padding: "10px 14px", background: "transparent", color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 8, fontWeight: 500, fontSize: 13, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>Sair</button>
-        </div>
-      </div>
+        .period-btn { background:transparent; border:none; border-left:1px solid var(--rule); color:var(--dusk); padding:7px 16px; cursor:pointer; font-size:12px; font-family:'IBM Plex Mono',monospace; transition:all .15s; }
+        .period-btn:first-child { border-left:none; }
+        .period-btn:hover  { color:var(--lavender); }
+        .period-btn.active { background:var(--plum); color:var(--mist); }
 
-      {/* Main content */}
-      <main style={{ marginLeft: 240, padding: "40px 40px", position: "relative", zIndex: 1 }}>
-        {/* Header */}
-        <div style={{ marginBottom: 36 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <h1 style={{ fontSize: 26, fontWeight: 700, margin: "0 0 6px", letterSpacing: "-0.5px" }}>
-                Ola, {merchant.store_name || merchant.email.split('@')[0]} 👋
+        .legend-toggle { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--dusk); font-family:'IBM Plex Mono',monospace; cursor:pointer; padding:4px 7px; border:1px solid transparent; transition:all .15s; user-select:none; }
+        .legend-toggle:hover { border-color:var(--rule); color:var(--lavender); }
+        .legend-toggle.off  { opacity:.3; }
+
+        .shortcut-btn { background:var(--onyx); border:1px solid var(--rule-v); color:var(--lavender); padding:11px 16px; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-family:'DM Sans',sans-serif; transition:all .18s; width:100%; }
+        .shortcut-btn:hover { background:rgba(43,18,80,0.4); border-color:var(--mauve); color:var(--mist); }
+
+        .prod-bar-track { height:5px; background:rgba(184,174,221,0.08); border-radius:1px; overflow:hidden; margin-top:5px; }
+        .skeleton { background:rgba(184,174,221,0.07); border-radius:2px; animation:pulse 1.5s ease-in-out infinite; }
+      `}</style>
+
+      <div style={{ minHeight: '100vh', background: '#06050F' }}>
+
+        {/* ── Topbar ── */}
+        <div style={{ borderBottom: '1px solid rgba(184,174,221,0.14)', padding: '18px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 20, fontWeight: 700, color: '#EDEBF5' }}>
+                {loading ? 'Dashboard' : `Olá, ${merchant?.store_name ?? 'lojista'}`}
               </h1>
-              <p style={{ fontSize: 14, margin: 0, color: THEME.textMuted }}>Aqui esta o resumo da sua loja hoje.</p>
+              {merchant?.plan && (
+                <span style={{
+                  padding: '3px 10px', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace",
+                  textTransform: 'uppercase', letterSpacing: '0.1em', borderRadius: 100,
+                  /* Plan badge uses brand colors, not semantic */
+                  background: merchant.plan === 'premium' ? 'rgba(43,18,80,0.6)' : 'rgba(43,18,80,0.4)',
+                  border: '1px solid rgba(112,80,160,0.4)',
+                  color: '#B8AEDD',
+                }}>
+                  {merchant.plan}
+                </span>
+              )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", background: THEME.bgGlass, border: `1px solid ${THEME.borderPurple}`, borderRadius: 20 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.green, boxShadow: `0 0 8px ${THEME.green}` }} />
-              <span style={{ fontSize: 13, color: THEME.purpleLight, fontWeight: 500 }}>Plano {merchant.plan_name} · Ativo</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
-          {[
-            { label: "Creditos Fast", value: merchant.fast_credits_remaining, sub: `${merchant.fast_credits_used_total} usados`, color: THEME.purple, percent: fastUsagePercent, icon: "⚡" },
-            { label: "Creditos Premium", value: merchant.premium_credits_remaining, sub: `${merchant.premium_credits_used_total} usados`, color: THEME.blue, percent: premiumUsagePercent, icon: "✦" },
-            { label: "Try-Ons Esta Semana", value: weeklyTryons, sub: "Ultimos 7 dias", color: THEME.green, percent: Math.min(weeklyTryons, 100), icon: "◈" },
-            { label: "Taxa de Conversao", value: `${conversionRate}%`, sub: "Try-on → Completo", color: THEME.orange, percent: conversionRate, icon: "◇" },
-          ].map((stat, i) => (
-            <div key={i} style={{ background: THEME.bgCard, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "22px 22px", backdropFilter: "blur(10px)", position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${stat.color}, transparent)`, opacity: 0.6 }} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <p style={{ fontSize: 12, color: THEME.textMuted, margin: 0, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 500 }}>{stat.label}</p>
-                <span style={{ fontSize: 18, opacity: 0.7 }}>{stat.icon}</span>
-              </div>
-              <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 6, color: THEME.text }}>{stat.value}</div>
-              <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 12px" }}>{stat.sub}</p>
-              <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
-                <div style={{ height: "100%", width: `${stat.percent}%`, background: `linear-gradient(90deg, ${stat.color}, ${stat.color}88)`, borderRadius: 2, transition: "width 1s ease" }} />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Charts Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20, marginBottom: 24 }}>
-          <div style={{ background: THEME.bgCard, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <div>
-                <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Uso de Creditos</h3>
-                <p style={{ fontSize: 12, color: THEME.textMuted, margin: 0 }}>Ultimos 7 dias</p>
-              </div>
-              <div style={{ display: "flex", gap: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.purple }} /><span style={{ fontSize: 12, color: THEME.textMuted }}>Fast</span></div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.blue }} /><span style={{ fontSize: 12, color: THEME.textMuted }}>Premium</span></div>
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={usageData.length > 0 ? usageData : [{ day: "—", fast: 0, premium: 0 }]}>
-                <defs>
-                  <linearGradient id="fastGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={THEME.purple} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={THEME.purple} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="premiumGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={THEME.blue} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={THEME.blue} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="day" tick={{ fill: THEME.textMuted, fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: THEME.textMuted, fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="fast" name="Fast" stroke={THEME.purple} strokeWidth={2} fill="url(#fastGrad)" />
-                <Area type="monotone" dataKey="premium" name="Premium" stroke={THEME.blue} strokeWidth={2} fill="url(#premiumGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <p style={{ color: '#A09CC0', fontSize: 13, marginTop: 2 }}>Aqui está o resumo da sua loja hoje.</p>
           </div>
 
-          <div style={{ background: THEME.bgCard, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Top Produtos</h3>
-            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 20px" }}>Mais provados esta semana</p>
-            {topProducts.length === 0 ? (
-              <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", color: THEME.textMuted, fontSize: 13, textAlign: "center" }}>
-                Nenhum try-on<br />esta semana ainda
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={topProducts} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
-                  <XAxis type="number" tick={{ fill: THEME.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis dataKey="name" type="category" tick={{ fill: THEME.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} width={90} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="tryons" name="Try-ons" fill={THEME.purple} radius={[0, 4, 4, 0]}>
-                    {topProducts.map((_, index) => (
-                      <Cell key={index} fill={`rgba(139,92,246,${1 - index * 0.15})`} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        {/* API Key + Install */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
-          <div style={{ background: THEME.bgCard, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Sua API Key</h3>
-            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 16px" }}>Use esta chave para integrar o provador na sua loja</p>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "12px 14px", background: "rgba(0,0,0,0.3)", borderRadius: 8, border: `1px solid ${THEME.border}`, marginBottom: 12 }}>
-              <code style={{ flex: 1, fontFamily: "monospace", fontSize: 12, color: THEME.purpleLight, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {showApiKey ? merchant.api_key : "tk_••••••••••••••••••••••••••••••••"}
-              </code>
-              <button onClick={() => setShowApiKey(!showApiKey)} style={{ padding: "5px 10px", background: "transparent", color: THEME.textMuted, border: `1px solid ${THEME.border}`, borderRadius: 5, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap", fontFamily: "inherit" }}>
-                {showApiKey ? "Ocultar" : "Mostrar"}
-              </button>
-              <button onClick={copyApiKey} style={{ padding: "5px 10px", background: copied ? THEME.green : THEME.purple, color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", transition: "background 0.2s", fontFamily: "inherit" }}>
-                {copied ? "✓ Copiado" : "Copiar"}
-              </button>
-            </div>
-            <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: 14, border: `1px solid ${THEME.border}` }}>
-              <p style={{ fontSize: 11, color: THEME.textMuted, margin: "0 0 8px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>Instalacao Shopify</p>
-              <pre style={{ fontSize: 11, color: THEME.purpleLight, margin: 0, overflow: "auto", lineHeight: 1.6, fontFamily: "monospace" }}>
-{`<script>
-  window.ReflexyConfig = {
-    apiKey: "${showApiKey ? merchant.api_key : 'SUA_API_KEY'}",
-  };
-</script>
-<script src="https://reflexy.co/virtual-tryon.js"></script>`}
-              </pre>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div style={{ background: THEME.bgCard, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: "24px", backdropFilter: "blur(10px)" }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 4px" }}>Acoes Rapidas</h3>
-            <p style={{ fontSize: 12, color: THEME.textMuted, margin: "0 0 20px" }}>Acesse as principais funcionalidades</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[
-                { title: "Ver Analytics Completo", desc: "Funil, produtos e comportamento dos clientes", href: "/analytics", color: THEME.blue, icon: "◈" },
-                { title: "Estudio Profissional", desc: "Gere fotos de produto com IA em segundos", href: "/admin", color: THEME.purple, icon: "◉" },
-                { title: "Fazer Upgrade de Plano", desc: "Mais creditos e recursos avancados", href: "/pricing", color: THEME.orange, icon: "◇" },
-              ].map((action, i) => (
-                <Link key={i} href={action.href} style={{ textDecoration: "none" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 10, border: `1px solid ${THEME.border}`, background: "rgba(255,255,255,0.02)", cursor: "pointer" }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 8, background: `${action.color}22`, border: `1px solid ${action.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: action.color, flexShrink: 0 }}>
-                      {action.icon}
-                    </div>
-                    <div>
-                      <h4 style={{ fontSize: 13, fontWeight: 600, margin: "0 0 2px", color: THEME.text }}>{action.title}</h4>
-                      <p style={{ fontSize: 11, color: THEME.textMuted, margin: 0 }}>{action.desc}</p>
-                    </div>
-                  </div>
-                </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', border: '1px solid rgba(184,174,221,0.14)' }}>
+              {([7, 15, 30] as Period[]).map(p => (
+                <button key={p} className={`period-btn${period === p ? ' active' : ''}`} onClick={() => setPeriod(p)}>
+                  {p}d
+                </button>
               ))}
             </div>
+            <button onClick={fetchData} style={{ background: 'transparent', border: '1px solid rgba(184,174,221,0.14)', color: '#A09CC0', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <RefreshCw size={14} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
+            </button>
           </div>
         </div>
-      </main>
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 3px; }
-      `}</style>
-    </div>
+        <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
+
+          {/* ── Stat Cards ── */}
+          <div style={{ display: 'flex', gap: '1px', background: 'rgba(184,174,221,0.14)', marginBottom: 28 }}>
+
+            {/* Fast Credits — health-based color */}
+            <StatCard
+              icon={<Zap size={15} />}
+              label="Créditos Fast"
+              value={fastRem.toLocaleString('pt-BR')}
+              sub={`de ${fastLimit.toLocaleString('pt-BR')} disponíveis`}
+              accentColor={creditColor(fastRem, fastLimit)}
+              remainingPct={fastRemPct}
+              loading={loading}
+              emptyAction={fastRem === 0 ? () => window.location.href = '/planos' : undefined}
+            />
+
+            {/* Premium Credits — health-based color */}
+            <StatCard
+              icon={<Star size={15} />}
+              label="Créditos Premium"
+              value={premRem.toLocaleString('pt-BR')}
+              sub={`de ${premLimit.toLocaleString('pt-BR')} disponíveis`}
+              accentColor={creditColor(premRem, premLimit)}
+              remainingPct={premRemPct}
+              loading={loading}
+              emptyAction={premRem === 0 ? () => window.location.href = '/planos' : undefined}
+            />
+
+            {/* Try-ons — cobalt: dado neutro de volume */}
+            <StatCard
+              icon={<Eye size={15} />}
+              label="Try-ons"
+              value={stats?.totalTryOns?.toLocaleString('pt-BR') ?? '0'}
+              sub={`~${stats?.avgPerDay ?? 0}/dia`}
+              trend={stats?.tryOnsTrend}
+              accentColor="#3B82F6"
+              loading={loading}
+            />
+
+            {/* Conversion — verdigris/warning/error por performance */}
+            <StatCard
+              icon={<TrendingUp size={15} />}
+              label="Conversão"
+              value={`${stats?.conversionRate ?? 0}%`}
+              sub="prova → compra"
+              trend={stats?.convTrend}
+              accentColor={stats ? convColor(stats.conversionRate) : '#0CC89E'}
+              loading={loading}
+            />
+          </div>
+
+          {/* ── Chart + Products ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, marginBottom: 20 }}>
+
+            {/* Usage Chart */}
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+                <div>
+                  <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>Uso de Créditos</h2>
+                  <p style={{ color: '#A09CC0', fontSize: 12, marginTop: 2 }}>Últimos {period} dias</p>
+                </div>
+                {/* Legend — brand colors (mauve/lavender), não semântico */}
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <div className={`legend-toggle${!showFast ? ' off' : ''}`} onClick={() => setShowFast(v => !v)}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#7050A0' }} />Fast
+                  </div>
+                  <div className={`legend-toggle${!showPremium ? ' off' : ''}`} onClick={() => setShowPremium(v => !v)}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#B8AEDD' }} />Premium
+                  </div>
+                </div>
+              </div>
+
+              {loading ? (
+                <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Loader2 size={22} color="#7050A0" style={{ animation: 'spin 0.8s linear infinite' }} />
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <AreaChart
+                    data={usageData}
+                    margin={{ top: 4, right: 4, left: -22, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="gFast" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#7050A0" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#7050A0" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gPrem" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#B8AEDD" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#B8AEDD" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="2 4" stroke="rgba(184,174,221,0.06)" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<UsageTooltip />} />
+                    {avgVal > 0 && (
+                      <ReferenceLine
+                        y={Math.round(avgVal)}
+                        stroke="rgba(184,174,221,0.25)"
+                        strokeDasharray="4 4"
+                        label={{ value: 'média', position: 'insideTopRight', fill: '#A09CC0', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }}
+                      />
+                    )}
+                    {showFast && (
+                      <Area type="monotone" dataKey="fast" stroke="#7050A0" strokeWidth={2} fill="url(#gFast)" dot={false}
+                        activeDot={{ r: 4, fill: '#7050A0', stroke: '#0F0D1E', strokeWidth: 2 }} />
+                    )}
+                    {showPremium && (
+                      <Area type="monotone" dataKey="premium" stroke="#B8AEDD" strokeWidth={2} fill="url(#gPrem)" dot={false}
+                        activeDot={{ r: 4, fill: '#B8AEDD', stroke: '#0F0D1E', strokeWidth: 2 }} />
+                    )}
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* Top Products — mauve como cor padrão, sem semântica de performance */}
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: 24 }}>
+              <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', marginBottom: 4 }}>
+                Produtos Mais Provados
+              </h2>
+              <p style={{ color: '#A09CC0', fontSize: 12, marginBottom: 20 }}>Top 5 no período</p>
+
+              {loading ? (
+                Array(5).fill(0).map((_, i) => (
+                  <div key={i} style={{ marginBottom: 16 }}>
+                    <div className="skeleton" style={{ height: 12, width: '65%', marginBottom: 6 }} />
+                    <div className="skeleton" style={{ height: 5,  width: '100%' }} />
+                  </div>
+                ))
+              ) : topProducts.length === 0 ? (
+                <div style={{ textAlign: 'center', paddingTop: 32 }}>
+                  <ShoppingBag size={28} color="#A09CC0" style={{ marginBottom: 10 }} />
+                  <p style={{ color: '#A09CC0', fontSize: 13 }}>Nenhum produto ainda</p>
+                </div>
+              ) : (() => {
+                const max = topProducts[0]?.count ?? 1;
+                return topProducts.map((prod, i) => {
+                  const pct = (prod.count / max) * 100;
+                  /* Intensity via opacity — mais provas = mais destaque, mesma cor brand */
+                  const opacity = 0.55 + (i === 0 ? 0.45 : (1 - i / topProducts.length) * 0.35);
+                  return (
+                    <div key={prod.sku} style={{ marginBottom: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                        <span style={{ fontSize: 12, color: '#EDEBF5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '72%' }}>{prod.name}</span>
+                        <span style={{ fontSize: 11, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace", flexShrink: 0 }}>{prod.count}</span>
+                      </div>
+                      <div className="prod-bar-track">
+                        {/* mauve com opacidade variando por posição — ênfase por intensidade, não por semântica */}
+                        <div style={{ height: '100%', width: `${pct}%`, background: `rgba(112,80,160,${opacity})`, transition: 'width 0.6s ease' }} />
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+
+          {/* ── Shortcuts ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+            <button className="shortcut-btn" onClick={() => window.location.href = '/studio'}>
+              <Layers  size={14} style={{ color: '#7050A0' }} />
+              <span>Estúdio Pro</span>
+              <ArrowUpRight size={12} style={{ marginLeft: 'auto', opacity: 0.4 }} />
+            </button>
+            <button className="shortcut-btn" onClick={() => window.location.href = '/analytics'}>
+              <BarChart2 size={14} style={{ color: '#7050A0' }} />
+              <span>Analytics</span>
+              <ArrowUpRight size={12} style={{ marginLeft: 'auto', opacity: 0.4 }} />
+            </button>
+            <button className="shortcut-btn" onClick={() => window.location.href = '/settings'}>
+              {/* Warning color no ícone de API Key — dado sensível, merece atenção */}
+              <Key size={14} style={{ color: '#FFB432' }} />
+              <span>API Key & Configurações</span>
+              <ArrowUpRight size={12} style={{ marginLeft: 'auto', opacity: 0.4 }} />
+            </button>
+          </div>
+
+          {/* API Key warning banner */}
+          <div style={{ marginTop: 12, padding: '10px 16px', background: 'rgba(255,180,50,0.05)', border: '1px solid rgba(255,180,50,0.18)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <AlertTriangle size={13} color="#FFB432" style={{ flexShrink: 0 }} />
+            <p style={{ fontSize: 12, color: '#A09CC0', fontFamily: "'DM Sans',sans-serif" }}>
+              Sua API Key está disponível em{' '}
+              <button onClick={() => window.location.href = '/settings'} style={{ background: 'none', border: 'none', color: '#FFB432', cursor: 'pointer', fontSize: 12, fontFamily: "'DM Sans',sans-serif", padding: 0 }}>
+                Configurações
+              </button>. Nunca a exponha publicamente.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </>
   );
 }
