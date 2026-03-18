@@ -9,14 +9,14 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   const { priceId, quantity = 1 } = await req.json();
 
+  if (!priceId) {
+    return NextResponse.json({ error: 'Price ID is required' }, { status: 400 });
+  }
+
   try {
-    const session = await stripe.checkout.sessions.create({
+    const checkoutConfig: any = {
       mode: 'subscription',
       line_items: [
         {
@@ -24,13 +24,20 @@ export async function POST(req: NextRequest) {
           quantity: quantity,
         },
       ],
-      customer_email: user.email,
       success_url: `${req.nextUrl.origin}/dashboard?success=true`,
-      cancel_url: `${req.nextUrl.origin}/pricing?canceled=true`,
-      metadata: {
-        userId: user.id,
-      },
-    });
+      cancel_url: `${req.nextUrl.origin}/?canceled=true`,
+    };
+
+    // If user is authenticated, add their email and userId
+    if (user) {
+      checkoutConfig.customer_email = user.email;
+      checkoutConfig.metadata = { userId: user.id };
+    } else {
+      // For unauthenticated users, redirect to login after checkout
+      checkoutConfig.success_url = `${req.nextUrl.origin}/login?redirect=/dashboard&success=true`;
+    }
+
+    const session = await stripe.checkout.sessions.create(checkoutConfig);
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (error: any) {
