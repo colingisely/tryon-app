@@ -182,7 +182,7 @@ export function Pricing() {
             <button 
               onClick={() => handleCheckout(process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER)}
               className="plan-cta ghost"
-              style={{ width: '100%', background: 'none', cursor: 'pointer', border: '1px solid var(--rule-v)', color: 'var(--lavender)' }}
+              style={{ width: '100%' }}
             >
               Assinar Starter
             </button>
@@ -206,7 +206,7 @@ export function Pricing() {
             <button 
               onClick={() => handleCheckout(process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH)}
               className="plan-cta primary"
-              style={{ width: '100%', cursor: 'pointer', background: 'var(--plum)', color: 'var(--mist)', border: '1px solid rgba(112,80,160,.35)' }}
+              style={{ width: '100%' }}
             >
               Assinar Growth
             </button>
@@ -230,7 +230,7 @@ export function Pricing() {
             <button 
               onClick={() => handleCheckout(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO)}
               className="plan-cta ghost"
-              style={{ width: '100%', background: 'none', cursor: 'pointer', border: '1px solid var(--rule-v)', color: 'var(--lavender)' }}
+              style={{ width: '100%' }}
             >
               Assinar Pro
             </button>
