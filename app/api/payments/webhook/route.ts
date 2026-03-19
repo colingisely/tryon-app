@@ -70,7 +70,29 @@ export async function POST(req: NextRequest) {
         const plan = await getPlanByPriceId(priceId);
         if (!plan) break;
         const merchantId = await getMerchantIdByCustomer(customerId) ?? session.metadata?.merchant_id ?? null;
-        if (!merchantId) break;
+
+        if (!merchantId) {
+          // Unauthenticated checkout: user hasn't created an account yet.
+          // Store the pending subscription keyed by stripe_customer_id so it can
+          // be linked after the user signs up via /api/payments/activate-subscription.
+          const customerEmail = session.customer_details?.email ?? session.customer_email ?? null;
+          console.log(
+            `[webhook] No merchantId for customer ${customerId} (email: ${customerEmail}). ` +
+            `Storing pending subscription ${session.subscription} to be activated after signup.`
+          );
+          await getSupabase().from('pending_subscriptions').upsert({
+            stripe_customer_id:     customerId,
+            stripe_subscription_id: session.subscription as string,
+            plan_id:                plan.id,
+            plan_slug:              plan.slug,
+            customer_email:         customerEmail,
+            fast_credits_monthly:   plan.fast_credits_monthly,
+            premium_credits_monthly: plan.premium_credits_monthly,
+            created_at:             new Date().toISOString(),
+          }, { onConflict: 'stripe_customer_id' });
+          break;
+        }
+
         await getSupabase().from('merchants').update({
           plan_id: plan.id, stripe_customer_id: customerId,
           stripe_subscription_id: session.subscription as string,

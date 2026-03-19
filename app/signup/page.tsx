@@ -11,8 +11,8 @@
  *     Se confirmação pendente → estado de sucesso inline
  */
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -48,6 +48,13 @@ import ReflexGem from '@/components/ui/ReflexGem'
 /** Ajuste para corresponder ao valor real na tabela plans do Supabase */
 const PREVIEW_PLAN_ID = 'preview'
 
+const PLAN_LABELS: Record<string, string> = {
+  starter:    'Starter',
+  growth:     'Growth',
+  pro:        'Pro',
+  enterprise: 'Enterprise',
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FormValues {
@@ -82,10 +89,15 @@ function measureStrength(pwd: string): StrengthResult {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default function SignupPage() {
-  const router   = useRouter()
-  const supabase = createClient()
+function SignupPageInner() {
+  const router      = useRouter()
+  const searchParams = useSearchParams()
+  const supabase    = createClient()
   const [mounted, setMounted] = useState(false)
+
+  const paymentSuccess = searchParams.get('payment') === 'success'
+  const planSlug       = searchParams.get('plan') ?? ''
+  const planLabel      = PLAN_LABELS[planSlug] ?? planSlug
 
   useEffect(() => {
     setMounted(true)
@@ -177,7 +189,24 @@ export default function SignupPage() {
         console.error('[Reflexy] merchants insert error:', merchantError.message)
       }
 
-      // ── Step 3: Redirect ou estado de sucesso ─────────────────────────────
+      // ── Step 3: Activate pending subscription (if came from payment) ──────
+      if (paymentSuccess && data.user) {
+        try {
+          await fetch('/api/payments/activate-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: data.user.id,
+              email:  form.email.trim().toLowerCase(),
+            }),
+          })
+        } catch (activateErr) {
+          // Non-fatal: subscription will be linked via support or manual reconciliation
+          console.error('[Reflexy] activate-subscription error:', activateErr)
+        }
+      }
+
+      // ── Step 4: Redirect ou estado de sucesso ─────────────────────────────
       if (data.session) {
         // Confirmação de e-mail desabilitada → session imediata
         router.push('/dashboard')
@@ -208,6 +237,38 @@ export default function SignupPage() {
       <AmbientGlow />
 
       <div className="relative z-10 w-full" style={{ maxWidth: 440 }}>
+
+        {/* ── Payment success banner ── */}
+        {paymentSuccess && (
+          <div
+            role="status"
+            className="flex items-start gap-3 p-4 mb-6"
+            style={{
+              background: 'rgba(12,200,158,.09)',
+              border:     '1px solid rgba(12,200,158,.30)',
+            }}
+          >
+            <CheckCircle2
+              size={16}
+              className="mt-0.5 shrink-0"
+              style={{ color: '#0CC89E' }}
+            />
+            <p
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize:   14,
+                color:      '#0CC89E',
+                lineHeight: 1.65,
+              }}
+            >
+              Pagamento confirmado! Crie sua conta abaixo para ativar o plano{' '}
+              <span style={{ fontWeight: 600 }}>
+                {planLabel || 'selecionado'}
+              </span>
+              .
+            </p>
+          </div>
+        )}
 
         {/* ── Brand header ── */}
         <header className="flex flex-col items-center mb-10">
@@ -422,6 +483,14 @@ export default function SignupPage() {
 
       <GlobalKeyframes />
     </main>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupPageInner />
+    </Suspense>
   )
 }
 
