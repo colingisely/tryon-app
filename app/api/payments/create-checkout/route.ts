@@ -70,7 +70,6 @@ export async function POST(req: Request) {
       locale: isPortuguese ? "pt-BR" : "auto",
       metadata: { planSlug, locale: locale || "pt", ...(userId && { userId }) },
       subscription_data: {
-        trial_period_days: 7,
         metadata: { planSlug, ...(userId && { userId }) },
       },
     };
