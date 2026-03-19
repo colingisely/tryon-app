@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reflexy.co";
 
     // Build session config — userId/userEmail são opcionais (landing page não autenticada)
-    const sessionConfig: Parameters<typeof stripe.checkout.sessions.create>[0] = {
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
