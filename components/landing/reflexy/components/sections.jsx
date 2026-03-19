@@ -124,16 +124,16 @@ export function Results() {
 
 // ── §07 PRICING ───────────────────────────────────────────────────────────────
 export function Pricing() {
-  const handleCheckout = async (priceId) => {
-    if (!priceId) {
-      console.error('Price ID is missing');
+  const handleCheckout = async (planSlug) => {
+    if (!planSlug) {
+      console.error('Plan slug is missing');
       return;
     }
     try {
       const response = await fetch('/api/payments/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ planSlug }),
       });
       const data = await response.json();
       if (data.url) {
@@ -180,7 +180,7 @@ export function Pricing() {
               <div className="plan-feat"><div className="plan-feat-dot"></div>Suporte padrão</div>
             </div>
             <button 
-              onClick={() => handleCheckout(process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER)}
+              onClick={() => handleCheckout('starter')}
               className="plan-cta ghost"
               style={{ width: '100%' }}
             >
@@ -204,7 +204,7 @@ export function Pricing() {
               <div className="plan-feat"><div className="plan-feat-dot"></div>Suporte prioritário</div>
             </div>
             <button 
-              onClick={() => handleCheckout(process.env.NEXT_PUBLIC_STRIPE_PRICE_GROWTH)}
+              onClick={() => handleCheckout('growth')}
               className="plan-cta primary"
               style={{ width: '100%' }}
             >
@@ -228,7 +228,7 @@ export function Pricing() {
               <div className="plan-feat"><div className="plan-feat-dot"></div>Suporte prioritário</div>
             </div>
             <button 
-              onClick={() => handleCheckout(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO)}
+              onClick={() => handleCheckout('pro')}
               className="plan-cta ghost"
               style={{ width: '100%' }}
             >

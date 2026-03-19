@@ -14,18 +14,16 @@ const supabase =
       )
     : null;
 
-// Stripe Price IDs
-// Preview = $0 (10 try-ons, sem Studio Pro)
-// Starter = $19 (100 try-ons, 5 Studio Pro)
-// Growth  = $29 (200 try-ons, 10 Studio Pro) — plano mais popular
-// Pro     = $59 (500 try-ons, 10 Studio Pro)
-// Enterprise = $109 (1000 try-ons, 10 Studio Pro)
+// Stripe Price IDs — conta acct_1T8taBQb0V048bOe (Reflexy)
+// Starter    = $19/mês  — 100 try-ons, 5 Studio Pro
+// Growth     = $39/mês  — 300 try-ons, 10 Studio Pro
+// Pro        = $99/mês  — 800 try-ons, 20 Studio Pro
+// Enterprise = $109/mês — volume customizado
 const STRIPE_PRICE_IDS: Record<string, string> = {
-  preview_monthly:    process.env.STRIPE_PRICE_PREVIEW_MONTHLY    || "price_1T76CW1oCVkpQBTzGeXwx8Xd",
-  starter_monthly:    process.env.STRIPE_PRICE_STARTER_MONTHLY    || "price_1T76Ds1oCVkpQBTzm5P9bkqi",
-  growth_monthly:     process.env.STRIPE_PRICE_GROWTH_MONTHLY     || "price_1T76Ff1oCVkpQBTz1RwtClv0",
-  pro_monthly:        process.env.STRIPE_PRICE_PRO_MONTHLY        || "price_1T76K01oCVkpQBTz4CsbJnYG",
-  enterprise_monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY || "", // Configurar no Stripe
+  starter_monthly:    process.env.STRIPE_PRICE_STARTER_MONTHLY    || "price_1T8wXoQb0V048bOeSHwKxvtN",
+  growth_monthly:     process.env.STRIPE_PRICE_GROWTH_MONTHLY     || "price_1T8wXrQb0V048bOeAU9Hnz5r",
+  pro_monthly:        process.env.STRIPE_PRICE_PRO_MONTHLY        || "price_1T8wXtQb0V048bOe07iYDk2D",
+  enterprise_monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY || "price_1T8wXyQb0V048bOezBnPdXrU",
 };
 
 export async function POST(req: Request) {
@@ -39,9 +37,9 @@ export async function POST(req: Request) {
 
     const { planSlug, userId, userEmail, locale } = await req.json();
 
-    if (!planSlug || !userId || !userEmail) {
+    if (!planSlug) {
       return NextResponse.json(
-        { error: "Dados incompletos" },
+        { error: "Plano não informado" },
         { status: 400 }
       );
     }
@@ -58,41 +56,31 @@ export async function POST(req: Request) {
     const isPortuguese = locale === "pt" || !locale;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://reflexy.co";
 
-    // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    // Build session config — userId/userEmail são opcionais (landing page não autenticada)
+    const sessionConfig: Parameters<typeof stripe.checkout.sessions.create>[0] = {
       mode: "subscription",
       payment_method_types: ["card"],
-      customer_email: userEmail,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      // Pass user ID to webhook for linking subscription to merchant
-      client_reference_id: userId,
-      metadata: {
-        userId,
-        planSlug,
-        locale: locale || "pt",
-      },
-      success_url: `${baseUrl}/dashboard?payment=success&plan=${planSlug}`,
-      cancel_url: `${baseUrl}/pricing?payment=cancelled`,
-      // Allow promotion codes
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: userId
+        ? `${baseUrl}/dashboard?payment=success&plan=${planSlug}`
+        : `${baseUrl}/signup?plan=${planSlug}&payment=success`,
+      cancel_url: `${baseUrl}/#pricing`,
       allow_promotion_codes: true,
-      // Billing address collection
       billing_address_collection: "auto",
-      // Locale
       locale: isPortuguese ? "pt-BR" : "auto",
-      // Subscription data
+      metadata: { planSlug, locale: locale || "pt", ...(userId && { userId }) },
       subscription_data: {
-        metadata: {
-          userId,
-          planSlug,
-        },
-        trial_period_days: 7, // 7-day free trial
+        trial_period_days: 7,
+        metadata: { planSlug, ...(userId && { userId }) },
       },
-    });
+    };
+
+    // Se autenticado, pré-preenche email e vincula ao merchant
+    if (userEmail) sessionConfig.customer_email = userEmail;
+    if (userId)    sessionConfig.client_reference_id = userId;
+
+    // Create Stripe Checkout Session
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return NextResponse.json({ url: session.url, sessionId: session.id });
   } catch (error: any) {
