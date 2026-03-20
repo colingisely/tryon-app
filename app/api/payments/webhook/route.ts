@@ -1,195 +1,223 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
-import {
-  getMerchantIdByCustomer, cancelScheduledSuspension,
-  scheduleSuspension, suspendMerchant, reactivateMerchant,
-} from '@/lib/overage';
+import { createClient } from '@/lib/supabase/server';
 
-let _stripe: Stripe | null = null;
-function getStripe(): Stripe {
-  if (!_stripe) {
-    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? 'placeholder', {
-      apiVersion: '2026-02-25.clover' as any,
-    });
-  }
-  return _stripe;
-}
-
-let _supabase: ReturnType<typeof createClient> | null = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getSupabase(): any {
-  if (!_supabase) {
-    _supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-  }
-  return _supabase;
-}
-
-async function getPlanByPriceId(priceId: string) {
-  const { data } = await getSupabase()
-    .from('plans')
-    .select('id, slug, fast_credits_monthly, premium_credits_monthly, price_usd')
-    .eq('stripe_price_id', priceId)
-    .single();
-  return data;
-}
-
-async function logAndDedup(eventId: string, eventType: string): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (getSupabase() as any).from('stripe_webhook_log').insert({ event_id: eventId, event_type: eventType });
-  return !error;
-}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: NextRequest) {
-  const body      = await req.text();
-  const signature = req.headers.get('stripe-signature');
-  if (!signature) return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
+  const body = await req.text();
+  const sig = req.headers.get('stripe-signature');
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!sig || !webhookSecret) {
+    return NextResponse.json({ error: 'Missing signature or secret' }, { status: 400 });
+  }
 
   let event: Stripe.Event;
   try {
-    event = getStripe().webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
-  } catch (err) {
-    console.error('[webhook] Invalid signature:', err);
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
+  } catch (err: any) {
+    console.error(`Webhook signature error: ${err.message}`);
+    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
-  const isNew = await logAndDedup(event.id, event.type);
-  if (!isNew) return NextResponse.json({ received: true, skipped: 'duplicate' });
+  const supabase = await createClient();
+
+  // Log the event (idempotency)
+  const { error: logError } = await supabase
+    .from('stripe_webhook_log')
+    .insert({ event_id: event.id, event_type: event.type })
+    .select()
+    .single();
+
+  if (logError && logError.code !== '23505') {
+    // 23505 = unique violation = already processed
+    console.error('Failed to log webhook event:', logError);
+  }
+
+  // If already processed (duplicate), skip
+  if (logError?.code === '23505') {
+    return NextResponse.json({ received: true, skipped: true });
+  }
 
   try {
     switch (event.type) {
-
       case 'checkout.session.completed': {
-        const session    = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object as Stripe.Checkout.Session;
+        const userId = session.metadata?.userId;
+        const subscriptionId = session.subscription as string;
         const customerId = session.customer as string;
-        const priceId    = (session as any).metadata?.price_id ?? session.line_items?.data?.[0]?.price?.id;
-        if (!customerId || !priceId) break;
-        const plan = await getPlanByPriceId(priceId);
-        if (!plan) break;
-        const merchantId = await getMerchantIdByCustomer(customerId) ?? session.metadata?.merchant_id ?? null;
 
-        if (!merchantId) {
-          // Unauthenticated checkout: user hasn't created an account yet.
-          // Store the pending subscription keyed by stripe_customer_id so it can
-          // be linked after the user signs up via /api/payments/activate-subscription.
-          const customerEmail = session.customer_details?.email ?? session.customer_email ?? null;
-          console.log(
-            `[webhook] No merchantId for customer ${customerId} (email: ${customerEmail}). ` +
-            `Storing pending subscription ${session.subscription} to be activated after signup.`
-          );
-          await getSupabase().from('pending_subscriptions').upsert({
-            stripe_customer_id:     customerId,
-            stripe_subscription_id: session.subscription as string,
-            plan_id:                plan.id,
-            plan_slug:              plan.slug,
-            customer_email:         customerEmail,
-            fast_credits_monthly:   plan.fast_credits_monthly,
-            premium_credits_monthly: plan.premium_credits_monthly,
-            created_at:             new Date().toISOString(),
-          }, { onConflict: 'stripe_customer_id' });
+        if (!userId || !subscriptionId || !customerId) {
+          console.warn('checkout.session.completed: missing userId, subscriptionId or customerId');
           break;
         }
 
-        await getSupabase().from('merchants').update({
-          plan_id: plan.id, stripe_customer_id: customerId,
-          stripe_subscription_id: session.subscription as string,
-          subscription_status: 'active', subscription_started_at: new Date().toISOString(),
-          fast_credits_remaining: plan.fast_credits_monthly,
-          premium_credits_remaining: plan.premium_credits_monthly,
-          fast_credits_used_total: 0, premium_credits_used_total: 0,
-          overage_status: 'inactive', overage_used_cents: 0,
-          updated_at: new Date().toISOString(),
-        }).eq('id', merchantId);
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const priceId = subscription.items.data[0].price.id;
+
+        // Look up plan by stripe_price_id first, then by slug fallback
+        let planSlug = 'free';
+        if (priceId === process.env.STRIPE_PRICE_STARTER) planSlug = 'starter';
+        else if (priceId === process.env.STRIPE_PRICE_GROWTH) planSlug = 'growth';
+        else if (priceId === process.env.STRIPE_PRICE_PRO) planSlug = 'pro';
+
+        // Try to find plan by stripe_price_id in DB
+        let { data: plan } = await supabase
+          .from('plans')
+          .select('id, fast_credits_monthly, premium_credits_monthly')
+          .eq('stripe_price_id', priceId)
+          .single();
+
+        // Fallback: find by slug
+        if (!plan) {
+          const { data: planBySlug } = await supabase
+            .from('plans')
+            .select('id, fast_credits_monthly, premium_credits_monthly')
+            .eq('slug', planSlug)
+            .single();
+          plan = planBySlug;
+        }
+
+        if (!plan) {
+          console.error(`Plan not found for priceId: ${priceId}`);
+          break;
+        }
+
+        await supabase
+          .from('merchants')
+          .update({
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            plan_id: plan.id,
+            subscription_status: 'active',
+            subscription_started_at: new Date().toISOString(),
+            fast_credits_remaining: plan.fast_credits_monthly,
+            premium_credits_remaining: plan.premium_credits_monthly,
+            payment_failed_at: null,
+          })
+          .eq('id', userId);
+
+        console.log(`Subscription activated for merchant ${userId} -> plan ${planSlug}`);
         break;
       }
 
       case 'invoice.payment_succeeded': {
-        const invoice    = event.data.object as Stripe.Invoice;
-        const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
-        if (!customerId) break;
-        if ((invoice as any).billing_reason === 'subscription_create') break;
-        const merchantId = await getMerchantIdByCustomer(customerId);
-        if (!merchantId) break;
-        const sub  = await getStripe().subscriptions.retrieve((invoice as any).subscription as string);
-        const plan = await getPlanByPriceId(sub.items.data[0]?.price?.id);
-        if (plan) {
-          await getSupabase().from('merchants').update({
-            fast_credits_remaining: plan.fast_credits_monthly,
-            premium_credits_remaining: plan.premium_credits_monthly,
-            subscription_status: 'active', updated_at: new Date().toISOString(),
-          }).eq('id', merchantId);
-        }
-        await reactivateMerchant(merchantId);
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = invoice.customer as string;
+
+        const { data: merchant } = await supabase
+          .from('merchants')
+          .select('id, plan_id')
+          .eq('stripe_customer_id', customerId)
+          .single();
+
+        if (!merchant) break;
+
+        const { data: plan } = await supabase
+          .from('plans')
+          .select('fast_credits_monthly, premium_credits_monthly')
+          .eq('id', merchant.plan_id)
+          .single();
+
+        await supabase
+          .from('merchants')
+          .update({
+            subscription_status: 'active',
+            payment_failed_at: null,
+            fast_credits_remaining: plan?.fast_credits_monthly ?? 0,
+            premium_credits_remaining: plan?.premium_credits_monthly ?? 0,
+          })
+          .eq('id', merchant.id);
+
+        console.log(`Payment succeeded, credits renewed for merchant ${merchant.id}`);
         break;
       }
 
       case 'invoice.payment_failed': {
-        const invoice    = event.data.object as Stripe.Invoice;
-        const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
-        if (!customerId) break;
-        const merchantId = await getMerchantIdByCustomer(customerId);
-        if (!merchantId) break;
-        await getSupabase().from('merchants').update({
-          overage_status: 'payment_failed', payment_failed_at: new Date().toISOString(),
-          subscription_status: 'past_due', updated_at: new Date().toISOString(),
-        }).eq('id', merchantId);
-        await scheduleSuspension(merchantId);
-        break;
-      }
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = invoice.customer as string;
 
-      case 'customer.subscription.deleted': {
-        const sub        = event.data.object as Stripe.Subscription;
-        const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id;
-        if (!customerId) break;
-        const merchantId = await getMerchantIdByCustomer(customerId);
-        if (!merchantId) break;
-        await getSupabase().from('merchants').update({
-          subscription_status: 'canceled',
-          fast_credits_remaining: 0, premium_credits_remaining: 0,
-          updated_at: new Date().toISOString(),
-        }).eq('id', merchantId);
-        await suspendMerchant(merchantId);
+        await supabase
+          .from('merchants')
+          .update({
+            subscription_status: 'past_due',
+            payment_failed_at: new Date().toISOString(),
+          })
+          .eq('stripe_customer_id', customerId);
+
+        console.warn(`Payment failed for customer ${customerId}`);
         break;
       }
 
       case 'customer.subscription.updated': {
-        const sub        = event.data.object as Stripe.Subscription;
-        const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id;
-        if (!customerId) break;
-        const merchantId = await getMerchantIdByCustomer(customerId);
-        if (!merchantId) break;
-        const plan = await getPlanByPriceId(sub.items.data[0]?.price?.id);
-        if (plan) await getSupabase().from('merchants').update({ plan_id: plan.id, updated_at: new Date().toISOString() }).eq('id', merchantId);
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string;
+        const priceId = subscription.items.data[0].price.id;
+
+        let planSlug = 'free';
+        if (priceId === process.env.STRIPE_PRICE_STARTER) planSlug = 'starter';
+        else if (priceId === process.env.STRIPE_PRICE_GROWTH) planSlug = 'growth';
+        else if (priceId === process.env.STRIPE_PRICE_PRO) planSlug = 'pro';
+
+        let { data: plan } = await supabase
+          .from('plans')
+          .select('id')
+          .eq('stripe_price_id', priceId)
+          .single();
+
+        if (!plan) {
+          const { data: planBySlug } = await supabase
+            .from('plans')
+            .select('id')
+            .eq('slug', planSlug)
+            .single();
+          plan = planBySlug;
+        }
+
+        if (plan) {
+          await supabase
+            .from('merchants')
+            .update({
+              plan_id: plan.id,
+              subscription_status: subscription.status === 'active' ? 'active' : subscription.status,
+            })
+            .eq('stripe_customer_id', customerId);
+        }
         break;
       }
 
-      case 'payment_intent.payment_failed': {
-        const intent = event.data.object as Stripe.PaymentIntent;
-        if (intent.metadata?.type !== 'overage_preauth') break;
-        const merchantId = intent.metadata?.merchant_id;
-        if (!merchantId) break;
-        await getSupabase().from('merchants').update({
-          overage_status: 'payment_failed', payment_failed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }).eq('id', merchantId);
-        await scheduleSuspension(merchantId);
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string;
+
+        const { data: freePlan } = await supabase
+          .from('plans')
+          .select('id, fast_credits_monthly, premium_credits_monthly')
+          .eq('slug', 'free')
+          .single();
+
+        await supabase
+          .from('merchants')
+          .update({
+            subscription_status: 'cancelled',
+            stripe_subscription_id: null,
+            plan_id: freePlan?.id ?? null,
+            fast_credits_remaining: freePlan?.fast_credits_monthly ?? 0,
+            premium_credits_remaining: freePlan?.premium_credits_monthly ?? 0,
+          })
+          .eq('stripe_customer_id', customerId);
+
+        console.log(`Subscription cancelled for customer ${customerId}`);
         break;
       }
 
-      case 'payment_intent.succeeded': {
-        const intent = event.data.object as Stripe.PaymentIntent;
-        if (intent.metadata?.type !== 'overage_preauth') break;
-        const merchantId = intent.metadata?.merchant_id;
-        if (!merchantId) break;
-        await cancelScheduledSuspension(merchantId);
-        break;
-      }
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
-  } catch (err) {
-    console.error(`[webhook] Error on ${event.type}:`, err);
+  } catch (error: any) {
+    console.error('Webhook handler error:', error);
+    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
