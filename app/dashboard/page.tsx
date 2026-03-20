@@ -17,10 +17,10 @@ import {
 interface MerchantData {
   id: string;
   store_name: string;
-  credits_fast: number;
-  credits_premium: number;
-  credits_fast_limit: number;
-  credits_premium_limit: number;
+  fast_credits_remaining: number;
+  premium_credits_remaining: number;
+  fast_credits_monthly: number;
+  premium_credits_monthly: number;
   plan: string;
 }
 
@@ -201,7 +201,7 @@ export default function DashboardPage() {
 
       const { data: m, error: mErr } = await supabase
         .from('merchants')
-        .select('id,store_name,credits_fast,credits_premium,credits_fast_limit,credits_premium_limit,plan')
+        .select('id,store_name,fast_credits_remaining,premium_credits_remaining,fast_credits_monthly,premium_credits_monthly,plan')
         .eq('user_id', user.id)
         .single();
       if (mErr) throw mErr;
@@ -276,10 +276,10 @@ export default function DashboardPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   /* ── Derived values ── */
-  const fastLimit   = merchant?.credits_fast_limit   ?? 5000;
-  const premLimit   = merchant?.credits_premium_limit ?? 2000;
-  const fastRem     = merchant?.credits_fast   ?? fastLimit;
-  const premRem     = merchant?.credits_premium ?? premLimit;
+  const fastLimit   = merchant?.fast_credits_monthly   ?? 5000;
+  const premLimit   = merchant?.premium_credits_monthly ?? 2000;
+  const fastRem     = merchant?.fast_credits_remaining   ?? fastLimit;
+  const premRem     = merchant?.premium_credits_remaining ?? premLimit;
   const fastRemPct  = (fastRem / fastLimit) * 100;
   const premRemPct  = (premRem / premLimit) * 100;
 
