@@ -63,13 +63,13 @@ import {
 type SettingsTab = 'store' | 'api' | 'widget' | 'danger'
 
 interface MerchantSettings {
-  id:             string
-  storeName:      string
-  email:          string
-  apiKey:         string
-  widgetEnabled:  boolean
-  planId:         string
-  credits:        number
+  id:                     string
+  storeName:              string
+  email:                  string
+  apiKey:                 string
+  widgetEnabled:          boolean
+  planId:                 string
+  fast_credits_remaining: number
 }
 
 interface SaveState {
@@ -95,13 +95,13 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('store')
   const [loading,   setLoading]   = useState(true)
   const [settings,  setSettings]  = useState<MerchantSettings>({
-    id:            '',
-    storeName:     '',
-    email:         '',
-    apiKey:        '',
-    widgetEnabled: true,
-    planId:        'preview',
-    credits:       0,
+    id:                     '',
+    storeName:              '',
+    email:                  '',
+    apiKey:                 '',
+    widgetEnabled:          true,
+    planId:                 'preview',
+    fast_credits_remaining: 0,
   })
   const [saveState, setSaveState] = useState<SaveState>({ status: 'idle', message: '' })
 
@@ -115,7 +115,7 @@ export default function SettingsPage() {
 
         const { data, error } = await supabase
           .from('merchants')
-          .select('id, store_name, email, api_key, widget_enabled, plan_id, credits')
+          .select('id, store_name, email, api_key, widget_enabled, plan_id, fast_credits_remaining')
           .eq('id', user.id)
           .single()
 
@@ -128,7 +128,7 @@ export default function SettingsPage() {
           apiKey:        data.api_key       ?? generateDemoKey(),
           widgetEnabled: data.widget_enabled ?? true,
           planId:        data.plan_id        ?? 'preview',
-          credits:       data.credits        ?? 0,
+          fast_credits_remaining: data.fast_credits_remaining ?? 0,
         })
       } catch {
         // Fallback for preview/demo
@@ -181,7 +181,7 @@ export default function SettingsPage() {
       <TopNav
         storeName={settings.storeName}
         planId={settings.planId}
-        credits={settings.credits}
+        credits={settings.fast_credits_remaining}
         onSignOut={handleSignOut}
       />
 

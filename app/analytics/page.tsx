@@ -141,7 +141,7 @@ export default function AnalyticsPage() {
       if (uErr || !user) throw new Error('Não autenticado.');
 
       const { data: m, error: mErr } = await supabase
-        .from('merchants').select('id').eq('user_id', user.id).single();
+        .from('merchants').select('id').eq('id', user.id).single();
       if (mErr) throw mErr;
 
       const since = new Date();

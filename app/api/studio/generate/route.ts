@@ -19,11 +19,11 @@ export async function POST(req: Request) {
     // 1. Verificar créditos
     const { data: merchant, error: mErr } = await supabase
       .from('merchants')
-      .select('credits')
+      .select('fast_credits_remaining')
       .eq('id', user.id)
       .single();
 
-    if (mErr || !merchant || merchant.credits <= 0) {
+    if (mErr || !merchant || merchant.fast_credits_remaining <= 0) {
       return NextResponse.json({ error: 'Créditos insuficientes' }, { status: 403 });
     }
 
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     // 4. Decrementar crédito
     await supabase
       .from('merchants')
-      .update({ credits: merchant.credits - 1 })
+      .update({ fast_credits_remaining: merchant.fast_credits_remaining - 1 })
       .eq('id', user.id);
 
     return NextResponse.json({

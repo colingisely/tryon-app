@@ -21,7 +21,7 @@ interface MerchantData {
   premium_credits_remaining: number;
   fast_credits_monthly: number;
   premium_credits_monthly: number;
-  plan: string;
+  plan_slug: string | null;
 }
 
 interface UsageDay { label: string; fast: number; premium: number; }
@@ -201,11 +201,21 @@ export default function DashboardPage() {
 
       const { data: m, error: mErr } = await supabase
         .from('merchants')
-        .select('id,store_name,fast_credits_remaining,premium_credits_remaining,fast_credits_monthly,premium_credits_monthly,plan')
-        .eq('user_id', user.id)
+        .select('id,store_name,fast_credits_remaining,premium_credits_remaining,plans!plan_id(slug,fast_credits_monthly,premium_credits_monthly)')
+        .eq('id', user.id)
         .single();
       if (mErr) throw mErr;
-      setMerchant(m);
+      const plan = (m as any)?.plans ?? {};
+      const merchant_normalized = m ? {
+        id:                       m.id,
+        store_name:               m.store_name,
+        fast_credits_remaining:   m.fast_credits_remaining,
+        premium_credits_remaining: m.premium_credits_remaining,
+        fast_credits_monthly:     plan.fast_credits_monthly  ?? 0,
+        premium_credits_monthly:  plan.premium_credits_monthly ?? 0,
+        plan_slug:                plan.slug ?? null,
+      } : null;
+      setMerchant(merchant_normalized as any);
 
       const since = new Date();
       since.setDate(since.getDate() - period);
@@ -343,16 +353,16 @@ export default function DashboardPage() {
               <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 20, fontWeight: 700, color: '#EDEBF5' }}>
                 {loading ? 'Dashboard' : `Olá, ${merchant?.store_name ?? 'lojista'}`}
               </h1>
-              {merchant?.plan && (
+              {merchant?.plan_slug && (
                 <span style={{
                   padding: '3px 10px', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace",
                   textTransform: 'uppercase', letterSpacing: '0.1em', borderRadius: 100,
                   /* Plan badge uses brand colors, not semantic */
-                  background: merchant.plan === 'premium' ? 'rgba(43,18,80,0.6)' : 'rgba(43,18,80,0.4)',
+                  background: merchant.plan_slug === 'premium' ? 'rgba(43,18,80,0.6)' : 'rgba(43,18,80,0.4)',
                   border: '1px solid rgba(112,80,160,0.4)',
                   color: '#B8AEDD',
                 }}>
-                  {merchant.plan}
+                  {merchant.plan_slug}
                 </span>
               )}
             </div>

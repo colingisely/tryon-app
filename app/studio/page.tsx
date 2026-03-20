@@ -84,9 +84,9 @@ interface GenerationResult {
 }
 
 interface MerchantData {
-  storeName: string
-  plan:      'preview' | 'starter' | 'premium' | 'enterprise'
-  credits:   number
+  storeName:              string
+  plan:                   'preview' | 'starter' | 'premium' | 'enterprise'
+  fast_credits_remaining: number
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -149,9 +149,9 @@ export default function StudioPage() {
 
   // ── Merchant data ────────────────────────────────────────────────────────
   const [merchant, setMerchant] = useState<MerchantData>({
-    storeName: '',
-    plan:      'premium',
-    credits:   12,
+    storeName:              '',
+    plan:                   'premium',
+    fast_credits_remaining: 0,
   })
 
   useEffect(() => {
@@ -161,15 +161,16 @@ export default function StudioPage() {
 
       const { data } = await supabase
         .from('merchants')
-        .select('store_name, plan_id, credits')
+        .select('store_name, fast_credits_remaining, plans!plan_id(slug)')
         .eq('id', user.id)
         .single()
 
       if (data) {
+        const planSlug = (data as any).plans?.slug ?? 'preview'
         setMerchant({
-          storeName: data.store_name ?? '',
-          plan:      data.plan_id ?? 'preview',
-          credits:   data.credits ?? 0,
+          storeName:              data.store_name ?? '',
+          plan:                   planSlug as MerchantData['plan'],
+          fast_credits_remaining: data.fast_credits_remaining ?? 0,
         })
       }
     }
@@ -305,7 +306,7 @@ export default function StudioPage() {
       setStatus('done')
       setResult(data.imageUrl)
 
-      setMerchant(prev => ({ ...prev, credits: Math.max(0, prev.credits - 1) }))
+      setMerchant(prev => ({ ...prev, fast_credits_remaining: Math.max(0, prev.fast_credits_remaining - 1) }))
       setGallery(prev => [{
         id:        Date.now().toString(),
         url:       data.imageUrl,
@@ -395,11 +396,11 @@ export default function StudioPage() {
           )}
 
           {/* Credits counter or upgrade CTA */}
-          {merchant.credits > 0 ? (
+          {merchant.fast_credits_remaining > 0 ? (
             <div className="flex items-center gap-1.5">
               <Zap size={11} style={{ color: '#A09CC0' }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '.16em', color: '#A09CC0' }}>
-                {merchant.credits} crédito{merchant.credits !== 1 ? 's' : ''}
+                {merchant.fast_credits_remaining} crédito{merchant.fast_credits_remaining !== 1 ? 's' : ''}
               </span>
             </div>
           ) : (
