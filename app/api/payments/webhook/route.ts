@@ -58,9 +58,9 @@ export async function POST(req: NextRequest) {
 
         // Look up plan by stripe_price_id first, then by slug fallback
         let planSlug = 'free';
-        if (priceId === process.env.STRIPE_PRICE_STARTER) planSlug = 'starter';
-        else if (priceId === process.env.STRIPE_PRICE_GROWTH) planSlug = 'growth';
-        else if (priceId === process.env.STRIPE_PRICE_PRO) planSlug = 'pro';
+        if (priceId === process.env.STRIPE_PRICE_STARTER_MONTHLY) planSlug = 'starter';
+        else if (priceId === process.env.STRIPE_PRICE_GROWTH_MONTHLY) planSlug = 'growth';
+        else if (priceId === process.env.STRIPE_PRICE_PRO_MONTHLY) planSlug = 'pro';
 
         // Try to find plan by stripe_price_id in DB
         let { data: plan } = await supabase
@@ -156,9 +156,9 @@ export async function POST(req: NextRequest) {
         const priceId = subscription.items.data[0].price.id;
 
         let planSlug = 'free';
-        if (priceId === process.env.STRIPE_PRICE_STARTER) planSlug = 'starter';
-        else if (priceId === process.env.STRIPE_PRICE_GROWTH) planSlug = 'growth';
-        else if (priceId === process.env.STRIPE_PRICE_PRO) planSlug = 'pro';
+        if (priceId === process.env.STRIPE_PRICE_STARTER_MONTHLY) planSlug = 'starter';
+        else if (priceId === process.env.STRIPE_PRICE_GROWTH_MONTHLY) planSlug = 'growth';
+        else if (priceId === process.env.STRIPE_PRICE_PRO_MONTHLY) planSlug = 'pro';
 
         let { data: plan } = await supabase
           .from('plans')
