@@ -474,22 +474,7 @@ export default function StudioPage() {
             </span>
           </div>
 
-          <h1 style={{
-            fontFamily:    "'Bricolage Grotesque', sans-serif",
-            fontWeight:     700,
-            fontSize:      'clamp(28px, 3.8vw, 44px)',
-            color:          '#EDEBF5',
-            letterSpacing: '-.025em',
-            lineHeight:     1.05,
-            marginBottom:   10,
-          }}>
-            Estúdio Profissional
-          </h1>
-
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 300, fontSize: 15, color: '#A09CC0', lineHeight: 1.6 }}>
-            Geração de fotos de alta fidelidade com IA — qualidade 4k em até 60s.
-          </p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 300, fontSize: 15, color: 'rgba(160,156,192,.38)', lineHeight: 1.6 }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, fontSize: 13, color: 'rgba(160,156,192,.50)', lineHeight: 1.6 }}>
             Ideal para catálogo, anúncios e redes sociais.
           </p>
         </div>
