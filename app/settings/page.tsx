@@ -43,7 +43,6 @@ import {
   ChevronRight,
   ShoppingBag,
   Settings,
-  Zap,
   Info,
 } from 'lucide-react'
 import ReflexGem from '@/components/ui/ReflexGem'
@@ -148,7 +147,6 @@ export default function SettingsPage() {
         .from('merchants')
         .update({
           store_name:     updates.storeName     ?? settings.storeName,
-          email:          updates.email         ?? settings.email,
           widget_enabled: updates.widgetEnabled ?? settings.widgetEnabled,
         })
         .eq('id', settings.id)
@@ -181,7 +179,6 @@ export default function SettingsPage() {
       <TopNav
         storeName={settings.storeName}
         planId={settings.planId}
-        credits={settings.fast_credits_remaining}
         onSignOut={handleSignOut}
       />
 
@@ -289,12 +286,10 @@ export default function SettingsPage() {
 function TopNav({
   storeName,
   planId,
-  credits,
   onSignOut,
 }: {
   storeName: string
   planId:    string
-  credits:   number
   onSignOut: () => void
 }) {
   return (
@@ -310,7 +305,7 @@ function TopNav({
     >
       <div className="flex items-center">
         <div className="flex items-center gap-2">
-          <ReflexGem size={18} uid="settings-nav" />
+          <ReflexGem size={18} uid="settings-nav" noReflection />
           <span style={{
             fontFamily:    "'Bricolage Grotesque', sans-serif",
             fontWeight:     700,
@@ -332,14 +327,6 @@ function TopNav({
       </div>
 
       <div className="flex items-center gap-2.5">
-        {/* Credits */}
-        <div className="flex items-center gap-1.5">
-          <Zap size={11} style={{ color: '#A09CC0' }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '.14em', color: '#A09CC0' }}>
-            {credits} crédito{credits !== 1 ? 's' : ''}
-          </span>
-        </div>
-
         {/* Store name */}
         {storeName && (
           <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0' }}>
@@ -467,11 +454,11 @@ function StoreProfileSection({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    await onSave({ storeName, email })
+    await onSave({ storeName })
     setSaving(false)
   }
 
-  const hasChanges = storeName !== settings.storeName || email !== settings.email
+  const hasChanges = storeName !== settings.storeName
 
   return (
     <form onSubmit={handleSubmit}>
@@ -508,13 +495,11 @@ function StoreProfileSection({
                 id="merchantEmail"
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                readOnly
                 placeholder="voce@exemplo.com"
                 autoComplete="email"
-                className="w-full outline-none transition-[border-color] duration-200"
-                style={INPUT_STYLE}
-                onFocus={e  => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.40)')}
-                onBlur={e   => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)')}
+                className="w-full outline-none"
+                style={{ ...INPUT_STYLE, cursor: 'default', opacity: 0.6 }}
               />
             </div>
             <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.16em', color: 'rgba(160,156,192,.45)', marginTop: 2 }}>

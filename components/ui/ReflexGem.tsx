@@ -81,9 +81,10 @@ const GEM_CSS = `
 interface ReflexGemProps {
   size?: number
   uid: string
+  noReflection?: boolean
 }
 
-export default function ReflexGem({ size = 64, uid }: ReflexGemProps) {
+export default function ReflexGem({ size = 64, uid, noReflection = false }: ReflexGemProps) {
   const id = (base: string) => `${base}-${uid}`
 
   return (
@@ -202,31 +203,33 @@ export default function ReflexGem({ size = 64, uid }: ReflexGemProps) {
           </g>
         </svg>
 
-        <div className="rfx-axis" />
+        {!noReflection && <div className="rfx-axis" />}
 
-        <svg
-          className="rfx-reflection"
-          width={size} height={size}
-          viewBox="0 0 100 100"
-          fill="none"
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id={id('rF')} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%"   stopColor="#C4B8E4" stopOpacity=".6"/>
-              <stop offset="100%" stopColor="#7050A0" stopOpacity=".4"/>
-            </linearGradient>
-            <linearGradient id={id('rT')} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%"   stopColor="#E8E2F8" stopOpacity=".7"/>
-              <stop offset="100%" stopColor="#B090D8" stopOpacity=".5"/>
-            </linearGradient>
-          </defs>
-          <polygon points="50,22 28,50  3,50 50,3" fill={`url(#${id('rF')})`}/>
-          <polygon points="50,22 72,50 97,50 50,3" fill={`url(#${id('rF')})`}/>
-          <polygon points="50,22 72,50 50,78 28,50" fill={`url(#${id('rT')})`} opacity=".7"/>
-          <circle cx="50" cy="50" r="2.5" fill="#EDE8F6" opacity=".5"/>
-          <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="#C4B8E4" strokeWidth=".4" opacity=".3"/>
-        </svg>
+        {!noReflection && (
+          <svg
+            className="rfx-reflection"
+            width={size} height={size}
+            viewBox="0 0 100 100"
+            fill="none"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id={id('rF')} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%"   stopColor="#C4B8E4" stopOpacity=".6"/>
+                <stop offset="100%" stopColor="#7050A0" stopOpacity=".4"/>
+              </linearGradient>
+              <linearGradient id={id('rT')} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%"   stopColor="#E8E2F8" stopOpacity=".7"/>
+                <stop offset="100%" stopColor="#B090D8" stopOpacity=".5"/>
+              </linearGradient>
+            </defs>
+            <polygon points="50,22 28,50  3,50 50,3" fill={`url(#${id('rF')})`}/>
+            <polygon points="50,22 72,50 97,50 50,3" fill={`url(#${id('rF')})`}/>
+            <polygon points="50,22 72,50 50,78 28,50" fill={`url(#${id('rT')})`} opacity=".7"/>
+            <circle cx="50" cy="50" r="2.5" fill="#EDE8F6" opacity=".5"/>
+            <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="#C4B8E4" strokeWidth=".4" opacity=".3"/>
+          </svg>
+        )}
 
       </div>
     </>

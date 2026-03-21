@@ -29,8 +29,8 @@ interface TopProduct { name: string; sku: string; count: number; }
 interface DashStats {
   totalTryOns: number;
   conversionRate: number;
-  tryOnsTrend: number;
-  convTrend: number;
+  tryOnsTrend: number | undefined;
+  convTrend: number | undefined;
   avgPerDay: number;
 }
 type Period = 7 | 15 | 30;
@@ -237,8 +237,8 @@ export default function DashboardPage() {
       setStats({
         totalTryOns:    tryOns.length,
         conversionRate: convRate,
-        tryOnsTrend:    12,
-        convTrend:      7,
+        tryOnsTrend:    undefined,
+        convTrend:      undefined,
         avgPerDay:      parseFloat((tryOns.length / period).toFixed(1)),
       });
 
@@ -558,7 +558,7 @@ export default function DashboardPage() {
             <button className="shortcut-btn" onClick={() => window.location.href = '/settings'}>
               {/* Warning color no ícone de API Key — dado sensível, merece atenção */}
               <Key size={14} style={{ color: '#FFB432' }} />
-              <span>API Key & Configurações</span>
+              <span>Configurações</span>
               <ArrowUpRight size={12} style={{ marginLeft: 'auto', opacity: 0.4 }} />
             </button>
           </div>
