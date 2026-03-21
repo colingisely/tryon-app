@@ -400,8 +400,8 @@ export function Footer() {
         </div>
         <div>
           <p className="footer-col-title">Legal</p>
-          <a className="footer-link" href="#">Privacidade</a>
-          <a className="footer-link" href="#">Termos de Uso</a>
+          <a className="footer-link" href="/privacy">Privacidade</a>
+          <a className="footer-link" href="/terms">Termos de Uso</a>
           <a className="footer-link" href="#">LGPD</a>
         </div>
       </div>
