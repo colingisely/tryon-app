@@ -3,8 +3,16 @@ import "./globals.css";
 import '@/app/landing.css';
 
 export const metadata: Metadata = {
-  title: "REFLEXY — O reflexo da sua conversão",
-  description: "Provador virtual com IA, geração de imagens profissionais e analytics comportamental para e-commerce de moda. Integração nativa Shopify.",
+  title: 'REFLEXY — O reflexo da sua conversão',
+  description: 'Provador virtual com IA, geração de imagens profissionais e analytics comportamental para e-commerce de moda. Integração nativa Shopify.',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/logos/symbol-dark.png', type: 'image/png', sizes: '32x32' },
+    ],
+    apple: { url: '/logos/symbol-dark.png', sizes: '180x180' },
+    shortcut: '/logos/symbol-dark.png',
+  },
 };
 
 export default function RootLayout({
