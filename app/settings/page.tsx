@@ -25,6 +25,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter }                    from 'next/navigation'
 import { createClient }                 from '@/lib/supabase/client'
+import { InternalFooter }               from '@/components/ui/InternalFooter'
 import {
   Store,
   Mail,
@@ -280,6 +281,8 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      <InternalFooter />
 
       <GlobalKeyframes />
       <style>{`

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { InternalFooter } from '@/components/ui/InternalFooter';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
@@ -573,6 +574,8 @@ export default function DashboardPage() {
               </button>. Nunca a exponha publicamente.
             </p>
           </div>
+
+          <InternalFooter />
 
         </div>
       </div>

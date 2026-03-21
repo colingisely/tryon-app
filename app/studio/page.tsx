@@ -31,6 +31,7 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { InternalFooter } from '@/components/ui/InternalFooter'
 import {
   Upload,
   Sparkles,
@@ -769,6 +770,8 @@ export default function StudioPage() {
         {/* ── Gallery ── */}
         <RecentGallery items={gallery} />
       </div>
+
+      <InternalFooter />
 
       <GlobalKeyframes />
       <style>{`

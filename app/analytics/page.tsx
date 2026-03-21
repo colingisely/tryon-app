@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { InternalFooter } from '@/components/ui/InternalFooter';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
@@ -591,6 +592,8 @@ export default function AnalyticsPage() {
               })}
             </div>
           </div>
+
+          <InternalFooter />
 
         </div>
       </div>
