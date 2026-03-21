@@ -146,19 +146,25 @@ export default function SettingsPage() {
       const { data: { user }, error: uErr } = await supabase.auth.getUser()
       if (uErr || !user) throw new Error('Não autenticado.')
 
-      const merchantId = settings.id || user.id
+      // Build only the fields that are being updated
+      const payload: Record<string, unknown> = {}
+      if (updates.storeName     !== undefined) payload.store_name     = updates.storeName.trim()
+      if (updates.widgetEnabled !== undefined) payload.widget_enabled = updates.widgetEnabled
+
+      if (Object.keys(payload).length === 0) {
+        setSaveState({ status: 'saved', message: 'Nenhuma alteração detectada.' })
+        setTimeout(() => setSaveState({ status: 'idle', message: '' }), 3000)
+        return
+      }
 
       const { error } = await supabase
         .from('merchants')
-        .update({
-          store_name:     updates.storeName     ?? settings.storeName,
-          widget_enabled: updates.widgetEnabled ?? settings.widgetEnabled,
-        })
-        .eq('id', merchantId)
+        .update(payload)
+        .eq('id', user.id)
 
       if (error) throw error
 
-      setSettings(prev => ({ ...prev, ...updates, id: merchantId }))
+      setSettings(prev => ({ ...prev, ...updates, id: user.id }))
       setSaveState({ status: 'saved', message: 'Alterações salvas.' })
       setTimeout(() => setSaveState({ status: 'idle', message: '' }), 3000)
     } catch (err: any) {
@@ -552,10 +558,13 @@ function ApiKeySection({
     try {
       const newKey = generateApiKey()
 
+      const { data: { user }, error: uErr } = await supabase.auth.getUser()
+      if (uErr || !user) throw new Error('Não autenticado.')
+
       const { error } = await supabase
         .from('merchants')
         .update({ api_key: newKey })
-        .eq('id', settings.id)
+        .eq('id', user.id)
 
       if (error) throw error
 
