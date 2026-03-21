@@ -203,33 +203,39 @@ const TERMS_HTML = `
     <tr>
       <th>Plano</th>
       <th>Preço mensal</th>
-      <th>Fast Credits</th>
-      <th>Premium Credits</th>
+      <th>Provas Virtuais (Fast Credits)</th>
+      <th>Studio Pro (Premium Credits)</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><strong>Starter</strong></td>
-      <td>R$ 19 / US$ 19</td>
-      <td>30</td>
+      <td><strong>Preview</strong></td>
+      <td>Grátis</td>
+      <td>10/mês</td>
       <td>—</td>
     </tr>
     <tr>
+      <td><strong>Starter</strong></td>
+      <td>US$ 19</td>
+      <td>100/mês</td>
+      <td>5/mês</td>
+    </tr>
+    <tr>
       <td><strong>Growth</strong></td>
-      <td>R$ 39 / US$ 39</td>
-      <td>100</td>
-      <td>10</td>
+      <td>US$ 39</td>
+      <td>300/mês</td>
+      <td>10/mês</td>
     </tr>
     <tr>
       <td><strong>Pro</strong></td>
-      <td>R$ 99 / US$ 99</td>
-      <td>Ilimitado</td>
-      <td>30</td>
+      <td>US$ 99</td>
+      <td>800/mês</td>
+      <td>20/mês</td>
     </tr>
   </tbody>
 </table>
 <br>
-<div>Os valores exatos em reais são os exibidos no momento da assinatura em <a href="https://www.reflexy.co/pricing" target="_blank">reflexy.co/pricing</a> e podem variar conforme câmbio ou ajustes de precificação.</div>
+<div>Os valores exatos são os exibidos no momento da assinatura em <a href="https://www.reflexy.co/#planos" target="_blank">reflexy.co/#planos</a> e podem variar conforme câmbio ou ajustes de precificação.</div>
 <br>
 <h3>Cobrança e Renovação</h3>
 <div>As assinaturas são renovadas automaticamente a cada 30 dias na data de aniversário da contratação. O pagamento é processado pelo Stripe no cartão de crédito cadastrado. Em caso de falha no pagamento, a Reflexy poderá suspender o acesso ao plano até a regularização.</div>
