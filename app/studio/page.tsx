@@ -339,7 +339,7 @@ export default function StudioPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen" style={{ background: '#06050F' }}>
+    <main style={{ minHeight: '100vh', background: '#06050F', display: 'flex', flexDirection: 'column' }}>
       <GrainOverlay />
       <AmbientGlow />
 
@@ -459,7 +459,7 @@ export default function StudioPage() {
       {/* ── Page content ── */}
       <div
         className="relative z-10 mx-auto px-7"
-        style={{ maxWidth: 1040, paddingTop: 48, paddingBottom: 100 }}
+        style={{ maxWidth: 1200, width: '100%', paddingTop: 48, paddingBottom: 100, flex: 1 }}
       >
 
         {/* Header */}
@@ -849,10 +849,10 @@ function UploadDropZone({
       onClick={() => !image && inputRef.current?.click()}
       className="relative overflow-hidden transition-colors"
       style={{
-        aspectRatio: '3/2',
+        aspectRatio: '4/3',
         cursor:      image ? 'default' : 'pointer',
         background:  isDragging ? 'rgba(184,174,221,.04)' : 'transparent',
-        minHeight:   200,
+        minHeight:   260,
       }}
     >
       {image ? (

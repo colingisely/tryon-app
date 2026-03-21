@@ -22,8 +22,8 @@ interface KpiData {
   completionRate: number;
   uniqueSessions: number;
   avgDuration:    number;
-  initiatedTrend: number;
-  completedTrend: number;
+  initiatedTrend: number | undefined;
+  completedTrend: number | undefined;
 }
 
 interface DayUsage  { label: string; initiated: number; completed: number; }
@@ -169,16 +169,18 @@ export default function AnalyticsPage() {
         completionRate: initiated > 0 ? parseFloat(((completed / initiated) * 100).toFixed(1)) : 0,
         uniqueSessions: sessions,
         avgDuration:    avgDur,
-        initiatedTrend: 18,
-        completedTrend: -5,
+        initiatedTrend: undefined as any,
+        completedTrend: undefined as any,
       });
 
       // Funnel — Lavender → Mauve → Cobalt → Verdigris
-      const viewed  = initiated + Math.round(initiated * 0.6);
-      const addCart = evts.filter((e: any) => e.event_type === 'add_to_cart').length;
+      const pageViews = evts.filter((e: any) => e.event_type === 'page_view').length;
+      const viewed    = pageViews > 0 ? pageViews : initiated; // real page views, or fall back to initiated if not tracked
+      const addCart   = evts.filter((e: any) => e.event_type === 'add_to_cart').length;
+      const funnelTop = Math.max(viewed, initiated); // ensure top of funnel >= initiated
       setFunnel([
-        { label: 'Visualizaram',             count: viewed,    pct: 100, color: '#B8AEDD' },  // lavender — menos ênfase
-        { label: 'Fizeram Try-On',           count: initiated, pct: parseFloat(((initiated / Math.max(viewed, 1)) * 100).toFixed(1)), color: '#7050A0' }, // mauve
+        { label: 'Visualizaram',             count: funnelTop, pct: 100, color: '#B8AEDD' },  // lavender — menos ênfase
+        { label: 'Fizeram Try-On',           count: initiated, pct: parseFloat(((initiated / Math.max(funnelTop, 1)) * 100).toFixed(1)), color: '#7050A0' }, // mauve
         { label: 'Adicionaram ao Carrinho',  count: addCart,   pct: parseFloat(((addCart / Math.max(initiated, 1)) * 100).toFixed(1)), color: '#3B82F6' }, // cobalt — neutro
         { label: 'Compraram',                count: purchases, pct: parseFloat(((purchases / Math.max(initiated, 1)) * 100).toFixed(1)), color: '#0CC89E' }, // verdigris — melhor resultado
       ]);

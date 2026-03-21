@@ -143,21 +143,26 @@ export default function SettingsPage() {
   async function handleSave(updates: Partial<MerchantSettings>) {
     setSaveState({ status: 'saving', message: '' })
     try {
+      const { data: { user }, error: uErr } = await supabase.auth.getUser()
+      if (uErr || !user) throw new Error('Não autenticado.')
+
+      const merchantId = settings.id || user.id
+
       const { error } = await supabase
         .from('merchants')
         .update({
           store_name:     updates.storeName     ?? settings.storeName,
           widget_enabled: updates.widgetEnabled ?? settings.widgetEnabled,
         })
-        .eq('id', settings.id)
+        .eq('id', merchantId)
 
       if (error) throw error
 
-      setSettings(prev => ({ ...prev, ...updates }))
+      setSettings(prev => ({ ...prev, ...updates, id: merchantId }))
       setSaveState({ status: 'saved', message: 'Alterações salvas.' })
       setTimeout(() => setSaveState({ status: 'idle', message: '' }), 3000)
-    } catch {
-      setSaveState({ status: 'error', message: 'Erro ao salvar. Tente novamente.' })
+    } catch (err: any) {
+      setSaveState({ status: 'error', message: err.message ?? 'Erro ao salvar. Tente novamente.' })
       setTimeout(() => setSaveState({ status: 'idle', message: '' }), 4000)
     }
   }
