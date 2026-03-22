@@ -1,6 +1,88 @@
 import { createClient } from '@/lib/supabase/server';
-
 import { NextResponse } from 'next/server';
+
+const FASHN_API_URL = 'https://api.fashn.ai/v1/run';
+const FASHN_API_KEY = process.env.FASHN_API_KEY;
+
+// ─── Convert File/Blob to base64 data URI ────────────────────────────────────
+
+async function fileToDataUri(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString('base64');
+  return `data:${file.type || 'image/jpeg'};base64,${base64}`;
+}
+
+// ─── FASHN.ai Status Polling ────────────────────────────────────────────────
+
+async function pollFashnStatus(predictionId: string, maxAttempts = 120): Promise<any> {
+  const statusUrl = `https://api.fashn.ai/v1/status/${predictionId}`;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const response = await fetch(statusUrl, {
+      headers: {
+        Authorization: `Bearer ${FASHN_API_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Status check failed: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    if (result.status === 'completed') {
+      return result;
+    } else if (result.status === 'failed') {
+      throw new Error(result.error?.message || 'Generation failed');
+    }
+
+    // Wait 2 seconds before next poll
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
+  throw new Error('Timeout waiting for result');
+}
+
+// ─── Try-On Max (Premium Quality) ──────────────────────────────────────────
+
+async function tryOnMax(modelImage: string, garmentImage: string): Promise<string> {
+  console.log('🏆 Studio Pro: Using Try-On Max (tryon-max, ~50s)...');
+
+  const response = await fetch(FASHN_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${FASHN_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model_name: 'tryon-max',
+      inputs: {
+        model_image: modelImage,
+        product_image: garmentImage,
+        output_format: 'png',
+        return_base64: false,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || errorData.message || `FASHN API error: ${response.statusText}`);
+  }
+
+  const { id: predictionId } = await response.json();
+  console.log('📋 Try-On Max Prediction ID:', predictionId);
+
+  const result = await pollFashnStatus(predictionId, 120);
+
+  if (!result.output || !Array.isArray(result.output) || result.output.length === 0) {
+    throw new Error('No output image returned from Try-On Max');
+  }
+
+  return result.output[0];
+}
+
+// ─── Main Route ─────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -12,54 +94,88 @@ export async function POST(req: Request) {
 
   try {
     const formData = await req.formData();
-    const modelPresetId = formData.get('modelPresetId');
-    const modelFile = formData.get('modelFile');
-    const productFile = formData.get('productFile');
 
-    // 1. Verificar créditos
+    // Model image: either a File upload or a preset public URL string
+    const modelFileEntry = formData.get('modelFile');
+    const modelUrlEntry  = formData.get('model') as string | null;
+    const modelPresetId  = formData.get('modelPresetId') as string | null;
+
+    // Product image: either a File upload
+    const productFileEntry = formData.get('productFile');
+
+    if (!modelFileEntry && !modelUrlEntry) {
+      return NextResponse.json({ error: 'Imagem do modelo não enviada' }, { status: 400 });
+    }
+    if (!productFileEntry) {
+      return NextResponse.json({ error: 'Imagem do produto não enviada' }, { status: 400 });
+    }
+    if (!FASHN_API_KEY) {
+      return NextResponse.json({ error: 'FASHN API key not configured' }, { status: 500 });
+    }
+
+    // Resolve model image: File → base64 data URI, or use the preset URL directly
+    let finalModelImage: string;
+    if (modelFileEntry && modelFileEntry instanceof File) {
+      finalModelImage = await fileToDataUri(modelFileEntry);
+    } else {
+      // Preset URL (public https:// URL)
+      finalModelImage = modelUrlEntry || '';
+    }
+
+    // Resolve product image: File → base64 data URI
+    let finalProductImage: string;
+    if (productFileEntry && productFileEntry instanceof File) {
+      finalProductImage = await fileToDataUri(productFileEntry);
+    } else {
+      return NextResponse.json({ error: 'Imagem do produto inválida' }, { status: 400 });
+    }
+
+    // 1. Verificar créditos premium
     const { data: merchant, error: mErr } = await supabase
       .from('merchants')
-      .select('fast_credits_remaining')
+      .select('premium_credits_remaining')
       .eq('id', user.id)
       .single();
 
-    if (mErr || !merchant || merchant.fast_credits_remaining <= 0) {
-      return NextResponse.json({ error: 'Créditos insuficientes' }, { status: 403 });
+    if (mErr || !merchant || merchant.premium_credits_remaining <= 0) {
+      return NextResponse.json({ error: 'Créditos premium insuficientes' }, { status: 403 });
     }
 
-    // 2. Simular chamada de IA (Aqui entraria a integração real com Replicate/OpenAI/etc)
-    // Por enquanto, vamos retornar uma imagem de exemplo após um delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    const mockResultUrl = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80';
+    // 2. Chamar FASHN.ai com tryon-max (geração real)
+    console.log('🎨 Studio Pro: iniciando geração com tryon-max...');
+    const resultUrl = await tryOnMax(finalModelImage, finalProductImage);
+    console.log('✅ Studio Pro: imagem gerada com sucesso');
 
     // 3. Salvar no banco de dados
     const { data: gen, error: gErr } = await supabase
       .from('studio_generations')
       .insert({
         merchant_id: user.id,
-        result_image_url: mockResultUrl,
+        result_image_url: resultUrl,
         model_name: modelPresetId ? `Preset ${modelPresetId}` : 'Upload Customizado',
-        status: 'done'
+        status: 'done',
       })
       .select()
       .single();
 
     if (gErr) throw gErr;
 
-    // 4. Decrementar crédito
+    // 4. Decrementar crédito premium
     await supabase
       .from('merchants')
-      .update({ fast_credits_remaining: merchant.fast_credits_remaining - 1 })
+      .update({ premium_credits_remaining: merchant.premium_credits_remaining - 1 })
       .eq('id', user.id);
 
     return NextResponse.json({
       id: gen.id,
+      imageUrl: gen.result_image_url,
       url: gen.result_image_url,
       createdAt: gen.created_at,
-      modelName: gen.model_name
+      modelName: gen.model_name,
     });
 
   } catch (error: any) {
+    console.error('❌ Studio Pro generation error:', error?.message || error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

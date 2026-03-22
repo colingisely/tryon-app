@@ -64,6 +64,7 @@ interface UploadedImage {
   preview: string  // object URL or preset URL
   name:    string
   isPreset?: boolean
+  file?: File      // actual File object for uploads (undefined for presets)
 }
 
 type GenerationStatus =
@@ -232,7 +233,7 @@ export default function StudioPage() {
 
   function loadFile(file: File, setter: (img: UploadedImage) => void) {
     if (!file.type.startsWith('image/')) return
-    setter({ preview: URL.createObjectURL(file), name: file.name })
+    setter({ preview: URL.createObjectURL(file), name: file.name, file })
   }
 
   const onModelChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -295,9 +296,18 @@ export default function StudioPage() {
       }
 
       const formData = new FormData()
-      if (!modelImg!.isPreset) formData.append('model', modelImg!.preview)
-      else formData.append('modelPresetId', selectedPresetId ?? '')
-      formData.append('product', productImg!.preview)
+      if (modelImg!.isPreset) {
+        // Preset: send the public URL directly
+        formData.append('modelPresetId', selectedPresetId ?? '')
+        formData.append('model', modelImg!.preview)
+      } else if (modelImg!.file) {
+        // Uploaded file: send actual File blob
+        formData.append('modelFile', modelImg!.file)
+      }
+      if (productImg!.file) {
+        // Uploaded file: send actual File blob
+        formData.append('productFile', productImg!.file)
+      }
 
       const res = await fetch('/api/studio/generate', { method: 'POST', body: formData })
       if (!res.ok) throw new Error(`Erro ${res.status}`)
