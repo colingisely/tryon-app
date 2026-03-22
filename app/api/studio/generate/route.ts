@@ -1,6 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
+// Vercel: allow up to 300s so the tryon-max poll loop (~50s) doesn't hit the
+// default 10s function timeout and cause a silent 500.
+export const maxDuration = 300;
+
 const FASHN_API_URL = 'https://api.fashn.ai/v1/run';
 const FASHN_API_KEY = process.env.FASHN_API_KEY;
 
@@ -75,6 +79,9 @@ async function tryOnMax(modelImage: string, garmentImage: string): Promise<strin
       inputs: {
         model_image: modelImage,
         product_image: garmentImage,
+        // 'auto' lets FASHN detect top/bottom/one-piece automatically;
+        // omitting this field was causing FASHN to reject the request.
+        category: 'auto',
         output_format: 'png',
         return_base64: false,
       },
