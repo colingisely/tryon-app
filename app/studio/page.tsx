@@ -302,18 +302,18 @@ export default function StudioPage() {
       const res = await fetch('/api/studio/generate', { method: 'POST', body: formData })
       if (!res.ok) throw new Error(`Erro ${res.status}`)
 
-      const data: { imageUrl: string } = await res.json()
+      const data: { url: string } = await res.json()
 
       setProgress(100)
       setProgMsg('Pronto.')
       await sleep(400)
       setStatus('done')
-      setResult(data.imageUrl)
+      setResult(data.url)
 
       setMerchant(prev => ({ ...prev, premium_credits_remaining: Math.max(0, prev.premium_credits_remaining - 1) }))
       setGallery(prev => [{
         id:        Date.now().toString(),
-        url:       data.imageUrl,
+        url:       data.url,
         createdAt: new Date(),
         modelName: modelImg!.name,
       }, ...prev])
