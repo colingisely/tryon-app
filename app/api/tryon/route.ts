@@ -368,8 +368,8 @@ export async function POST(req: Request) {
 
         // ── BILLING CHECK ──────────────────────────────────────────────
         // Determina o tipo de geração com base no modo solicitado.
-        // "tryon-max" = Studio Pro (premium), qualquer outro modo = fast.
-        const generationType: GenerationType = mode === "tryon-max" ? "premium" : "fast";
+        // "tryon-max" or "premium" = Studio Pro (premium), qualquer outro modo = fast.
+        const generationType: GenerationType = (mode === "tryon-max" || mode === "premium") ? "premium" : "fast";
 
         const billing = await checkBillingAndDeduct(merchantId, generationType);
 
@@ -387,7 +387,7 @@ export async function POST(req: Request) {
         console.log(`💡 Prompt: ${analysis.description}`);
 
         // Step 3: Choose endpoint based on mode
-        const useFast = mode !== "tryon-max";
+        const useFast = mode !== "tryon-max" && mode !== "premium";
         let resultData: { resultUrl: string; model: string };
 
         if (useFast) {
@@ -444,7 +444,7 @@ export async function POST(req: Request) {
     console.log(`👗 Categoria: ${analysis.category}`);
     console.log(`💡 Prompt: ${analysis.description}`);
 
-    const useFast = mode !== "tryon-max";
+    const useFast = mode !== "tryon-max" && mode !== "premium";
     let resultData: { resultUrl: string; model: string };
 
     if (useFast) {
