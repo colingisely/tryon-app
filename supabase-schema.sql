@@ -50,7 +50,17 @@ CREATE TABLE IF NOT EXISTS usage_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. TRANSACTIONS TABLE (for payment tracking)
+-- 4. STUDIO GENERATIONS TABLE (Studio Pro history)
+CREATE TABLE IF NOT EXISTS studio_generations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE,
+  result_image_url TEXT NOT NULL,
+  model_name TEXT,
+  status TEXT DEFAULT 'done',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. TRANSACTIONS TABLE (for payment tracking)
 CREATE TABLE IF NOT EXISTS transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE,
@@ -74,6 +84,8 @@ CREATE INDEX IF NOT EXISTS idx_merchants_plan_id ON merchants(plan_id);
 CREATE INDEX IF NOT EXISTS idx_usage_logs_merchant_id ON usage_logs(merchant_id);
 CREATE INDEX IF NOT EXISTS idx_usage_logs_created_at ON usage_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_transactions_merchant_id ON transactions(merchant_id);
+CREATE INDEX IF NOT EXISTS idx_studio_generations_merchant_id ON studio_generations(merchant_id);
+CREATE INDEX IF NOT EXISTS idx_studio_generations_created_at ON studio_generations(created_at);
 
 -- ============================================
 -- ROW LEVEL SECURITY (RLS)
@@ -83,6 +95,7 @@ ALTER TABLE plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE merchants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE studio_generations ENABLE ROW LEVEL SECURITY;
 
 -- Plans: Everyone can read, only admins can modify
 CREATE POLICY "Plans are viewable by everyone" ON plans FOR SELECT USING (true);
@@ -99,6 +112,10 @@ CREATE POLICY "Users can insert own usage logs" ON usage_logs FOR INSERT WITH CH
 -- Transactions: Users can only see and create their own transactions
 CREATE POLICY "Users can view own transactions" ON transactions FOR SELECT USING (auth.uid() = merchant_id);
 CREATE POLICY "Users can insert own transactions" ON transactions FOR INSERT WITH CHECK (auth.uid() = merchant_id);
+
+-- Studio generations: Users can only see and create their own generations
+CREATE POLICY "Users can view own studio generations" ON studio_generations FOR SELECT USING (auth.uid() = merchant_id);
+CREATE POLICY "Users can insert own studio generations" ON studio_generations FOR INSERT WITH CHECK (auth.uid() = merchant_id);
 
 -- ============================================
 -- FUNCTIONS

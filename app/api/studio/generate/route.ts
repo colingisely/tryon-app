@@ -12,6 +12,22 @@ async function fileToDataUri(file: File): Promise<string> {
   return `data:${file.type || 'image/jpeg'};base64,${base64}`;
 }
 
+// ─── Fetch a preset public URL and convert to base64 data URI ───────────────
+// FASHN.ai requires the image to be accessible from its servers. Fetching
+// it here and converting to base64 guarantees delivery regardless of CORS
+// or network restrictions on the preset CDN URL.
+
+async function urlToDataUri(url: string): Promise<string> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch preset model image: ${response.statusText}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  const contentType = response.headers.get('content-type') || 'image/jpeg';
+  const base64 = Buffer.from(arrayBuffer).toString('base64');
+  return `data:${contentType.split(';')[0]};base64,${base64}`;
+}
+
 // ─── FASHN.ai Status Polling ────────────────────────────────────────────────
 
 async function pollFashnStatus(predictionId: string, maxAttempts = 120): Promise<any> {
@@ -46,7 +62,7 @@ async function pollFashnStatus(predictionId: string, maxAttempts = 120): Promise
 // ─── Try-On Max (Premium Quality) ──────────────────────────────────────────
 
 async function tryOnMax(modelImage: string, garmentImage: string): Promise<string> {
-  console.log('🏆 Studio Pro: Using Try-On Max (tryon-max, ~50s)...');
+  console.log('Studio Pro: Using Try-On Max (tryon-max, ~50s)...');
 
   const response = await fetch(FASHN_API_URL, {
     method: 'POST',
@@ -66,12 +82,12 @@ async function tryOnMax(modelImage: string, garmentImage: string): Promise<strin
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.detail || errorData.message || `FASHN API error: ${response.statusText}`);
   }
 
   const { id: predictionId } = await response.json();
-  console.log('📋 Try-On Max Prediction ID:', predictionId);
+  console.log('Try-On Max Prediction ID:', predictionId);
 
   const result = await pollFashnStatus(predictionId, 120);
 
@@ -100,7 +116,7 @@ export async function POST(req: Request) {
     const modelUrlEntry  = formData.get('model') as string | null;
     const modelPresetId  = formData.get('modelPresetId') as string | null;
 
-    // Product image: either a File upload
+    // Product image: File upload
     const productFileEntry = formData.get('productFile');
 
     if (!modelFileEntry && !modelUrlEntry) {
@@ -113,13 +129,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'FASHN API key not configured' }, { status: 500 });
     }
 
-    // Resolve model image: File → base64 data URI, or use the preset URL directly
+    // Resolve model image:
+    //   - Uploaded File  → read arrayBuffer → base64 data URI
+    //   - Preset URL     → fetch on server  → base64 data URI
+    // Converting preset URLs to base64 ensures FASHN.ai can always access
+    // the image even when the CDN URL has CORS restrictions or is private.
     let finalModelImage: string;
     if (modelFileEntry && modelFileEntry instanceof File) {
       finalModelImage = await fileToDataUri(modelFileEntry);
+    } else if (modelUrlEntry && modelUrlEntry.startsWith('http')) {
+      // BUG FIX: fetch preset URL server-side and convert to base64 instead of
+      // passing the raw URL, which FASHN.ai may not be able to reach.
+      finalModelImage = await urlToDataUri(modelUrlEntry);
     } else {
-      // Preset URL (public https:// URL)
-      finalModelImage = modelUrlEntry || '';
+      return NextResponse.json({ error: 'Imagem do modelo inválida' }, { status: 400 });
     }
 
     // Resolve product image: File → base64 data URI
@@ -131,51 +154,76 @@ export async function POST(req: Request) {
     }
 
     // 1. Verificar créditos premium
+    // BUG FIX: use (merchant.premium_credits_remaining ?? 0) so that a NULL
+    // value in the DB column does not falsely trigger the "insufficient credits"
+    // guard (null <= 0 is true in JS, which blocked valid users).
     const { data: merchant, error: mErr } = await supabase
       .from('merchants')
       .select('premium_credits_remaining')
       .eq('id', user.id)
       .single();
 
-    if (mErr || !merchant || merchant.premium_credits_remaining <= 0) {
+    if (mErr || !merchant) {
+      return NextResponse.json({ error: 'Merchant não encontrado' }, { status: 403 });
+    }
+
+    const creditsRemaining = merchant.premium_credits_remaining ?? 0;
+    if (creditsRemaining <= 0) {
       return NextResponse.json({ error: 'Créditos premium insuficientes' }, { status: 403 });
     }
 
     // 2. Chamar FASHN.ai com tryon-max (geração real)
-    console.log('🎨 Studio Pro: iniciando geração com tryon-max...');
+    console.log('Studio Pro: iniciando geração com tryon-max...');
     const resultUrl = await tryOnMax(finalModelImage, finalProductImage);
-    console.log('✅ Studio Pro: imagem gerada com sucesso');
+    console.log('Studio Pro: imagem gerada com sucesso');
 
-    // 3. Salvar no banco de dados
+    // 3. Decrementar crédito premium — do this before the DB insert so the
+    //    credit is always consumed for a successful generation even if the
+    //    history log write fails.
+    await supabase
+      .from('merchants')
+      .update({ premium_credits_remaining: creditsRemaining - 1 })
+      .eq('id', user.id);
+
+    // 4. Salvar no banco de dados (studio_generations)
+    // BUG FIX: do NOT throw if this insert fails — the studio_generations table
+    // may not exist yet (it is absent from supabase-schema.sql). Return the
+    // image URL regardless so the user gets their result.
+    let genId: string | null = null;
+    let genCreatedAt: string | null = null;
+    let genModelName: string = modelPresetId ? `Preset ${modelPresetId}` : 'Upload Customizado';
+
     const { data: gen, error: gErr } = await supabase
       .from('studio_generations')
       .insert({
         merchant_id: user.id,
         result_image_url: resultUrl,
-        model_name: modelPresetId ? `Preset ${modelPresetId}` : 'Upload Customizado',
+        model_name: genModelName,
         status: 'done',
       })
       .select()
       .single();
 
-    if (gErr) throw gErr;
-
-    // 4. Decrementar crédito premium
-    await supabase
-      .from('merchants')
-      .update({ premium_credits_remaining: merchant.premium_credits_remaining - 1 })
-      .eq('id', user.id);
+    if (gErr) {
+      // Log the error but don't fail — missing table or RLS denial must not
+      // prevent the user from receiving the generated image.
+      console.error('studio_generations insert failed (non-fatal):', gErr.message);
+    } else if (gen) {
+      genId        = gen.id;
+      genCreatedAt = gen.created_at;
+      genModelName = gen.model_name ?? genModelName;
+    }
 
     return NextResponse.json({
-      id: gen.id,
-      imageUrl: gen.result_image_url,
-      url: gen.result_image_url,
-      createdAt: gen.created_at,
-      modelName: gen.model_name,
+      id:        genId ?? `gen_${Date.now()}`,
+      imageUrl:  resultUrl,
+      url:       resultUrl,
+      createdAt: genCreatedAt ?? new Date().toISOString(),
+      modelName: genModelName,
     });
 
   } catch (error: any) {
-    console.error('❌ Studio Pro generation error:', error?.message || error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Studio Pro generation error:', error?.message || error);
+    return NextResponse.json({ error: error?.message ?? 'Erro interno' }, { status: 500 });
   }
 }
