@@ -303,14 +303,24 @@ export default function StudioPage() {
       } else if (modelImg!.file) {
         // Uploaded file: send actual File blob
         formData.append('modelFile', modelImg!.file)
+      } else {
+        // Should not happen (canGenerate guard), but surface a clear error
+        throw new Error('Imagem do modelo inválida. Por favor recarregue a foto.')
       }
       if (productImg!.file) {
         // Uploaded file: send actual File blob
         formData.append('productFile', productImg!.file)
+      } else {
+        // Should not happen (canGenerate guard), but surface a clear error
+        throw new Error('Imagem do produto inválida. Por favor recarregue a foto.')
       }
 
       const res = await fetch('/api/studio/generate', { method: 'POST', body: formData })
-      if (!res.ok) throw new Error(`Erro ${res.status}`)
+      if (!res.ok) {
+        // Surface the server error message instead of a generic "Erro 500"
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `Erro ${res.status}`)
+      }
 
       const data: { imageUrl: string } = await res.json()
 
