@@ -1,0 +1,21 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="F1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#B8AEDD"/><stop offset="100%" stop-color="#7050A0"/></linearGradient>
+    <linearGradient id="F4" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#EDEBF5" stop-opacity=".9"/><stop offset="100%" stop-color="#B8AEDD"/></linearGradient>
+    <linearGradient id="F2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#B8AEDD" stop-opacity=".7"/><stop offset="100%" stop-color="#7050A0" stop-opacity=".5"/></linearGradient>
+    <linearGradient id="F3" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#EDEBF5" stop-opacity=".6"/><stop offset="100%" stop-color="#B8AEDD" stop-opacity=".4"/></linearGradient>
+    <linearGradient id="P1" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#06050F" stop-opacity=".9"/><stop offset="100%" stop-color="#2B1250" stop-opacity=".7"/></linearGradient>
+    <linearGradient id="P2" x1="100%" y1="100%" x2="0%" y2="0%"><stop offset="0%" stop-color="#06050F" stop-opacity=".85"/><stop offset="100%" stop-color="#2B1250" stop-opacity=".65"/></linearGradient>
+    <linearGradient id="Tbl" x1="50%" y1="0%" x2="50%" y2="100%"><stop offset="0%" stop-color="#EDEBF5" stop-opacity=".18"/><stop offset="100%" stop-color="#7050A0" stop-opacity=".28"/></linearGradient>
+    <linearGradient id="Str" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#B8AEDD" stop-opacity=".4"/><stop offset="100%" stop-color="#0CC89E" stop-opacity=".3"/></linearGradient>
+  </defs>
+  <polygon points="50,22 28,50 3,50 50,3" fill="url(#F1)"/>
+  <polygon points="50,22 72,50 97,50 50,3" fill="url(#F4)"/>
+  <polygon points="3,50 50,22 28,50" fill="url(#F2)"/>
+  <polygon points="97,50 50,22 72,50" fill="url(#F3)"/>
+  <polygon points="50,78 28,50 3,50 50,97" fill="url(#P1)" opacity=".80"/>
+  <polygon points="50,78 72,50 97,50 50,97" fill="url(#P2)" opacity=".80"/>
+  <polygon points="50,22 72,50 50,78 28,50" fill="url(#Tbl)"/>
+  <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="url(#Str)" stroke-width=".45"/>
+  <line x1="3" y1="50" x2="97" y2="50" stroke="#0CC89E" stroke-width=".8" opacity=".65"/>
+</svg>
