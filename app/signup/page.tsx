@@ -318,7 +318,7 @@ function SignupPageInner() {
           ) : (
             <>
               <form onSubmit={handleSubmit} noValidate>
-                <div className="p-8 flex flex-col gap-5">
+                <div className="p-8 flex flex-col" style={{ gap: 24 }}>
 
                   <Eyebrow text="Criar conta" />
 
@@ -393,7 +393,7 @@ function SignupPageInner() {
                   />
 
                   {/* Senha + strength indicator */}
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2">
                     <FieldLabel htmlFor="password">Senha</FieldLabel>
                     <div className="relative">
                       <FieldIcon><Lock size={14} /></FieldIcon>
@@ -433,10 +433,12 @@ function SignupPageInner() {
                   {/* Terms */}
                   <p
                     style={{
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize:   12,
-                      color:      '#A09CC0',
-                      lineHeight: 1.75,
+                      fontFamily:   "'DM Sans', sans-serif",
+                      fontSize:     12,
+                      color:        '#A09CC0',
+                      lineHeight:   1.75,
+                      marginTop:    16,
+                      marginBottom: 24,
                     }}
                   >
                     Ao criar uma conta, você concorda com os{' '}
