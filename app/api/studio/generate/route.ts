@@ -108,14 +108,14 @@ async function tryOnMax(modelImage: string, garmentImage: string): Promise<strin
 // ─── Main Route ─────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  }
-
   try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
     const formData = await req.formData();
 
     // Model image: either a File upload or a preset public URL string
@@ -230,7 +230,10 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error('Studio Pro generation error:', error?.message || error);
-    return NextResponse.json({ error: error?.message ?? 'Erro interno' }, { status: 500 });
+    console.error('[studio/generate] Unhandled error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Erro interno do servidor' },
+      { status: 500 }
+    );
   }
 }
