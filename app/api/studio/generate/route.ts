@@ -133,21 +133,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Imagem do produto não enviada' }, { status: 400 });
     }
     if (!FASHN_API_KEY) {
-      return NextResponse.json({ error: 'FASHN API key not configured' }, { status: 500 });
+      console.error('[studio/generate] FASHN_API_KEY env var is not set');
+      return NextResponse.json({ error: 'Configuração de API ausente. Contate o suporte.' }, { status: 500 });
     }
 
     // Resolve model image:
     //   - Uploaded File  → read arrayBuffer → base64 data URI
-    //   - Preset URL     → fetch on server  → base64 data URI
-    // Converting preset URLs to base64 ensures FASHN.ai can always access
-    // the image even when the CDN URL has CORS restrictions or is private.
+    //   - Preset URL     → pass URL string directly to FASHN (no server-side fetch)
+    // Vercel serverless IPs are frequently blocked by Unsplash CDN, so we must
+    // NOT fetch preset URLs server-side. FASHN's tryon-max API accepts URLs
+    // directly in model_image, so we pass the URL string as-is.
     let finalModelImage: string;
     if (modelFileEntry && modelFileEntry instanceof File) {
       finalModelImage = await fileToDataUri(modelFileEntry);
     } else if (modelUrlEntry && modelUrlEntry.startsWith('http')) {
-      // BUG FIX: fetch preset URL server-side and convert to base64 instead of
-      // passing the raw URL, which FASHN.ai may not be able to reach.
-      finalModelImage = await urlToDataUri(modelUrlEntry);
+      // Preset URL: pass directly to FASHN — no server-side fetch needed.
+      finalModelImage = modelUrlEntry;
     } else {
       return NextResponse.json({ error: 'Imagem do modelo inválida' }, { status: 400 });
     }
