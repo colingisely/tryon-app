@@ -128,8 +128,9 @@ function sleep(ms: number): Promise<void> {
   return new Promise(r => setTimeout(r, ms))
 }
 
-function formatRelative(date: Date): string {
-  const mins = Math.round((Date.now() - date.getTime()) / 60000)
+function formatRelative(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date
+  const mins = Math.round((Date.now() - d.getTime()) / 60000)
   if (mins < 1) return 'agora'
   if (mins < 60) return `${mins}min atrás`
   return `${Math.round(mins / 60)}h atrás`
@@ -212,7 +213,11 @@ export default function StudioPage() {
         const res = await fetch('/api/studio/history')
         if (res.ok) {
           const data: GenerationResult[] = await res.json()
-          if (data.length) setGallery(data)
+          const hydrated = data.map(item => ({
+            ...item,
+            createdAt: new Date(item.createdAt as unknown as string),
+          }))
+          if (hydrated.length) setGallery(hydrated)
         }
       } catch {
         // Falls back to demo gallery
