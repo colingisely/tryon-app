@@ -79,9 +79,6 @@ async function tryOnMax(modelImage: string, garmentImage: string): Promise<strin
       inputs: {
         model_image: modelImage,
         product_image: garmentImage,
-        // 'auto' lets FASHN detect top/bottom/one-piece automatically;
-        // omitting this field was causing FASHN to reject the request.
-        category: 'auto',
         output_format: 'png',
         return_base64: false,
       },
