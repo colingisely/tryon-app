@@ -235,7 +235,7 @@ export default function LoginPage() {
               />
 
               {/* Senha field */}
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 <FieldLabel htmlFor="password">Senha</FieldLabel>
                 <div className="relative">
                   <FieldIcon><Lock size={14} /></FieldIcon>
@@ -368,7 +368,7 @@ export const INPUT_STYLE: React.CSSProperties = {
   fontFamily:   "'DM Sans', sans-serif",
   fontSize:      14,
   color:         '#EDEBF5',
-  background:   'rgba(255,255,255,.05)', /* --input bg conforme brand spec */
+  background:   'rgba(15,13,30,0.8)', /* --onyx: #0F0D1E dark bg per brand spec */
   border:       '1px solid rgba(184,174,221,.14)', /* --rule */
   borderRadius:  2, /* --r-input */
   padding:      '10px 12px 10px 36px',
@@ -468,7 +468,7 @@ export function InputField({
   disabled?:    boolean
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <div className="relative">
         <FieldIcon>{icon}</FieldIcon>
@@ -505,8 +505,8 @@ export function CTAPrimary({
       className="w-full flex items-center justify-center gap-2.5"
       style={{
         fontFamily:    "'Bricolage Grotesque', sans-serif",
-        fontWeight:     500,
-        fontSize:       11,
+        fontWeight:     600,
+        fontSize:       12,
         letterSpacing: '0.14em',
         textTransform: 'uppercase',
         color:          '#EDEBF5',
@@ -542,7 +542,7 @@ export function CardFooter({ children }: { children: React.ReactNode }) {
     <div
       className="flex items-center justify-center gap-2"
       style={{
-        borderTop: '1px solid rgba(184,174,221,.10)',
+        borderTop: '1px solid rgba(184,174,221,.14)',
         padding:   '16px 32px',
       }}
     >
