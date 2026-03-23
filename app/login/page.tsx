@@ -510,27 +510,16 @@ export function CTAPrimary({
         letterSpacing: '0.14em',
         textTransform: 'uppercase',
         color:          '#EDEBF5',
-        /* CTA Primary gradient: --plum → --mauve */
+        /* CTA Primary: solid --plum per brand system v5 */
         background:    loading
           ? 'rgba(43,18,80,.45)'
-          : 'linear-gradient(135deg, #2B1250 0%, #7050A0 100%)',
+          : '#2B1250',
         border:        '1px solid rgba(112,80,160,.35)',
         borderRadius:   0,
         padding:       '14px 28px',
         cursor:        loading ? 'not-allowed' : 'pointer',
         opacity:       loading ? 0.65 : 1,
-        filter:        'drop-shadow(0 0 20px rgba(43,18,80,.4))',
-        transition:    'filter .2s, background .2s',
-      }}
-      onMouseEnter={e => {
-        if (!loading) {
-          e.currentTarget.style.filter = 'drop-shadow(0 0 28px rgba(43,18,80,.65)) brightness(1.10)'
-        }
-      }}
-      onMouseLeave={e => {
-        if (!loading) {
-          e.currentTarget.style.filter = 'drop-shadow(0 0 20px rgba(43,18,80,.4))'
-        }
+        transition:    'opacity .2s',
       }}
     >
       {loading ? (
