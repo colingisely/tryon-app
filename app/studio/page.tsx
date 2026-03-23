@@ -206,6 +206,19 @@ export default function StudioPage() {
   const isGenerating = !['idle', 'done', 'error'].includes(status)
   const canGenerate  = !!modelImg && !!productImg && !isGenerating
 
+  // ── Lightbox state ────────────────────────────────────────────────────────
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setLightboxOpen(false)
+    }
+    if (lightboxOpen) {
+      document.addEventListener('keydown', onKeyDown)
+      return () => document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [lightboxOpen])
+
   // ── History fetch ─────────────────────────────────────────────────────────
   useEffect(() => {
     async function fetchHistory() {
@@ -484,8 +497,8 @@ export default function StudioPage() {
 
       {/* ── Page content ── */}
       <div
-        className="relative z-10 mx-auto px-7"
-        style={{ maxWidth: 1200, width: '100%', paddingTop: 48, paddingBottom: 100, flex: 1 }}
+        className="relative z-10 px-7"
+        style={{ width: '100%', paddingTop: 48, paddingBottom: 100, flex: 1 }}
       >
 
         {/* Header */}
@@ -771,24 +784,105 @@ export default function StudioPage() {
               </div>
             </div>
 
-            <div style={{ background: '#0F0D1E', border: '1px solid rgba(12,200,158,.20)', maxWidth: 400, overflow: 'hidden' }}>
-              <img src={result} alt="Resultado" style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
-              <div className="flex items-center justify-between" style={{ padding: '12px 16px', borderTop: '1px solid rgba(184,174,221,.10)' }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.16em', textTransform: 'uppercase', color: '#0CC89E' }}>
-                  Try-On Max · Qualidade Máxima
-                </span>
-                <button
-                  type="button"
-                  onClick={() => triggerDownload(result, 'reflexy-studio.jpg')}
-                  className="flex items-center gap-1.5 px-4 py-2 transition-all"
-                  style={{ background: 'linear-gradient(135deg,#2B1250,#7050A0)', border: '1px solid rgba(112,80,160,.35)', color: '#EDEBF5', fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer' }}
-                  onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.12)')}
-                  onMouseLeave={e => (e.currentTarget.style.filter = 'none')}
-                >
-                  <Download size={12} /> Baixar
-                </button>
+            {/* Centered result card */}
+            <div className="flex flex-col items-center">
+              <div
+                style={{
+                  background:  '#0F0D1E',
+                  border:      '1px solid rgba(12,200,158,.20)',
+                  width:        400,
+                  maxWidth:    '100%',
+                  overflow:    'hidden',
+                  boxShadow:   '0 0 40px rgba(112,80,160,.35), 0 0 80px rgba(43,18,80,.25)',
+                }}
+              >
+                <img
+                  src={result}
+                  alt="Resultado"
+                  onClick={() => setLightboxOpen(true)}
+                  style={{
+                    width:      '100%',
+                    aspectRatio:'3/4',
+                    objectFit:  'cover',
+                    display:    'block',
+                    cursor:     'zoom-in',
+                  }}
+                />
+                <div className="flex items-center justify-between" style={{ padding: '12px 16px', borderTop: '1px solid rgba(184,174,221,.10)' }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.16em', textTransform: 'uppercase', color: '#0CC89E' }}>
+                    Try-On Max · Qualidade Máxima
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const count = gallery.length + 1
+                      const paddedNum = String(count).padStart(3, '0')
+                      const filename = `Reflexy Studio Pro ${paddedNum}.jpg`
+                      triggerDownload(result, filename)
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 transition-all"
+                    style={{ background: 'linear-gradient(135deg,#2B1250,#7050A0)', border: '1px solid rgba(112,80,160,.35)', color: '#EDEBF5', fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.12)')}
+                    onMouseLeave={e => (e.currentTarget.style.filter = 'none')}
+                  >
+                    <Download size={12} /> Baixar
+                  </button>
+                </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── Lightbox ── */}
+        {lightboxOpen && result && (
+          <div
+            onClick={() => setLightboxOpen(false)}
+            style={{
+              position:       'fixed',
+              inset:           0,
+              zIndex:          1000,
+              background:     'rgba(6,5,15,.95)',
+              display:        'flex',
+              alignItems:     'center',
+              justifyContent: 'center',
+              animation:      'lightboxFadeIn .25s ease both',
+            }}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(false)}
+              style={{
+                position:   'absolute',
+                top:         20,
+                right:       20,
+                background: 'rgba(184,174,221,.10)',
+                border:     '1px solid rgba(184,174,221,.22)',
+                color:       '#B8AEDD',
+                width:       36,
+                height:      36,
+                display:    'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor:     'pointer',
+                zIndex:      1001,
+              }}
+            >
+              <X size={16} />
+            </button>
+            <img
+              src={result}
+              alt="Resultado em tela cheia"
+              onClick={e => e.stopPropagation()}
+              style={{
+                maxHeight:   '90vh',
+                maxWidth:    '90vw',
+                objectFit:   'contain',
+                display:     'block',
+                boxShadow:   '0 0 60px rgba(112,80,160,.40)',
+                animation:   'lightboxScaleIn .3s cubic-bezier(0.16,1,0.3,1) both',
+              }}
+            />
           </div>
         )}
 
@@ -804,6 +898,8 @@ export default function StudioPage() {
         @keyframes barShimmer { 0%{background-position:-200% 0;} 100%{background-position:200% 0;} }
         @keyframes resultReveal { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
         @keyframes recPanelReveal { from{opacity:0;transform:translateY(-6px);} to{opacity:1;transform:translateY(0);} }
+        @keyframes lightboxFadeIn { from{opacity:0;} to{opacity:1;} }
+        @keyframes lightboxScaleIn { from{opacity:0;transform:scale(.94);} to{opacity:1;transform:scale(1);} }
       `}</style>
     </main>
   )
