@@ -172,15 +172,15 @@ export default function NotFound() {
           <Link
             href="/"
             style={{
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Bricolage Grotesque', sans-serif",
               padding: '0.75rem 1.75rem',
               background: '#2B1250',
               border: '1px solid rgba(112,80,160,.35)',
-              borderRadius: '0.5rem',
+              borderRadius: '2px',
               color: '#EDEBF5',
               textDecoration: 'none',
-              fontWeight: 500,
-              fontSize: '0.95rem',
+              fontWeight: 600,
+              fontSize: '12px',
               display: 'inline-block',
             }}
           >
@@ -189,15 +189,15 @@ export default function NotFound() {
           <Link
             href="/dashboard"
             style={{
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Bricolage Grotesque', sans-serif",
               padding: '0.75rem 1.75rem',
               background: 'transparent',
               border: '1px solid rgba(184,174,221,0.14)',
-              borderRadius: '0.5rem',
+              borderRadius: '2px',
               color: '#B8AEDD',
               textDecoration: 'none',
-              fontWeight: 500,
-              fontSize: '0.95rem',
+              fontWeight: 600,
+              fontSize: '12px',
               display: 'inline-block',
             }}
           >
