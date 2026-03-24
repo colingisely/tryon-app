@@ -21,6 +21,8 @@ type GarmentCategory = "tops" | "bottoms" | "one-pieces";
 interface GarmentAnalysis {
   category: GarmentCategory;
   description: string; // Used as prompt hint for Try-On Max
+  garmentPhotoType: "flat-lay" | "model" | "auto";
+  segmentationFree: boolean;
 }
 
 // ─── Merchant Lookup ────────────────────────────────────────────────────────
@@ -74,10 +76,16 @@ async function logUsage(
 // ─── Garment Analysis via GPT Vision ───────────────────────────────────────
 // Detects category AND generates a styling prompt for better results
 
-async function analyzeGarment(imageUrl: string): Promise<GarmentAnalysis> {
+async function analyzeGarment(
+  imageUrl: string,
+  productTitle?: string,
+  productDescription?: string
+): Promise<GarmentAnalysis> {
   const defaultResult: GarmentAnalysis = {
     category: "tops",
     description: "",
+    garmentPhotoType: "auto",
+    segmentationFree: true,
   };
 
   if (!OPENAI_API_KEY) {
@@ -87,6 +95,14 @@ async function analyzeGarment(imageUrl: string): Promise<GarmentAnalysis> {
 
   try {
     console.log("🔍 Analyzing garment with GPT Vision...");
+
+    // Build optional context from product page
+    const contextLines: string[] = [];
+    if (productTitle) contextLines.push(`Product name: ${productTitle}`);
+    if (productDescription) contextLines.push(`Description: ${productDescription.substring(0, 300)}`);
+    const contextText = contextLines.length
+      ? `\n\nAdditional context from the product page:\n${contextLines.join("\n")}`
+      : "";
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -99,27 +115,38 @@ async function analyzeGarment(imageUrl: string): Promise<GarmentAnalysis> {
         messages: [
           {
             role: "system",
-            content: `You are an expert fashion garment analyzer specializing in virtual try-on optimization. Analyze the product image and provide:
+            content: `You are an expert fashion garment analyzer specializing in virtual try-on optimization. Analyze the product image (and optional page text) and provide:
 1. CATEGORY: exactly one of "tops", "bottoms", or "one-pieces"
-2. PROMPT: a detailed styling instruction (max 25 words) describing how this garment should look on a person
+2. PHOTO_TYPE: how the garment is photographed — exactly one of "flat-lay", "model", or "auto"
+3. SEGMENTATION_FREE: "true" or "false"
+4. PROMPT: a detailed styling instruction (max 30 words) describing how this garment should look on a person
 
-Category rules:
-- "tops" = upper body: t-shirts, shirts, blouses, sweaters, jackets, coats, vests, crop tops, tank tops, hoodies, cardigans, blazers
-- "bottoms" = lower body: pants, jeans, trousers, shorts, skirts, leggings, bermudas, culottes
-- "one-pieces" = full body: dresses, jumpsuits, rompers, overalls, bodysuits, gowns, coveralls
+CATEGORY rules:
+- "tops" = upper body only: t-shirts, shirts, blouses, sweaters, hoodies, cardigans, blazers, coats, jackets, vests, crop tops, tank tops
+- "bottoms" = lower body only: pants, jeans, trousers, shorts, skirts, leggings, culottes, bermudas
+- "one-pieces" = full body: dresses (short/midi/maxi/long), jumpsuits, rompers, overalls, gowns, bodysuits, coveralls
 
-Prompt engineering rules (CRITICAL for quality):
-- Describe the garment's KEY VISUAL DETAILS: color, pattern, texture, fabric type, embellishments
+PHOTO_TYPE rules:
+- "flat-lay" = garment laid flat on a surface, no person
+- "model" = garment worn by a person or mannequin
+- "auto" = unclear
+
+SEGMENTATION_FREE rules:
+- "true" for tops and one-pieces (preserves body proportions better)
+- "false" for bottoms (better waist and hip segmentation)
+
+PROMPT rules (CRITICAL for quality):
+- Describe KEY VISUAL DETAILS: color, pattern, texture, fabric type
 - Mention FIT and DRAPE: loose, fitted, oversized, cropped, high-waisted, wide-leg, etc.
-- For tops: specify neckline, sleeve length, closure type (buttons, zipper, open)
-- For bottoms: specify rise (high/mid/low), leg shape (straight, wide, skinny), length
-- For one-pieces: describe silhouette, waistline, overall length
-- ALWAYS include "preserve existing lower body" for tops, "preserve existing upper body" for bottoms
-- NEVER mention removing background or changing scenery
+- For tops: specify neckline, sleeve length — end with "preserve existing lower body and legs"
+- For bottoms: specify rise, leg shape, length — end with "preserve existing upper body and top"
+- For one-pieces/dresses: describe silhouette and length — end with "replace full outfit from shoulders to hem"
 - Focus on REALISTIC DRAPING and NATURAL FABRIC BEHAVIOR
 
-Reply in this exact format (2 lines only):
+Reply in this exact format (4 lines only):
 CATEGORY: <category>
+PHOTO_TYPE: <photo_type>
+SEGMENTATION_FREE: <true|false>
 PROMPT: <detailed styling instruction>`,
           },
           {
@@ -127,16 +154,16 @@ PROMPT: <detailed styling instruction>`,
             content: [
               {
                 type: "image_url",
-                image_url: { url: imageUrl, detail: "low" },
+                image_url: { url: imageUrl, detail: "high" },
               },
               {
                 type: "text",
-                text: "Analyze this garment. Reply with CATEGORY and PROMPT only.",
+                text: `Analyze this garment. Reply with CATEGORY, PHOTO_TYPE, SEGMENTATION_FREE, and PROMPT only.${contextText}`,
               },
             ],
           },
         ],
-        max_tokens: 80,
+        max_tokens: 120,
         temperature: 0,
       }),
     });
@@ -157,6 +184,19 @@ PROMPT: <detailed styling instruction>`,
       category = "one-pieces";
     else if (answer.toLowerCase().includes("tops")) category = "tops";
 
+    // Parse photo type
+    let garmentPhotoType: "flat-lay" | "model" | "auto" = "auto";
+    const photoMatch = answer.match(/PHOTO_TYPE:\s*(\S+)/i);
+    if (photoMatch) {
+      const pt = photoMatch[1].trim().toLowerCase();
+      if (pt === "flat-lay") garmentPhotoType = "flat-lay";
+      else if (pt === "model") garmentPhotoType = "model";
+    }
+
+    // Parse segmentation_free
+    const segMatch = answer.match(/SEGMENTATION_FREE:\s*(true|false)/i);
+    const segmentationFree = segMatch ? segMatch[1].toLowerCase() === "true" : category !== "bottoms";
+
     // Parse prompt
     let description = "";
     const promptMatch = answer.match(/PROMPT:\s*(.+)/i);
@@ -164,7 +204,7 @@ PROMPT: <detailed styling instruction>`,
       description = promptMatch[1].trim();
     }
 
-    return { category, description };
+    return { category, description, garmentPhotoType, segmentationFree };
   } catch (error) {
     console.log("⚠️ Garment analysis error:", error);
     return defaultResult;
@@ -261,10 +301,12 @@ async function tryOnV16(
   modelImage: string,
   garmentImage: string,
   category: GarmentCategory,
-  mode: "fast" | "quality" = "quality"
+  mode: "fast" | "quality" = "quality",
+  garmentPhotoType: "flat-lay" | "model" | "auto" = "auto",
+  segmentationFree: boolean = true
 ): Promise<{ resultUrl: string; model: string }> {
   const fashnMode = mode === "fast" ? "balanced" : "quality";
-  console.log(`🔄 Try-On v1.6 (${fashnMode} mode, category: ${category})...`);
+  console.log(`🔄 Try-On v1.6 (${fashnMode} mode, category: ${category}, photo_type: ${garmentPhotoType}, seg_free: ${segmentationFree})...`);
 
   const response = await fetch(FASHN_API_URL, {
     method: "POST",
@@ -277,12 +319,10 @@ async function tryOnV16(
       inputs: {
         model_image: modelImage,
         garment_image: garmentImage,
-        // Use 'auto' for smart category detection (better than hardcoded)
-        category: category === "tops" || category === "bottoms" || category === "one-pieces" ? category : "auto",
-        // Better body shape and skin texture preservation
-        segmentation_free: true,
-        // Auto-detect photo type for best results
-        garment_photo_type: "auto",
+        category: category,
+        // Dynamic values from GPT analysis
+        segmentation_free: segmentationFree,
+        garment_photo_type: garmentPhotoType,
         // Mode: balanced for fast (8s), quality for premium fallback (12-17s)
         mode: fashnMode,
         // PNG for highest quality
@@ -316,7 +356,7 @@ async function tryOnV16(
 
 export async function POST(req: Request) {
   try {
-    const { image, productImage, mode, apiKey } = await req.json();
+    const { image, productImage, mode, apiKey, productTitle, productDescription } = await req.json();
 
     if (!image) {
       return NextResponse.json(
@@ -381,9 +421,9 @@ export async function POST(req: Request) {
         }
         // ── FIM BILLING CHECK ───────────────────────────────────────────
 
-        // Step 2: Analyze garment (category + styling prompt)
-        const analysis = await analyzeGarment(productImage);
-        console.log(`👗 Categoria: ${analysis.category}`);
+        // Step 2: Analyze garment (category + styling prompt + photo type)
+        const analysis = await analyzeGarment(productImage, productTitle, productDescription);
+        console.log(`👗 Categoria: ${analysis.category} | foto: ${analysis.garmentPhotoType} | seg_free: ${analysis.segmentationFree}`);
         console.log(`💡 Prompt: ${analysis.description}`);
 
         // Step 3: Choose endpoint based on mode
@@ -392,14 +432,14 @@ export async function POST(req: Request) {
 
         if (useFast) {
           // Fast mode: use v1.6 in quality mode (~15s, best quality without tryon-max)
-          resultData = await tryOnV16(image, productImage, analysis.category, "quality");
+          resultData = await tryOnV16(image, productImage, analysis.category, "quality", analysis.garmentPhotoType, analysis.segmentationFree);
         } else {
           // Premium mode: Try-On Max (50s, 4K quality) with v1.6 quality fallback
           try {
             resultData = await tryOnMax(image, productImage, analysis.description);
           } catch (maxError: any) {
             console.log("⚠️ Try-On Max failed, falling back to v1.6 quality:", maxError?.message);
-            resultData = await tryOnV16(image, productImage, analysis.category, "quality");
+            resultData = await tryOnV16(image, productImage, analysis.category, "quality", analysis.garmentPhotoType, analysis.segmentationFree);
           }
         }
 
@@ -440,21 +480,21 @@ export async function POST(req: Request) {
     // No API key provided — allow for testing (legacy behavior)
     console.log("⚠️ No API key provided - allowing for testing");
 
-    const analysis = await analyzeGarment(productImage);
-    console.log(`👗 Categoria: ${analysis.category}`);
+    const analysis = await analyzeGarment(productImage, productTitle, productDescription);
+    console.log(`👗 Categoria: ${analysis.category} | foto: ${analysis.garmentPhotoType} | seg_free: ${analysis.segmentationFree}`);
     console.log(`💡 Prompt: ${analysis.description}`);
 
     const useFast = mode !== "tryon-max" && mode !== "premium";
     let resultData: { resultUrl: string; model: string };
 
     if (useFast) {
-      resultData = await tryOnV16(image, productImage, analysis.category, "fast");
+      resultData = await tryOnV16(image, productImage, analysis.category, "quality", analysis.garmentPhotoType, analysis.segmentationFree);
     } else {
       try {
         resultData = await tryOnMax(image, productImage, analysis.description);
       } catch (maxError: any) {
         console.log("⚠️ Try-On Max failed, falling back to v1.6 quality:", maxError?.message);
-        resultData = await tryOnV16(image, productImage, analysis.category, "quality");
+        resultData = await tryOnV16(image, productImage, analysis.category, "quality", analysis.garmentPhotoType, analysis.segmentationFree);
       }
     }
 

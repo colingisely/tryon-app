@@ -7,6 +7,57 @@ export const maxDuration = 300;
 
 const FASHN_API_URL = 'https://api.fashn.ai/v1/run';
 const FASHN_API_KEY = process.env.FASHN_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+// ─── Garment Analysis via GPT Vision ────────────────────────────────────────
+
+async function analyzeGarmentForStudio(productImage: string): Promise<string> {
+  if (!OPENAI_API_KEY) return '';
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4.1-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a fashion expert for virtual try-on. Analyze the garment image and write a single styling instruction (max 30 words) that describes how it should look when worn.
+
+Rules:
+- Describe color, pattern, texture, and fabric
+- Mention fit and drape (loose, fitted, oversized, etc.)
+- For tops/jackets: end with "preserve existing lower body"
+- For bottoms: end with "preserve existing upper body"
+- For dresses/jumpsuits/full-body: end with "replace full outfit from shoulders to hem"
+- Focus on realistic fabric behavior and natural draping
+
+Reply with the styling instruction only — no labels, no extra lines.`,
+          },
+          {
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: productImage, detail: 'high' } },
+              { type: 'text', text: 'Write the styling instruction for this garment.' },
+            ],
+          },
+        ],
+        max_tokens: 80,
+        temperature: 0,
+      }),
+    });
+
+    if (!response.ok) return '';
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content?.trim() || '';
+  } catch {
+    return '';
+  }
+}
 
 // ─── Convert File/Blob to base64 data URI ────────────────────────────────────
 
@@ -65,8 +116,9 @@ async function pollFashnStatus(predictionId: string, maxAttempts = 120): Promise
 
 // ─── Try-On Max (Premium Quality) ──────────────────────────────────────────
 
-async function tryOnMax(modelImage: string, garmentImage: string): Promise<string> {
+async function tryOnMax(modelImage: string, garmentImage: string, prompt?: string): Promise<string> {
   console.log('Studio Pro: Using Try-On Max (tryon-max, ~50s)...');
+  if (prompt) console.log(`Studio Pro: Prompt: "${prompt}"`);
 
   const response = await fetch(FASHN_API_URL, {
     method: 'POST',
@@ -79,6 +131,7 @@ async function tryOnMax(modelImage: string, garmentImage: string): Promise<strin
       inputs: {
         model_image: modelImage,
         product_image: garmentImage,
+        ...(prompt ? { prompt } : {}),
         output_format: 'png',
         return_base64: false,
       },
@@ -177,12 +230,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Créditos premium insuficientes' }, { status: 403 });
     }
 
-    // 2. Chamar FASHN.ai com tryon-max (geração real)
+    // 2. Analisar peça com GPT Vision para obter prompt de styling
+    console.log('Studio Pro: analisando peça com GPT Vision...');
+    const garmentPrompt = await analyzeGarmentForStudio(finalProductImage);
+    if (garmentPrompt) console.log(`Studio Pro: prompt gerado: "${garmentPrompt}"`);
+
+    // 3. Chamar FASHN.ai com tryon-max (geração real)
     console.log('Studio Pro: iniciando geração com tryon-max...');
-    const resultUrl = await tryOnMax(finalModelImage, finalProductImage);
+    const resultUrl = await tryOnMax(finalModelImage, finalProductImage, garmentPrompt || undefined);
     console.log('Studio Pro: imagem gerada com sucesso');
 
-    // 3. Decrementar crédito premium — do this before the DB insert so the
+    // 4. Decrementar crédito premium — do this before the DB insert so the
     //    credit is always consumed for a successful generation even if the
     //    history log write fails.
     await supabase
@@ -190,7 +248,7 @@ export async function POST(req: Request) {
       .update({ premium_credits_remaining: creditsRemaining - 1 })
       .eq('id', user.id);
 
-    // 4. Salvar no banco de dados (studio_generations)
+    // 5. Salvar no banco de dados (studio_generations)
     // BUG FIX: do NOT throw if this insert fails — the studio_generations table
     // may not exist yet (it is absent from supabase-schema.sql). Return the
     // image URL regardless so the user gets their result.
