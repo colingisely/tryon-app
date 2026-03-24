@@ -391,8 +391,8 @@ export async function POST(req: Request) {
         let resultData: { resultUrl: string; model: string };
 
         if (useFast) {
-          // Fast mode: use v1.6 in balanced mode (~8s, good quality)
-          resultData = await tryOnV16(image, productImage, analysis.category, "fast");
+          // Fast mode: use v1.6 in quality mode (~15s, best quality without tryon-max)
+          resultData = await tryOnV16(image, productImage, analysis.category, "quality");
         } else {
           // Premium mode: Try-On Max (50s, 4K quality) with v1.6 quality fallback
           try {

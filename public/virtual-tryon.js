@@ -248,6 +248,33 @@
         });
     }
 
+    // Compress + resize before sending — keeps payload well under 4.5MB Vercel limit
+    function compressImage(file) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onerror = function () { reject(new Error('Falha ao ler o arquivo.')); };
+            reader.onload = function (e) {
+                var img = new Image();
+                img.onerror = function () { reject(new Error('Falha ao processar a imagem.')); };
+                img.onload = function () {
+                    var MAX_DIM = 1024;
+                    var w = img.width, h = img.height;
+                    if (w > MAX_DIM || h > MAX_DIM) {
+                        if (w >= h) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+                        else { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+                    }
+                    var canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', 0.88));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     function queryFirst(selectors, context) {
         context = context || document;
         for (var i = 0; i < selectors.length; i++) {
@@ -602,8 +629,9 @@
         }
 
         /* ─── Mode Toggle ─── */
+        /* Hidden while premium mode is disabled in widget — remove display:none to restore */
         .vto-mode-toggle {
-          display: flex;
+          display: none;
           margin-top: 16px;
           border: 1.5px solid #e0e0e0;
           border-radius: ${t.borderRadius};
@@ -1061,11 +1089,12 @@
         </div>
         
         <div class="vto-mode-toggle">
-          <button type="button" class="vto-mode-option vto-mode-fast" data-mode="fast">
+          <button type="button" class="vto-mode-option vto-mode-fast vto-mode-active" data-mode="fast">
             <span class="vto-mode-name">Rápido</span>
             <span class="vto-mode-desc">~15 seg</span>
           </button>
-          <button type="button" class="vto-mode-option vto-mode-premium vto-mode-active" data-mode="premium">
+          <!-- Premium MAX: desativado no widget (disponível no Studio Pro) — remover display:none para reativar -->
+          <button type="button" class="vto-mode-option vto-mode-premium" data-mode="premium" style="display:none">
             <span class="vto-mode-name">Premium <span class="vto-mode-badge">MAX</span></span>
             <span class="vto-mode-desc">~1 min &middot; Melhor qualidade</span>
           </button>
@@ -1182,7 +1211,7 @@
             });
 
             // Mode toggle
-            self.selectedMode = 'premium'; // Default to premium
+            self.selectedMode = 'fast'; // Default (premium hidden — available in Studio Pro only)
             var modeOptions = modal.querySelectorAll('.vto-mode-option');
             modeOptions.forEach(function(opt) {
                 opt.addEventListener('click', function() {
@@ -1288,7 +1317,7 @@
             var previewImg = this.modal.querySelector('.vto-preview-img');
             var generateBtn = this.modal.querySelector('.vto-generate-btn');
 
-            fileToBase64(file).then(function (base64) {
+            compressImage(file).then(function (base64) {
                 this.userImage = base64;
                 previewImg.src = base64;
                 dropzone.style.display = 'none';
