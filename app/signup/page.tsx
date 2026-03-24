@@ -98,6 +98,7 @@ function SignupPageInner() {
   const paymentSuccess = searchParams.get('payment') === 'success'
   const planSlug       = searchParams.get('plan') ?? ''
   const planLabel      = PLAN_LABELS[planSlug] ?? planSlug
+  const sessionId      = searchParams.get('session_id') ?? ''
 
   useEffect(() => {
     setMounted(true)
@@ -189,20 +190,17 @@ function SignupPageInner() {
         console.error('[Reflexy] merchants insert error:', merchantError.message)
       }
 
-      // ── Step 3: Activate pending subscription (if came from payment) ──────
-      if (paymentSuccess && data.user) {
+      // ── Step 3: Link Stripe session to new merchant (if came from payment) ──
+      if (sessionId) {
         try {
-          await fetch('/api/payments/activate-subscription', {
+          await fetch('/api/payments/link-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: data.user.id,
-              email:  form.email.trim().toLowerCase(),
-            }),
+            body: JSON.stringify({ sessionId }),
           })
-        } catch (activateErr) {
-          // Non-fatal: subscription will be linked via support or manual reconciliation
-          console.error('[Reflexy] activate-subscription error:', activateErr)
+        } catch (e) {
+          // non-fatal — webhook will eventually sync
+          console.warn('link-session failed:', e)
         }
       }
 
@@ -335,8 +333,8 @@ function SignupPageInner() {
                     Configure sua loja
                   </h1>
 
-                  {/* Preview plan badge */}
-                  <PreviewBadge />
+                  {/* Plan badge */}
+                  <PlanBadge planSlug={planSlug} />
 
                   {/* Error banner */}
                   {error && (
@@ -498,7 +496,14 @@ export default function SignupPage() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function PreviewBadge() {
+const PAID_PLANS = new Set(['starter', 'growth', 'pro', 'enterprise'])
+
+function PlanBadge({ planSlug }: { planSlug: string }) {
+  const isPaid = planSlug && PAID_PLANS.has(planSlug)
+  const label  = isPaid
+    ? `Plano ${planSlug.charAt(0).toUpperCase() + planSlug.slice(1)} — Ativado ✓`
+    : 'Plano Preview — grátis'
+
   return (
     <div
       className="inline-flex items-center gap-2 self-start"
@@ -529,7 +534,7 @@ function PreviewBadge() {
           color:          '#0CC89E',
         }}
       >
-        Plano Preview — grátis
+        {label}
       </span>
     </div>
   )
