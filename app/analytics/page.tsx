@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { InternalFooter } from '@/components/ui/InternalFooter';
 import {
@@ -10,8 +11,9 @@ import {
 import {
   Eye, CheckCircle, Users, Clock, Target,
   TrendingUp, TrendingDown, Package, Ruler,
-  AlertCircle, Loader2, ChevronRight, HelpCircle,
+  AlertCircle, Loader2, ChevronRight, HelpCircle, Lock,
 } from 'lucide-react';
+import { getPlanFeatures } from '@/lib/plan-features';
 
 /* ─────────────── Types ─────────────── */
 type Period    = 7 | 30;
@@ -123,11 +125,13 @@ const KpiCard = ({ icon, label, value, sub, trend, accentColor, tooltip, loading
 /* ─────────────── Main ─────────────── */
 export default function AnalyticsPage() {
   const supabase = createClient();
+  const router   = useRouter();
 
   const [period,       setPeriodState] = useState<Period>(7);
   const [chartTab,     setChartTab]    = useState<ChartTab>('both');
   const [loading,      setLoading]     = useState(true);
   const [error,        setError]       = useState<string | null>(null);
+  const [planLocked,   setPlanLocked]  = useState(false);
   const [kpi,          setKpi]         = useState<KpiData | null>(null);
   const [dailyData,    setDailyData]   = useState<DayUsage[]>([]);
   const [funnel,       setFunnel]      = useState<FunnelStep[]>([]);
@@ -142,8 +146,19 @@ export default function AnalyticsPage() {
       if (uErr || !user) throw new Error('Não autenticado.');
 
       const { data: m, error: mErr } = await supabase
-        .from('merchants').select('id').eq('id', user.id).single();
+        .from('merchants')
+        .select('id, plans!plan_id(slug)')
+        .eq('id', user.id)
+        .single();
       if (mErr) throw mErr;
+
+      // Plan gate: analytics avançado requer Growth ou superior
+      const planSlug = (m as any).plans?.slug ?? 'free';
+      if (!getPlanFeatures(planSlug).analyticsAdvanced) {
+        setPlanLocked(true);
+        setLoading(false);
+        return;
+      }
 
       const since = new Date();
       since.setDate(since.getDate() - period);
@@ -251,6 +266,45 @@ export default function AnalyticsPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const maxSizeCount = sizeData[0]?.count ?? 1;
+
+  if (planLocked) return (
+    <div style={{ minHeight: '100vh', background: '#06050F', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ textAlign: 'center', padding: '40px 24px', maxWidth: 460 }}>
+        <div style={{ width: 56, height: 56, borderRadius: 4, background: 'rgba(43,18,80,0.6)', border: '1px solid rgba(112,80,160,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+          <Lock size={24} color="#B8AEDD" />
+        </div>
+        <h1 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 24, fontWeight: 700, color: '#EDEBF5', marginBottom: 12 }}>
+          Analytics Avançado
+        </h1>
+        <p style={{ color: '#A09CC0', fontSize: 15, lineHeight: 1.6, marginBottom: 8 }}>
+          Esta funcionalidade está disponível a partir do plano <strong style={{ color: '#B8AEDD' }}>Growth</strong>.
+        </p>
+        <p style={{ color: '#A09CC0', fontSize: 14, lineHeight: 1.6, marginBottom: 32 }}>
+          Acesse funil de conversão, produtos mais provados, análise de tamanhos e KPIs detalhados.
+        </p>
+        <button
+          onClick={() => router.push('/planos')}
+          style={{
+            background: 'linear-gradient(135deg, #2B1250 0%, #7050A0 100%)',
+            border: 'none', color: '#EDEBF5',
+            padding: '13px 32px', fontSize: 14, fontWeight: 600,
+            fontFamily: "'DM Sans', sans-serif",
+            cursor: 'pointer', letterSpacing: '0.02em',
+          }}
+        >
+          Ver planos
+        </button>
+        <div style={{ marginTop: 16 }}>
+          <button
+            onClick={() => router.push('/dashboard')}
+            style={{ background: 'none', border: 'none', color: '#A09CC0', fontSize: 13, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Voltar ao dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   if (error) return (
     <div style={{ minHeight: '100vh', background: '#06050F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

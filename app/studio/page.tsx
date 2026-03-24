@@ -32,6 +32,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { InternalFooter } from '@/components/ui/InternalFooter'
+import { getPlanFeatures } from '@/lib/plan-features'
 import {
   Upload,
   Sparkles,
@@ -171,7 +172,9 @@ export default function StudioPage() {
         .single()
 
       if (data) {
-        const planSlug = (data as any).plans?.slug ?? 'preview'
+        const planSlug = (data as any).plans?.slug ?? 'free'
+        const features = getPlanFeatures(planSlug)
+        if (!features.studioPro) setPlanLocked(true)
         setMerchant({
           storeName:                 data.store_name ?? '',
           plan:                      planSlug as MerchantData['plan'],
@@ -194,6 +197,9 @@ export default function StudioPage() {
   // ── Recommended models ────────────────────────────────────────────────────
   const [recOpen,         setRecOpen]         = useState(false)
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null)
+
+  // ── Plan gate ─────────────────────────────────────────────────────────────
+  const [planLocked, setPlanLocked] = useState(false)
 
   // ── Generation state ─────────────────────────────────────────────────────
   const [status,   setStatus]   = useState<GenerationStatus>('idle')
@@ -376,6 +382,50 @@ export default function StudioPage() {
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  // Plan gate: Free plan cannot access Studio Pro
+  if (planLocked) {
+    return (
+      <main style={{ minHeight: '100vh', background: '#06050F', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif" }}>
+        <GrainOverlay />
+        <AmbientGlow />
+        <div style={{ textAlign: 'center', padding: '40px 24px', maxWidth: 480, position: 'relative', zIndex: 1 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 4, background: 'rgba(43,18,80,0.6)', border: '1px solid rgba(112,80,160,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+            <Crown size={24} color="#B8AEDD" />
+          </div>
+          <h1 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 26, fontWeight: 700, color: '#EDEBF5', marginBottom: 12 }}>
+            Studio Pro
+          </h1>
+          <p style={{ color: '#A09CC0', fontSize: 15, lineHeight: 1.6, marginBottom: 8 }}>
+            O Studio Pro está disponível a partir do plano <strong style={{ color: '#B8AEDD' }}>Starter</strong>.
+          </p>
+          <p style={{ color: '#A09CC0', fontSize: 14, lineHeight: 1.6, marginBottom: 32 }}>
+            Gere fotos profissionais com modelos usando inteligência artificial de alta qualidade.
+          </p>
+          <button
+            onClick={() => router.push('/planos')}
+            style={{
+              background: 'linear-gradient(135deg, #2B1250 0%, #7050A0 100%)',
+              border: 'none', color: '#EDEBF5',
+              padding: '13px 32px', fontSize: 14, fontWeight: 600,
+              fontFamily: "'DM Sans', sans-serif",
+              cursor: 'pointer', letterSpacing: '0.02em',
+            }}
+          >
+            Ver planos
+          </button>
+          <div style={{ marginTop: 16 }}>
+            <button
+              onClick={() => router.push('/dashboard')}
+              style={{ background: 'none', border: 'none', color: '#A09CC0', fontSize: 13, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Voltar ao dashboard
+            </button>
+          </div>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main style={{ minHeight: '100vh', background: '#06050F', display: 'flex', flexDirection: 'column' }}>
