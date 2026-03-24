@@ -629,8 +629,9 @@
         }
 
         /* ─── Mode Toggle ─── */
+        /* Hidden while premium mode is disabled in widget — remove display:none to restore */
         .vto-mode-toggle {
-          display: flex;
+          display: none;
           margin-top: 16px;
           border: 1.5px solid #e0e0e0;
           border-radius: ${t.borderRadius};
@@ -1088,11 +1089,12 @@
         </div>
         
         <div class="vto-mode-toggle">
-          <button type="button" class="vto-mode-option vto-mode-fast" data-mode="fast">
+          <button type="button" class="vto-mode-option vto-mode-fast vto-mode-active" data-mode="fast">
             <span class="vto-mode-name">Rápido</span>
             <span class="vto-mode-desc">~15 seg</span>
           </button>
-          <button type="button" class="vto-mode-option vto-mode-premium vto-mode-active" data-mode="premium">
+          <!-- Premium MAX: desativado no widget (disponível no Studio Pro) — remover display:none para reativar -->
+          <button type="button" class="vto-mode-option vto-mode-premium" data-mode="premium" style="display:none">
             <span class="vto-mode-name">Premium <span class="vto-mode-badge">MAX</span></span>
             <span class="vto-mode-desc">~1 min &middot; Melhor qualidade</span>
           </button>
@@ -1209,7 +1211,7 @@
             });
 
             // Mode toggle
-            self.selectedMode = 'premium'; // Default to premium
+            self.selectedMode = 'fast'; // Default (premium hidden — available in Studio Pro only)
             var modeOptions = modal.querySelectorAll('.vto-mode-option');
             modeOptions.forEach(function(opt) {
                 opt.addEventListener('click', function() {
