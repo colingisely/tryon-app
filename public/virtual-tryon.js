@@ -519,15 +519,6 @@
           line-height: 1.5;
         }
 
-        /* ─── Product Thumbnail ─── */
-        .vto-product-thumb {
-          display: block;
-          max-height: 90px;
-          border-radius: ${t.borderRadius};
-          margin: 0 auto 20px;
-          object-fit: contain;
-          border: 1px solid #f0f0f0;
-        }
 
         /* ─── Drop Zone ─── */
         .vto-dropzone {
@@ -647,7 +638,7 @@
           box-shadow: inset 0 -2px 0 ${t.primaryColor};
         }
         .vto-mode-option.vto-mode-active.vto-mode-premium {
-          box-shadow: inset 0 -2px 0 #d4a017;
+          box-shadow: inset 0 -2px 0 ${t.primaryColor};
         }
         .vto-mode-option:hover:not(.vto-mode-active) {
           background: #f0f0f0;
@@ -668,7 +659,7 @@
         }
         .vto-mode-badge {
           font-size: 9px;
-          background: linear-gradient(135deg, #d4a017, #f0c040);
+          background: #333;
           color: #fff;
           padding: 1px 5px;
           border-radius: 3px;
@@ -832,6 +823,86 @@
         }
         .vto-error.vto-visible { display: block; }
 
+        /* ─── Email Gate ─── */
+        .vto-email-gate {
+          margin-top: 16px;
+          padding: 16px;
+          background: #f9f9f9;
+          border: 1px solid #ebebeb;
+          border-radius: ${t.borderRadius};
+          text-align: center;
+        }
+        .vto-gate-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: #111;
+          margin: 0 0 4px;
+        }
+        .vto-gate-desc {
+          font-size: 12px;
+          color: #888;
+          margin: 0 0 12px;
+          line-height: 1.4;
+        }
+        .vto-email-label {
+          font-size: 12px;
+          color: #666;
+          margin: 0 0 8px;
+          font-weight: 500;
+        }
+        .vto-email-row {
+          display: flex;
+          gap: 8px;
+        }
+        .vto-email-input {
+          flex: 1;
+          padding: 9px 12px;
+          border: 1px solid #ddd;
+          border-radius: ${t.borderRadius};
+          font-size: 13px;
+          font-family: ${t.fontFamily};
+          color: #111;
+          background: #fff;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .vto-email-input:focus { border-color: rgba(${primaryRgb}, 0.5); }
+        .vto-email-btn {
+          padding: 9px 16px;
+          background: ${t.primaryColor};
+          color: ${t.primaryTextColor};
+          border: none;
+          border-radius: ${t.borderRadius};
+          font-size: 13px;
+          font-weight: 600;
+          font-family: ${t.fontFamily};
+          cursor: pointer;
+          white-space: nowrap;
+          transition: opacity 0.2s;
+        }
+        .vto-email-btn:hover { opacity: 0.85; }
+        .vto-email-confirm {
+          font-size: 12px;
+          color: #22a87a;
+          margin: 8px 0 0;
+          display: none;
+        }
+
+        /* ─── Brand ─── */
+        .vto-brand {
+          font-size: 11px;
+          color: #c8c8c8;
+          text-align: center;
+          margin: 20px 0 0;
+          padding-top: 14px;
+          border-top: 1px solid #f0f0f0;
+        }
+        .vto-brand a {
+          color: inherit;
+          text-decoration: none;
+        }
+        .vto-brand a:hover { color: #888; }
+
         /* ─── Mobile ─── */
         @media (max-width: 640px) {
           .vto-overlay { padding: 12px; }
@@ -909,7 +980,7 @@
                 var img = document.querySelector(selectors[i]);
                 if (img) {
                     var src = img.currentSrc || img.src;
-                    if (src && src.indexOf('cdn.shopify') !== -1) {
+                    if (src && src.startsWith('http')) {
                         return src.split('?')[0];
                     }
                 }
@@ -976,8 +1047,6 @@
         <p class="vto-subtitle">Envie uma foto sua e veja como esta peça fica em você</p>
         
         <div class="vto-upload-section">
-          <img src="${this.productImage}" class="vto-product-thumb" alt="Produto">
-          
           <div class="vto-dropzone">
             <div class="vto-dropzone-icon">${ICONS.upload}</div>
             <p class="vto-dropzone-text">Foto de corpo inteiro</p>
@@ -993,11 +1062,11 @@
         
         <div class="vto-mode-toggle">
           <button type="button" class="vto-mode-option vto-mode-fast" data-mode="fast">
-            <span class="vto-mode-name">&#9889; Rápido</span>
+            <span class="vto-mode-name">Rápido</span>
             <span class="vto-mode-desc">~15 seg</span>
           </button>
           <button type="button" class="vto-mode-option vto-mode-premium vto-mode-active" data-mode="premium">
-            <span class="vto-mode-name">&#11088; Premium <span class="vto-mode-badge">MAX</span></span>
+            <span class="vto-mode-name">Premium <span class="vto-mode-badge">MAX</span></span>
             <span class="vto-mode-desc">~1 min &middot; Melhor qualidade</span>
           </button>
         </div>
@@ -1021,6 +1090,18 @@
         </div>
         
         <div class="vto-error"></div>
+
+        <div class="vto-email-gate" style="display:none">
+          <p class="vto-gate-title">Quer tentar de novo?</p>
+          <p class="vto-gate-desc">Deixe seu email para liberar mais uma geração gratuita.</p>
+          <div class="vto-email-row">
+            <input type="email" class="vto-email-input" placeholder="seu@email.com">
+            <button type="button" class="vto-email-btn">Liberar</button>
+          </div>
+          <p class="vto-email-confirm">&#10003; Pronto! Pode enviar sua foto.</p>
+        </div>
+
+        <p class="vto-brand">Powered by <a href="https://reflexy.co" target="_blank" rel="noopener">Reflexy</a></p>
       `;
 
             overlay.appendChild(modal);
@@ -1115,9 +1196,49 @@
             // Auto-detect product price and pre-select mode
             self.autoSelectMode();
 
-            // Generate & retry
+            // Generate
             generateBtn.addEventListener('click', function() { self.generate(); });
-            retryBtn.addEventListener('click', function() { self.reset(); });
+
+            // Retry — gate on 2nd attempt
+            retryBtn.addEventListener('click', function() {
+                if (self._hasGeneratedOnce && !self._emailCaptured) {
+                    self.showEmailGate();
+                } else {
+                    self.reset();
+                }
+            });
+
+            // Email gate submit
+            var emailGate = modal.querySelector('.vto-email-gate');
+            var emailInput = modal.querySelector('.vto-email-input');
+            var emailBtn = modal.querySelector('.vto-email-btn');
+            var emailConfirm = modal.querySelector('.vto-email-confirm');
+            if (emailBtn) {
+                emailBtn.addEventListener('click', function() {
+                    var email = emailInput ? emailInput.value.trim() : '';
+                    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        emailInput.style.borderColor = '#f87171';
+                        return;
+                    }
+                    emailInput.style.borderColor = '';
+                    emailBtn.disabled = true;
+                    var captureEndpoint = self.config.apiEndpoint.replace(/\/api\/tryon.*$/, '/api/tryon/email-capture');
+                    fetch(captureEndpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email, shop: self.config.shop, result_url: self._resultUrl }),
+                    }).catch(function() {}).finally(function() {
+                        self._emailCaptured = true;
+                        if (emailConfirm) emailConfirm.style.display = 'block';
+                        var row = emailGate ? emailGate.querySelector('.vto-email-row') : null;
+                        if (row) row.style.display = 'none';
+                        setTimeout(function() {
+                            if (emailGate) emailGate.style.display = 'none';
+                            self.reset();
+                        }, 1400);
+                    });
+                });
+            }
         }
 
         autoSelectMode() {
@@ -1273,6 +1394,7 @@
 
             resultImg.src = url;
             this._resultUrl = url;
+            this._hasGeneratedOnce = true;
             resultWrap.classList.add('vto-visible');
 
             // Click on result image to open fullscreen lightbox
@@ -1339,6 +1461,13 @@
             document.addEventListener('keydown', escHandler);
         }
 
+        showEmailGate() {
+            var resultWrap = this.modal.querySelector('.vto-result-wrap');
+            var emailGate = this.modal.querySelector('.vto-email-gate');
+            if (resultWrap) resultWrap.classList.remove('vto-visible');
+            if (emailGate) emailGate.style.display = 'block';
+        }
+
         reset() {
             var previewWrap = this.modal.querySelector('.vto-preview-wrap');
             var dropzone = this.modal.querySelector('.vto-dropzone');
@@ -1347,15 +1476,19 @@
             var uploadSection = this.modal.querySelector('.vto-upload-section');
             var subtitle = this.modal.querySelector('.vto-subtitle');
             var header = this.modal.querySelector('.vto-header');
+            var emailGate = this.modal.querySelector('.vto-email-gate');
+            var modeToggle = this.modal.querySelector('.vto-mode-toggle');
 
             this.userImage = null;
             previewWrap.classList.remove('vto-visible');
             previewWrap.style.display = '';
             resultWrap.classList.remove('vto-visible');
+            if (emailGate) emailGate.style.display = 'none';
             dropzone.style.display = 'block';
             if (uploadSection) uploadSection.style.display = '';
             if (subtitle) subtitle.style.display = '';
             if (header) header.style.display = '';
+            if (modeToggle) modeToggle.style.display = '';
             if (generateBtn) {
                 generateBtn.style.display = '';
                 generateBtn.disabled = true;
