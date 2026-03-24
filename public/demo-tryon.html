@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:title" content="Vestido Midi Feminino">
+  <title>Demo — Provador Virtual Reflexy</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #f5f5f5; color: #111; }
+    .store-header {
+      background: #111; color: #fff; padding: 16px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .store-name { font-size: 18px; font-weight: 700; letter-spacing: 0.1em; }
+    .product-page {
+      max-width: 1100px; margin: 40px auto; padding: 0 24px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 48px;
+    }
+    .product-image-wrap { position: relative; }
+    .product-image-wrap img {
+      width: 100%; border-radius: 8px; background: #eee;
+      display: block; object-fit: cover;
+    }
+    .product-info { padding-top: 8px; }
+    .product-badge {
+      display: inline-block; background: #f0f0f0; color: #555;
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 100px; margin-bottom: 16px;
+    }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+    .product-desc { color: #666; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+    .price { font-size: 26px; font-weight: 700; margin-bottom: 24px; }
+    .size-label { font-size: 13px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .sizes { display: flex; gap: 8px; margin-bottom: 24px; }
+    .size-btn {
+      width: 44px; height: 44px; border: 1px solid #ddd; background: #fff;
+      border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;
+      transition: all 0.15s;
+    }
+    .size-btn:hover { border-color: #111; }
+    .size-btn.active { background: #111; color: #fff; border-color: #111; }
+    .add-to-cart {
+      width: 100%; padding: 16px; background: #111; color: #fff;
+      border: none; border-radius: 4px; font-size: 15px; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.05em; text-transform: uppercase;
+      margin-bottom: 12px; transition: background 0.15s;
+    }
+    .add-to-cart:hover { background: #333; }
+    /* The widget injects its own trigger button — this is just a spacer */
+    .tryon-slot { margin-bottom: 24px; }
+    @media (max-width: 700px) {
+      .product-page { grid-template-columns: 1fr; gap: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="store-header">
+  <span class="store-name">DEMO STORE</span>
+  <span style="font-size:13px;opacity:.5;">Simulação de loja Shopify</span>
+</header>
+
+<div class="product-page">
+  <!-- Product Image -->
+  <div class="product-image-wrap">
+    <img
+      src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=80"
+      alt="Vestido Midi Feminino"
+      id="product-main-image"
+      data-product-featured-image
+    >
+  </div>
+
+  <!-- Product Info -->
+  <div class="product-info">
+    <span class="product-badge">Novidade</span>
+    <h1>Vestido Midi Feminino</h1>
+    <p class="product-desc">
+      Vestido midi em tecido fluido com decote V e mangas longas.
+      Ideal para ocasiões especiais e uso no dia a dia.
+    </p>
+    <div class="price">R$ 289,90</div>
+
+    <div class="size-label">Tamanho</div>
+    <div class="sizes">
+      <button class="size-btn" type="button" onclick="this.parentNode.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">PP</button>
+      <button class="size-btn active" type="button" onclick="this.parentNode.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">P</button>
+      <button class="size-btn" type="button" onclick="this.parentNode.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">M</button>
+      <button class="size-btn" type="button" onclick="this.parentNode.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">G</button>
+      <button class="size-btn" type="button" onclick="this.parentNode.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">GG</button>
+    </div>
+
+    <form action="/cart/add" method="post">
+      <input type="hidden" name="id" value="demo-001">
+      <!-- The widget injects the "Provar" button before the submit button -->
+      <button class="add-to-cart" type="submit" name="add">Adicionar ao Carrinho</button>
+    </form>
+  </div>
+</div>
+
+<!-- Simulate Shopify product page context -->
+<script>
+  window.Shopify = { product: { id: 'demo-001', title: 'Vestido Midi Feminino' } };
+</script>
+
+<!-- Virtual Try-On Widget -->
+<script
+  src="/virtual-tryon.js"
+  data-shop="demo-store.myshopify.com"
+  data-api-endpoint="http://localhost:3000/api/tryon"
+></script>
+
+</body>
+</html>
