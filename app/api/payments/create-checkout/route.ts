@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: userId
         ? `${baseUrl}/dashboard?payment=success&plan=${planSlug}`
-        : `${baseUrl}/signup?plan=${planSlug}&payment=success`,
+        : `${baseUrl}/signup?plan=${planSlug}&payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/#pricing`,
       allow_promotion_codes: true,
       billing_address_collection: "auto",
