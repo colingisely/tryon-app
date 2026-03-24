@@ -411,6 +411,11 @@ export async function POST(req: Request) {
         // "tryon-max" or "premium" = Studio Pro (premium), qualquer outro modo = fast.
         const generationType: GenerationType = (mode === "tryon-max" || mode === "premium") ? "premium" : "fast";
 
+        // checkBillingAndDeduct returns a deductCredit CALLBACK — it does NOT
+        // deduct the credit immediately. The credit is only deducted when
+        // billing.deductCredit() is called below, after successful generation.
+        // If generation fails (throws), the outer catch block returns an error
+        // WITHOUT ever calling deductCredit — so no credit is charged on failure.
         const billing = await checkBillingAndDeduct(merchantId, generationType);
 
         if (!billing.allowed) {
@@ -446,7 +451,9 @@ export async function POST(req: Request) {
         console.log("✅ Resultado gerado com sucesso");
         console.log(`   Modelo: ${resultData.model} | Categoria: ${analysis.category}`);
 
-        // Deduz o crédito após geração bem-sucedida
+        // Deduz o crédito SOMENTE após geração bem-sucedida.
+        // Se qualquer erro ocorrer antes deste ponto (FASHN falhou, timeout,
+        // etc.), o catch externo retorna 500 sem jamais chamar deductCredit.
         await billing.deductCredit();
 
         // Step 4: Log usage
@@ -517,9 +524,11 @@ export async function POST(req: Request) {
     );
 
   } catch (err: any) {
+    // NOTE: reaching this block means billing.deductCredit() was never called,
+    // so the merchant's credit was NOT consumed for this failed attempt.
     console.error("❌ Erro no try-on:", err?.message || err);
     return NextResponse.json(
-      { error: `Erro no try-on: ${err?.message || "erro desconhecido"}` },
+      { error: `Erro no try-on: ${err?.message || "erro desconhecido"}`, credited: false },
       { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
     );
   }
