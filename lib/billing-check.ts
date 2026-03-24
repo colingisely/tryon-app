@@ -62,8 +62,10 @@ export async function checkBillingAndDeduct(
       allowed: true,
       deductCredit: async () => {
         await supabase.rpc('decrement_credit', {
-          p_merchant_id: merchantId,
-          p_type: type,
+          p_merchant_id:  merchantId,
+          p_type:         type,
+          p_reason:       'widget_tryon',
+          p_source:       'api/tryon',
         })
       },
     }
