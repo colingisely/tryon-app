@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getPlanFeatures } from '@/lib/plan-features';
 
 // Vercel: allow up to 300s so the tryon-max poll loop (~50s) doesn't hit the
 // default 10s function timeout and cause a silent 500.
@@ -211,18 +212,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Imagem do produto inválida' }, { status: 400 });
     }
 
-    // 1. Verificar créditos premium
+    // 1. Verificar plano e créditos premium
     // BUG FIX: use (merchant.premium_credits_remaining ?? 0) so that a NULL
     // value in the DB column does not falsely trigger the "insufficient credits"
     // guard (null <= 0 is true in JS, which blocked valid users).
     const { data: merchant, error: mErr } = await supabase
       .from('merchants')
-      .select('premium_credits_remaining')
+      .select('premium_credits_remaining, plans!plan_id(slug)')
       .eq('id', user.id)
       .single();
 
     if (mErr || !merchant) {
       return NextResponse.json({ error: 'Merchant não encontrado' }, { status: 403 });
+    }
+
+    // Gate: Studio Pro requires Starter plan or higher
+    const planSlug = (merchant as any).plans?.slug ?? 'free';
+    const features = getPlanFeatures(planSlug);
+    if (!features.studioPro) {
+      return NextResponse.json(
+        { error: 'Studio Pro não está disponível no plano gratuito. Faça upgrade para continuar.' },
+        { status: 403 }
+      );
     }
 
     const creditsRemaining = merchant.premium_credits_remaining ?? 0;

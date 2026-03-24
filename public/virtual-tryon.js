@@ -380,6 +380,7 @@
             this.theme = null;
             this.sessionId = this.generateSessionId();
             this.modalOpenTime = null;
+            this._hideBadge = false; // set to true for Enterprise plan via /api/widget/config
 
             if (this.isProductPage()) {
                 this.init();
@@ -402,6 +403,17 @@
             this.injectStyles();
             this.createTryOnButton();
             ReflexyConversion.init();
+            this._fetchWidgetConfig();
+        }
+
+        _fetchWidgetConfig() {
+            if (!this.config.apiKey) return;
+            var self = this;
+            var base = this.config.apiEndpoint.replace(/\/api\/tryon.*$/, '');
+            fetch(base + '/api/widget/config?key=' + encodeURIComponent(this.config.apiKey))
+                .then(function(r) { return r.ok ? r.json() : {}; })
+                .then(function(cfg) { self._hideBadge = !!cfg.hideBadge; })
+                .catch(function() { /* fail silently */ });
         }
 
         injectStyles() {
@@ -1130,7 +1142,7 @@
           <p class="vto-email-confirm">&#10003; Pronto! Pode enviar sua foto.</p>
         </div>
 
-        <p class="vto-brand">Powered by <a href="https://reflexy.co" target="_blank" rel="noopener">Reflexy</a></p>
+        ${this._hideBadge ? '' : '<p class="vto-brand">Powered by <a href="https://reflexy.co" target="_blank" rel="noopener">Reflexy</a></p>'}
       `;
 
             overlay.appendChild(modal);
