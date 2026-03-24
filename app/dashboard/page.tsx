@@ -11,10 +11,18 @@ import {
   Zap, Star, Eye, TrendingUp, TrendingDown,
   BarChart2, Settings, Layers, ArrowUpRight,
   AlertCircle, Loader2, RefreshCw, ShoppingBag,
-  Key, AlertTriangle,
+  Key, AlertTriangle, Mail, Download, Lock, Copy, Check,
 } from 'lucide-react';
+import { getPlanFeatures } from '@/lib/plan-features';
 
 /* ─────────────── Types ─────────────── */
+interface Lead {
+  id: string;
+  email: string;
+  created_at: string;
+  result_url: string | null;
+}
+
 interface MerchantData {
   id: string;
   store_name: string;
@@ -193,6 +201,9 @@ export default function DashboardPage() {
   const [error, setError]             = useState<string | null>(null);
   const [showFast, setShowFast]       = useState(true);
   const [showPremium, setShowPremium] = useState(true);
+  const [leads, setLeads]             = useState<Lead[]>([]);
+  const [leadsLocked, setLeadsLocked] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setRefreshing(true);
@@ -207,6 +218,7 @@ export default function DashboardPage() {
         .single();
       if (mErr) throw mErr;
       const plan = (m as any)?.plans ?? {};
+      const planSlug = plan.slug ?? 'free';
       const merchant_normalized = m ? {
         id:                       m.id,
         store_name:               m.store_name,
@@ -214,9 +226,24 @@ export default function DashboardPage() {
         premium_credits_remaining: m.premium_credits_remaining,
         fast_credits_monthly:     plan.fast_credits_monthly  ?? 0,
         premium_credits_monthly:  plan.premium_credits_monthly ?? 0,
-        plan_slug:                plan.slug ?? null,
+        plan_slug:                planSlug,
       } : null;
       setMerchant(merchant_normalized as any);
+
+      // Leads — disponível a partir do Starter
+      const features = getPlanFeatures(planSlug);
+      if (!features.leads) {
+        setLeadsLocked(true);
+      } else {
+        setLeadsLocked(false);
+        const { data: leadsData } = await supabase
+          .from('tryon_leads')
+          .select('id, email, created_at, result_url')
+          .eq('merchant_id', m.id)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        setLeads(leadsData ?? []);
+      }
 
       const since = new Date();
       since.setDate(since.getDate() - period);
@@ -562,6 +589,122 @@ export default function DashboardPage() {
               <span>Configurações</span>
               <ArrowUpRight size={12} style={{ marginLeft: 'auto', opacity: 0.4 }} />
             </button>
+          </div>
+
+          {/* ── Leads ── */}
+          <div style={{ marginTop: 20, background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)' }}>
+
+            {/* Header */}
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(184,174,221,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Mail size={14} color="#7050A0" />
+                <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', margin: 0 }}>
+                  Leads Coletados
+                </h2>
+                {!leadsLocked && leads.length > 0 && (
+                  <span style={{ padding: '2px 8px', background: 'rgba(43,18,80,0.6)', border: '1px solid rgba(112,80,160,0.3)', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: '#B8AEDD' }}>
+                    {leads.length}
+                  </span>
+                )}
+              </div>
+              {!leadsLocked && leads.length > 0 && (
+                <button
+                  onClick={() => {
+                    const csv = 'email,data\n' + leads.map(l =>
+                      `${l.email},${new Date(l.created_at).toLocaleDateString('pt-BR')}`
+                    ).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url  = URL.createObjectURL(blob);
+                    const a    = Object.assign(document.createElement('a'), { href: url, download: 'leads-reflexy.csv' });
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(43,18,80,0.4)', border: '1px solid rgba(112,80,160,0.3)', color: '#B8AEDD', fontSize: 12, fontFamily: "'DM Sans',sans-serif", padding: '6px 12px', cursor: 'pointer' }}
+                >
+                  <Download size={11} />
+                  Exportar CSV
+                </button>
+              )}
+            </div>
+
+            {/* Body */}
+            {leadsLocked ? (
+              /* Plano Free — lock */
+              <div style={{ padding: '36px 24px', textAlign: 'center' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 4, background: 'rgba(43,18,80,0.5)', border: '1px solid rgba(112,80,160,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <Lock size={18} color="#B8AEDD" />
+                </div>
+                <p style={{ color: '#EDEBF5', fontSize: 14, fontFamily: "'DM Sans',sans-serif", marginBottom: 6 }}>
+                  Disponível a partir do plano <strong>Starter</strong>
+                </p>
+                <p style={{ color: '#A09CC0', fontSize: 13, marginBottom: 20 }}>
+                  Veja e exporte os emails capturados pelo provador virtual.
+                </p>
+                <button
+                  onClick={() => window.location.href = '/planos'}
+                  style={{ background: 'linear-gradient(135deg,#2B1250 0%,#7050A0 100%)', border: 'none', color: '#EDEBF5', padding: '10px 24px', fontSize: 13, fontFamily: "'DM Sans',sans-serif", cursor: 'pointer' }}
+                >
+                  Ver planos
+                </button>
+              </div>
+            ) : loading ? (
+              <div style={{ padding: 24 }}>
+                {[1,2,3].map(i => (
+                  <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'center' }}>
+                    <div style={{ flex: 1, height: 12, background: 'rgba(184,174,221,0.07)', borderRadius: 2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                    <div style={{ width: 80, height: 12, background: 'rgba(184,174,221,0.07)', borderRadius: 2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                  </div>
+                ))}
+              </div>
+            ) : leads.length === 0 ? (
+              <div style={{ padding: '36px 24px', textAlign: 'center' }}>
+                <Mail size={28} color="#A09CC0" style={{ marginBottom: 10 }} />
+                <p style={{ color: '#A09CC0', fontSize: 13, fontFamily: "'DM Sans',sans-serif" }}>
+                  Nenhum lead capturado ainda.
+                </p>
+                <p style={{ color: 'rgba(160,156,192,0.55)', fontSize: 12, marginTop: 4 }}>
+                  Os emails aparecem aqui quando visitantes usam o provador pela segunda vez.
+                </p>
+              </div>
+            ) : (
+              <div>
+                {/* Table header */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 36px', gap: 0, padding: '8px 24px', borderBottom: '1px solid rgba(184,174,221,0.06)' }}>
+                  <span style={{ fontSize: 10, color: '#A09CC0', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'IBM Plex Mono',monospace" }}>Email</span>
+                  <span style={{ fontSize: 10, color: '#A09CC0', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'IBM Plex Mono',monospace" }}>Data</span>
+                  <span />
+                </div>
+                {/* Rows */}
+                <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+                  {leads.map((lead) => (
+                    <div
+                      key={lead.id}
+                      style={{ display: 'grid', gridTemplateColumns: '1fr 140px 36px', gap: 0, padding: '11px 24px', borderBottom: '1px solid rgba(184,174,221,0.05)', alignItems: 'center' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(43,18,80,0.2)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                    >
+                      <span style={{ fontSize: 13, color: '#EDEBF5', fontFamily: "'DM Sans',sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {lead.email}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace" }}>
+                        {new Date(lead.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                      </span>
+                      <button
+                        title="Copiar email"
+                        onClick={() => {
+                          navigator.clipboard.writeText(lead.email);
+                          setCopiedEmail(lead.id);
+                          setTimeout(() => setCopiedEmail(null), 1500);
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: copiedEmail === lead.id ? '#0CC89E' : '#A09CC0', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4 }}
+                      >
+                        {copiedEmail === lead.id ? <Check size={12} /> : <Copy size={12} />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* API Key warning banner */}
