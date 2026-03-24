@@ -158,7 +158,7 @@ export function Pricing() {
           <div className="free-entry-left">
             <div className="free-entry-title">Instale e veja o Reflexy na sua loja</div>
             <div className="free-entry-desc">10 provas reais por mês. Experiência completa do provador — sem assinatura.</div>
-            <div className="free-entry-note">Marca Reflexy visível · sem coleta de leads · sem analytics avançado</div>
+            <div className="free-entry-note">sem Studio Pro · sem coleta de leads · sem analytics avançado</div>
           </div>
           <a href="/signup" className="btn-g" style={{whiteSpace:'nowrap',flexShrink:0}}>Instalar agora</a>
         </div>
