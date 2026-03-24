@@ -158,7 +158,7 @@ export function Pricing() {
           <div className="free-entry-left">
             <div className="free-entry-title">Instale e veja o Reflexy na sua loja</div>
             <div className="free-entry-desc">10 provas reais por mês. Experiência completa do provador — sem assinatura.</div>
-            <div className="free-entry-note">Marca Reflexy visível</div>
+            <div className="free-entry-note">Marca Reflexy visível · sem coleta de leads · sem analytics avançado</div>
           </div>
           <a href="/signup" className="btn-g" style={{whiteSpace:'nowrap',flexShrink:0}}>Instalar agora</a>
         </div>
@@ -175,6 +175,7 @@ export function Pricing() {
             <div className="plan-features">
               <div className="plan-feat"><div className="plan-feat-dot"></div>100 provas por mês</div>
               <div className="plan-feat"><div className="plan-feat-dot"></div>5 renders Studio Pro/mês</div>
+              <div className="plan-feat"><div className="plan-feat-dot"></div>Emails coletados pelo provador</div>
               <div className="plan-feat"><div className="plan-feat-dot"></div>Peças mais provadas por SKU</div>
               <div className="plan-feat"><div className="plan-feat-dot"></div>Tempo médio de interação por produto</div>
               <div className="plan-feat"><div className="plan-feat-dot"></div>Suporte padrão</div>
@@ -263,9 +264,10 @@ export function Pricing() {
             <p className="ent-desc">Stack completo de analytics, limites flexíveis e suporte dedicado para operações de moda que exigem escala real e dados de conversão em produção.</p>
             <div className="ent-feats">
               <div className="ent-feat"><div className="ent-feat-dot"></div>1.000+ provas / mês</div>
-              <div className="ent-feat"><div className="ent-feat-dot"></div>20 renders Studio Pro</div>
+              <div className="ent-feat"><div className="ent-feat-dot"></div>Renders Studio Pro — volume customizado</div>
               <div className="ent-feat"><div className="ent-feat-dot"></div>Funil de conversão completo</div>
               <div className="ent-feat"><div className="ent-feat-dot"></div>Impacto do provador nas vendas</div>
+              <div className="ent-feat"><div className="ent-feat-dot"></div>Remoção da marca Reflexy no provador</div>
               <div className="ent-feat"><div className="ent-feat-dot"></div>Integrações customizadas</div>
               <div className="ent-feat"><div className="ent-feat-dot"></div>Suporte dedicado</div>
               <div className="ent-feat"><div className="ent-feat-dot"></div>Limites flexíveis</div>
