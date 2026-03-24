@@ -1366,6 +1366,7 @@
                 }
             }, 1000);
 
+            var productInfo = this.getProductInfo();
             fetch(this.config.apiEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1374,6 +1375,8 @@
                     productImage: this.productImage,
                     mode: this.selectedMode || 'premium',
                     apiKey: this.config.apiKey,
+                    productTitle: productInfo.name || null,
+                    productDescription: productInfo.description || null,
                 }),
             })
                 .then(function (res) {
@@ -1601,6 +1604,7 @@
         getProductInfo() {
             var productId = null;
             var productName = null;
+            var productDescription = null;
 
             // Try to get product ID from URL or meta tags
             var urlMatch = window.location.pathname.match(/\/products\/([^\/\?]+)/);
@@ -1614,7 +1618,17 @@
                 if (titleEl) productName = titleEl.textContent.trim();
             }
 
-            return { id: productId, name: productName };
+            // Extract product description for garment analysis context
+            var descEl = document.querySelector('.product-description, .product__description, [data-product-description], .product-single__description, .product-desc, .description');
+            if (descEl) {
+                productDescription = descEl.textContent.trim().substring(0, 300);
+            }
+            if (!productDescription) {
+                var metaDesc = document.querySelector('meta[name="description"]');
+                if (metaDesc) productDescription = metaDesc.content.substring(0, 300);
+            }
+
+            return { id: productId, name: productName, description: productDescription };
         }
 
         getUserFingerprint() {
