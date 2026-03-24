@@ -928,6 +928,18 @@
           display: none;
         }
 
+        /* ─── Lead Capture (post-generation) ─── */
+        .vto-lead-capture {
+          margin-top: 12px;
+          padding: 12px 14px;
+          background: #f9f9f9;
+          border: 1px solid #ebebeb;
+          border-radius: ${t.borderRadius};
+          text-align: center;
+          display: none;
+        }
+        .vto-lead-capture .vto-email-row { justify-content: center; }
+
         /* ─── Brand ─── */
         .vto-brand {
           font-size: 11px;
@@ -1132,6 +1144,15 @@
         
         <div class="vto-error"></div>
 
+        <div class="vto-lead-capture">
+          <p class="vto-email-label">Receber esta foto por email</p>
+          <div class="vto-email-row">
+            <input type="email" class="vto-lead-input vto-email-input" placeholder="seu@email.com">
+            <button type="button" class="vto-lead-btn vto-email-btn">Enviar</button>
+          </div>
+          <p class="vto-lead-confirm vto-email-confirm">&#10003; Ótimo! Em breve você recebe sua foto.</p>
+        </div>
+
         <div class="vto-email-gate" style="display:none">
           <p class="vto-gate-title">Quer tentar de novo?</p>
           <p class="vto-gate-desc">Deixe seu email para liberar mais uma geração gratuita.</p>
@@ -1249,11 +1270,42 @@
                 }
             });
 
+            // Lead capture (post-generation)
+            var leadCapture = modal.querySelector('.vto-lead-capture');
+            var leadInput = modal.querySelector('.vto-lead-input');
+            var leadBtn = modal.querySelector('.vto-lead-btn');
+            var leadConfirm = modal.querySelector('.vto-lead-confirm');
+            if (leadBtn) {
+                leadBtn.addEventListener('click', function() {
+                    var email = leadInput ? leadInput.value.trim() : '';
+                    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        if (leadInput) leadInput.style.borderColor = '#f87171';
+                        return;
+                    }
+                    if (leadInput) leadInput.style.borderColor = '';
+                    leadBtn.disabled = true;
+                    var captureEndpoint = self.config.apiEndpoint.replace(/\/api\/tryon.*$/, '/api/tryon/email-capture');
+                    fetch(captureEndpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email, shop: self.config.shop, result_url: self._resultUrl }),
+                    }).catch(function() {}).finally(function() {
+                        self._leadCaptured = true;
+                        var row = leadCapture ? leadCapture.querySelector('.vto-email-row') : null;
+                        if (row) row.style.display = 'none';
+                        if (leadConfirm) leadConfirm.style.display = 'block';
+                        setTimeout(function() {
+                            if (leadCapture) leadCapture.style.display = 'none';
+                        }, 2500);
+                    });
+                });
+            }
+
             // Email gate submit
             var emailGate = modal.querySelector('.vto-email-gate');
-            var emailInput = modal.querySelector('.vto-email-input');
-            var emailBtn = modal.querySelector('.vto-email-btn');
-            var emailConfirm = modal.querySelector('.vto-email-confirm');
+            var emailInput = modal.querySelector('.vto-email-input:not(.vto-lead-input)');
+            var emailBtn = modal.querySelector('.vto-email-btn:not(.vto-lead-btn)');
+            var emailConfirm = modal.querySelector('.vto-email-confirm:not(.vto-lead-confirm)');
             if (emailBtn) {
                 emailBtn.addEventListener('click', function() {
                     var email = emailInput ? emailInput.value.trim() : '';
@@ -1441,6 +1493,10 @@
             this._hasGeneratedOnce = true;
             resultWrap.classList.add('vto-visible');
 
+            // Show post-generation lead capture (unless email already captured this session)
+            var leadCapture = this.modal.querySelector('.vto-lead-capture');
+            if (leadCapture && !this._leadCaptured) leadCapture.style.display = 'block';
+
             // Click on result image to open fullscreen lightbox
             resultImg.addEventListener('click', function() {
                 self.openLightbox(url);
@@ -1521,6 +1577,7 @@
             var subtitle = this.modal.querySelector('.vto-subtitle');
             var header = this.modal.querySelector('.vto-header');
             var emailGate = this.modal.querySelector('.vto-email-gate');
+            var leadCapture = this.modal.querySelector('.vto-lead-capture');
             var modeToggle = this.modal.querySelector('.vto-mode-toggle');
 
             this.userImage = null;
@@ -1528,6 +1585,7 @@
             previewWrap.style.display = '';
             resultWrap.classList.remove('vto-visible');
             if (emailGate) emailGate.style.display = 'none';
+            if (leadCapture) leadCapture.style.display = 'none';
             dropzone.style.display = 'block';
             if (uploadSection) uploadSection.style.display = '';
             if (subtitle) subtitle.style.display = '';
