@@ -109,6 +109,16 @@ export async function POST(req: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
 
+        // CRITICAL: Only reset credits on monthly RENEWAL cycles.
+        // billing_reason = 'subscription_create' fires when the subscription
+        // is first created — checkout.session.completed already handled that.
+        // Resetting here would wipe any credits used in the gap between the
+        // two events (seconds to minutes), causing billing discrepancies.
+        if ((invoice as any).billing_reason === 'subscription_create') {
+          console.log(`invoice.payment_succeeded: initial invoice (subscription_create), skipping credit reset for customer ${customerId}`);
+          break;
+        }
+
         const { data: merchant } = await supabase
           .from('merchants')
           .select('id, plan_id')
@@ -133,7 +143,7 @@ export async function POST(req: NextRequest) {
           })
           .eq('id', merchant.id);
 
-        console.log(`Payment succeeded, credits renewed for merchant ${merchant.id}`);
+        console.log(`Payment succeeded (renewal), credits reset for merchant ${merchant.id}`);
         break;
       }
 

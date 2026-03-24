@@ -105,6 +105,12 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 2. Update the merchant record with Stripe subscription data ─────────
+    // NOTE: we do NOT reset fast_credits_used_total / premium_credits_used_total
+    // here because activate-subscription may be called multiple times (e.g. if
+    // the user returns to the success URL). Resetting _used_total would erase
+    // real usage history and allow credits consumed before re-activation to
+    // disappear. Credits are only refreshed here on NEW activations — the
+    // monthly renewal is handled exclusively by invoice.payment_succeeded.
     const { error: updateError } = await getSupabase()
       .from('merchants')
       .update({
@@ -115,8 +121,6 @@ export async function POST(req: NextRequest) {
         subscription_started_at:  new Date().toISOString(),
         fast_credits_remaining:   fastCredits,
         premium_credits_remaining: premiumCredits,
-        fast_credits_used_total:  0,
-        premium_credits_used_total: 0,
         overage_status:           'inactive',
         overage_used_cents:       0,
         updated_at:               new Date().toISOString(),

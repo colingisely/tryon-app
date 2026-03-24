@@ -1,6 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { getPlanFeatures } from '@/lib/plan-features';
+
+// Service-role client: bypasses RLS — used only for credit deduction via
+// the decrement_credit RPC (SECURITY DEFINER) to guarantee atomicity.
+function getServiceSupabase() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 // Vercel: allow up to 300s so the tryon-max poll loop (~50s) doesn't hit the
 // default 10s function timeout and cause a silent 500.
@@ -247,17 +257,24 @@ export async function POST(req: Request) {
     if (garmentPrompt) console.log(`Studio Pro: prompt gerado: "${garmentPrompt}"`);
 
     // 3. Chamar FASHN.ai com tryon-max (geração real)
+    // IMPORTANT: if tryOnMax throws (FASHN error, timeout, failed status),
+    // the outer catch block returns 500 and step 4 is never reached —
+    // meaning the credit is NOT deducted on failure.
     console.log('Studio Pro: iniciando geração com tryon-max...');
     const resultUrl = await tryOnMax(finalModelImage, finalProductImage, garmentPrompt || undefined);
     console.log('Studio Pro: imagem gerada com sucesso');
 
-    // 4. Decrementar crédito premium — do this before the DB insert so the
-    //    credit is always consumed for a successful generation even if the
-    //    history log write fails.
-    await supabase
-      .from('merchants')
-      .update({ premium_credits_remaining: creditsRemaining - 1 })
-      .eq('id', user.id);
+    // 4. Decrementar crédito premium SOMENTE após geração bem-sucedida.
+    // Usa o RPC decrement_credit (SECURITY DEFINER) para garantir:
+    //   - atomicidade (WHERE remaining > 0 previne race conditions)
+    //   - atualização de premium_credits_used_total
+    //   - bypass de RLS via service role
+    // NOTA: este ponto só é alcançado se tryOnMax retornou uma URL válida.
+    const { error: deductError } = await getServiceSupabase()
+      .rpc('decrement_credit', { p_merchant_id: user.id, p_type: 'premium' });
+    if (deductError) {
+      console.error('[studio/generate] decrement_credit failed (non-fatal):', deductError.message);
+    }
 
     // 5. Salvar no banco de dados (studio_generations)
     // BUG FIX: do NOT throw if this insert fails — the studio_generations table
@@ -297,9 +314,12 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
+    // NOTE: reaching this block means the credit deduction in step 4 was never
+    // executed — the merchant's premium credit was NOT consumed for this
+    // failed attempt.
     console.error('[studio/generate] Unhandled error:', error);
     return NextResponse.json(
-      { error: error?.message || 'Erro interno do servidor' },
+      { error: error?.message || 'Erro interno do servidor', credited: false },
       { status: 500 }
     );
   }
