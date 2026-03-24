@@ -248,6 +248,33 @@
         });
     }
 
+    // Compress + resize before sending — keeps payload well under 4.5MB Vercel limit
+    function compressImage(file) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onerror = function () { reject(new Error('Falha ao ler o arquivo.')); };
+            reader.onload = function (e) {
+                var img = new Image();
+                img.onerror = function () { reject(new Error('Falha ao processar a imagem.')); };
+                img.onload = function () {
+                    var MAX_DIM = 1024;
+                    var w = img.width, h = img.height;
+                    if (w > MAX_DIM || h > MAX_DIM) {
+                        if (w >= h) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+                        else { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+                    }
+                    var canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', 0.88));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     function queryFirst(selectors, context) {
         context = context || document;
         for (var i = 0; i < selectors.length; i++) {
@@ -1288,7 +1315,7 @@
             var previewImg = this.modal.querySelector('.vto-preview-img');
             var generateBtn = this.modal.querySelector('.vto-generate-btn');
 
-            fileToBase64(file).then(function (base64) {
+            compressImage(file).then(function (base64) {
                 this.userImage = base64;
                 previewImg.src = base64;
                 dropzone.style.display = 'none';
