@@ -271,7 +271,12 @@ export async function POST(req: Request) {
     //   - bypass de RLS via service role
     // NOTA: este ponto só é alcançado se tryOnMax retornou uma URL válida.
     const { error: deductError } = await getServiceSupabase()
-      .rpc('decrement_credit', { p_merchant_id: user.id, p_type: 'premium' });
+      .rpc('decrement_credit', {
+        p_merchant_id: user.id,
+        p_type:        'premium',
+        p_reason:      'studio_pro',
+        p_source:      'api/studio/generate',
+      });
     if (deductError) {
       console.error('[studio/generate] decrement_credit failed (non-fatal):', deductError.message);
     }

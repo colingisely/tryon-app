@@ -101,6 +101,16 @@ export async function POST(req: NextRequest) {
           })
           .eq('id', userId);
 
+        // Audit: log the credit grant for this activation
+        await supabase.rpc('log_credit_set', {
+          p_merchant_id:  userId,
+          p_fast_new:     plan.fast_credits_monthly,
+          p_premium_new:  plan.premium_credits_monthly,
+          p_reason:       'plan_activation',
+          p_source:       'webhook:checkout.session.completed',
+          p_reference_id: subscriptionId,
+        });
+
         console.log(`Subscription activated for merchant ${userId} -> plan ${planSlug}`);
         break;
       }
@@ -142,6 +152,16 @@ export async function POST(req: NextRequest) {
             premium_credits_remaining: plan?.premium_credits_monthly ?? 0,
           })
           .eq('id', merchant.id);
+
+        // Audit: log the credit renewal
+        await supabase.rpc('log_credit_set', {
+          p_merchant_id:  merchant.id,
+          p_fast_new:     plan?.fast_credits_monthly ?? 0,
+          p_premium_new:  plan?.premium_credits_monthly ?? 0,
+          p_reason:       'plan_renewal',
+          p_source:       'webhook:invoice.payment_succeeded',
+          p_reference_id: (invoice as any).id ?? null,
+        });
 
         console.log(`Payment succeeded (renewal), credits reset for merchant ${merchant.id}`);
         break;

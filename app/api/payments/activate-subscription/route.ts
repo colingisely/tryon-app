@@ -132,6 +132,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
+    // Audit: log the credit grant (non-fatal if fails)
+    await getSupabase().rpc('log_credit_set', {
+      p_merchant_id:  userId,
+      p_fast_new:     fastCredits,
+      p_premium_new:  premiumCredits,
+      p_reason:       'plan_activation',
+      p_source:       'activate-subscription',
+      p_reference_id: stripeSubscriptionId,
+    });
+
     // ── 3. Clean up pending_subscriptions row if it existed ─────────────────
     if (pending) {
       await getSupabase()
