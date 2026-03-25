@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function StickyCta() {
+  const { t } = useLanguage();
+
   useEffect(() => {
     /* ── STICKY CTA — IntersectionObserver ── */
     const stickyCta = document.getElementById('sticky-cta');
@@ -25,9 +28,9 @@ export default function StickyCta() {
   }, []);
 
   return (
-    <div id="sticky-cta" role="complementary" aria-label="Ação rápida">
-      <span className="sticky-cta-text">Provador virtual com IA para sua loja Shopify</span>
-      <a href="#pricing" className="btn-p">Começar gratuitamente <span aria-hidden="true">→</span></a>
+    <div id="sticky-cta" role="complementary" aria-label={t('stickyCta.ariaLabel')}>
+      <span className="sticky-cta-text">{t('stickyCta.text')}</span>
+      <a href="#pricing" className="btn-p">{t('stickyCta.button')} <span aria-hidden="true">→</span></a>
     </div>
   );
 }

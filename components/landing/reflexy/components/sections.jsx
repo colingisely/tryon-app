@@ -1,42 +1,104 @@
 'use client';
 
+import { useLanguage } from '../i18n/LanguageContext';
+
 // ── §04 HOW IT WORKS ──────────────────────────────────────────────────────────
 export function HowItWorks() {
+  const { lang, t } = useLanguage();
   return (
-    <section className="sec" id="how">
-      <div className="wrap">
-        <p className="eyebrow">Como Funciona</p>
-        <h2 className="display">Instale uma vez.<br />Funciona para sempre.</h2>
-        <p className="editorial" style={{marginTop:'12px'}}>Instalação simples e direta no Shopify. Em menos de 5 minutos, sua loja já está pronta.</p>
-
-        <div className="steps-grid">
-          <div className="step">
-            <div className="step-connector"></div>
-            <div className="step-num">Passo 01</div>
-            <div className="step-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{color:'var(--dusk)'}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <section className="how" id="how">
+      <div className="container">
+        <div className="how__grid">
+          <div>
+            <div className="reveal">
+              <div className="section-tag"><span className="section-tag-dot"></span>{t('how.tag')}</div>
             </div>
-            <h3 className="step-title">Instale o plugin</h3>
-            <p className="step-body">Adicione o Reflexy à sua loja Shopify em menos de 5 minutos diretamente pela App Store. A instalação é simples e acompanhada de um guia passo a passo.</p>
+            <h2 className="section-title reveal" data-delay="1">
+              {lang === 'en'
+                ? <>Install once.<br /><span className="text-gradient">Works forever.</span></>
+                : <>Instale uma vez.<br /><span className="text-gradient">Funciona para sempre.</span></>
+              }
+            </h2>
+            <p className="section-sub reveal" data-delay="2">
+              {t('how.sub')}
+            </p>
+
+            <div className="how__steps stagger-left">
+              <div className="how__step">
+                <div className="how__step-num">01</div>
+                <div>
+                  <div className="how__step-title">{t('how.step1Title')}</div>
+                  <div className="how__step-body">{t('how.step1Body')}</div>
+                  <div className="how__step-badge">{t('how.step1Badge')}</div>
+                </div>
+              </div>
+              <div className="how__step">
+                <div className="how__step-num">02</div>
+                <div>
+                  <div className="how__step-title">{t('how.step2Title')}</div>
+                  <div className="how__step-body">{t('how.step2Body')}</div>
+                  <div className="how__step-badge">{t('how.step2Badge')}</div>
+                </div>
+              </div>
+              <div className="how__step">
+                <div className="how__step-num">03</div>
+                <div>
+                  <div className="how__step-title">{t('how.step3Title')}</div>
+                  <div className="how__step-body">{t('how.step3Body')}</div>
+                  <div className="how__step-badge">{t('how.step3Badge')}</div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="step">
-            <div className="step-connector"></div>
-            <div className="step-num">Passo 02</div>
-            <div className="step-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{color:'var(--dusk)'}}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          {/* Dashboard mockup */}
+          <div className="reveal-right" data-delay="2">
+            <div className="dashboard spin-border">
+              <div className="dash__topbar">
+                <div className="dash__dot" style={{background:'#FF5F57'}}></div>
+                <div className="dash__dot" style={{background:'#FEBC2E'}}></div>
+                <div className="dash__dot" style={{background:'#28C840'}}></div>
+                <span style={{marginLeft:'8px',fontFamily:"'IBM Plex Mono',monospace",fontSize:'11px',color:'var(--dim)'}}>{t('how.dashProduction')}</span>
+                <div className="glow-dot" style={{marginLeft:'auto'}}></div>
+                <span style={{fontSize:'11px',color:'var(--accent)',fontFamily:"'IBM Plex Mono',monospace",marginLeft:'6px'}}>LIVE</span>
+              </div>
+              <div className="dash__metrics">
+                <div className="dash__metric">
+                  <div className="dash__metric-val text-gradient" style={{fontFamily:"'Bricolage Grotesque',sans-serif",fontSize:'20px',fontWeight:800}}>+38%</div>
+                  <div className="dash__metric-label">{t('how.dashConversion')}</div>
+                </div>
+                <div className="dash__metric">
+                  <div className="dash__metric-val" style={{fontFamily:"'Bricolage Grotesque',sans-serif",fontSize:'20px',fontWeight:800,color:'rgba(74,222,128,.9)'}}>−52%</div>
+                  <div className="dash__metric-label">{t('how.dashReturns')}</div>
+                </div>
+                <div className="dash__metric">
+                  <div className="dash__metric-val" style={{fontFamily:"'Bricolage Grotesque',sans-serif",fontSize:'20px',fontWeight:800,color:'var(--accent)'}}>&lt;15s</div>
+                  <div className="dash__metric-label">{t('how.dashGeneration')}</div>
+                </div>
+              </div>
+              <div className="dash__chart">
+                <div className="dash__chart-label">{t('how.dashChartLabel')}</div>
+                <div className="dash__chart-bars" id="dashBars"></div>
+              </div>
+              <div className="dash__alerts">
+                <div className="dash__alert-title">{t('how.dashInsightsTitle')}</div>
+                <div className="dash__alert">
+                  <div className="dash__alert-dot" style={{background:'rgba(74,222,128,.9)'}}></div>
+                  <span className="dash__alert-text">{t('how.dashAlert1')}</span>
+                  <span className="dash__alert-time">{t('how.dashAlert1Time')}</span>
+                </div>
+                <div className="dash__alert">
+                  <div className="dash__alert-dot" style={{background:'#FEBC2E'}}></div>
+                  <span className="dash__alert-text">{t('how.dashAlert2')}</span>
+                  <span className="dash__alert-time">{t('how.dashAlert2Time')}</span>
+                </div>
+                <div className="dash__alert">
+                  <div className="dash__alert-dot" style={{background:'rgba(124,58,237,.9)'}}></div>
+                  <span className="dash__alert-text">{t('how.dashAlert3')}</span>
+                  <span className="dash__alert-time">{t('how.dashAlert3Time')}</span>
+                </div>
+              </div>
             </div>
-            <h3 className="step-title">Ative o provador</h3>
-            <p className="step-body">O botão "Experimentar" aparece automaticamente nas páginas de produto. Seus clientes já podem usar — sem nenhuma ação adicional.</p>
-          </div>
-
-          <div className="step">
-            <div className="step-num">Passo 03</div>
-            <div className="step-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{color:'var(--dusk)'}}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            </div>
-            <h3 className="step-title">Acompanhe os dados</h3>
-            <p className="step-body">Acesse o painel e veja em tempo real como seus clientes interagem com cada peça. Inteligência disponível nas primeiras horas.</p>
           </div>
         </div>
       </div>
@@ -46,29 +108,38 @@ export function HowItWorks() {
 
 // ── §05 COMPARISON ────────────────────────────────────────────────────────────
 export function Comparison() {
+  const { lang, t } = useLanguage();
   return (
-    <section className="sec" style={{background:'var(--onyx)'}}>
-      <div className="wrap">
-        <p className="eyebrow">Vantagem Competitiva</p>
-        <h2 className="display">A maioria resolve uma camada.<br />Reflexy resolve três.</h2>
-
-        <div style={{overflowX:'auto'}}>
-          <table className="comp-table">
+    <section className="compare" id="compare">
+      <div className="container">
+        <div className="compare__header">
+          <div className="reveal">
+            <div className="section-tag"><span className="section-tag-dot"></span>{t('compare.tag')}</div>
+          </div>
+          <h2 className="section-title reveal" data-delay="1">
+            {lang === 'en'
+              ? <>Most tools solve one layer.<br /><span className="text-gradient">Reflexy solves three.</span></>
+              : <>A maioria resolve uma camada.<br /><span className="text-gradient">Reflexy resolve três.</span></>
+            }
+          </h2>
+        </div>
+        <div className="compare-table-wrap reveal-scale">
+          <table className="compare-table">
             <thead>
               <tr>
-                <th>Funcionalidade</th>
-                <th className="ours">Reflexy</th>
-                <th>Concorrentes</th>
+                <th>{t('compare.colFeature')}</th>
+                <th className="reflexy-col">{t('compare.colReflexy')}</th>
+                <th>{t('compare.colCompetitors')}</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td>Provador virtual com IA</td><td className="ours"><span className="tick-yes">✓</span></td><td><span className="tick-yes">✓</span></td></tr>
-              <tr><td>Geração de imagens profissionais 4K</td><td className="ours"><span className="tick-yes">✓</span></td><td><span className="tick-no">✗</span></td></tr>
-              <tr><td>Analytics comportamental proprietário</td><td className="ours"><span className="tick-yes">✓</span></td><td><span className="tick-no">✗</span></td></tr>
-              <tr><td>Dados de intenção de compra</td><td className="ours"><span className="tick-yes">✓</span></td><td><span className="tick-no">✗</span></td></tr>
-              <tr><td>Painel unificado</td><td className="ours"><span className="tick-yes">✓</span></td><td><span className="tick-no">✗</span></td></tr>
-              <tr><td>Integração nativa Shopify</td><td className="ours"><span className="tick-yes">✓</span></td><td><span className="tick-part">Parcial</span></td></tr>
-              <tr><td>Modelo de dados proprietário</td><td className="ours"><span className="tick-yes">✓</span></td><td><span className="tick-no">✗</span></td></tr>
+              <tr><td>{t('compare.row1')}</td><td className="reflexy-col"><span className="check-yes">✓</span></td><td><span className="check-yes">✓</span></td></tr>
+              <tr><td>{t('compare.row2')}</td><td className="reflexy-col"><span className="check-yes">✓</span></td><td><span className="check-no">✗</span></td></tr>
+              <tr><td>{t('compare.row3')}</td><td className="reflexy-col"><span className="check-yes">✓</span></td><td><span className="check-no">✗</span></td></tr>
+              <tr><td>{t('compare.row4')}</td><td className="reflexy-col"><span className="check-yes">✓</span></td><td><span className="check-no">✗</span></td></tr>
+              <tr><td>{t('compare.row5')}</td><td className="reflexy-col"><span className="check-yes">✓</span></td><td><span className="check-no">✗</span></td></tr>
+              <tr><td>{t('compare.row6')}</td><td className="reflexy-col"><span className="check-yes">✓</span></td><td>{t('compare.row6Competitor')}</td></tr>
+              <tr><td>{t('compare.row7')}</td><td className="reflexy-col"><span className="check-yes">✓</span></td><td><span className="check-no">✗</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -79,51 +150,177 @@ export function Comparison() {
 
 // ── §06 RESULTS ───────────────────────────────────────────────────────────────
 export function Results() {
+  const { lang, t } = useLanguage();
   return (
-    <section className="sec">
-      <div className="wrap">
-        <p className="eyebrow">Resultados</p>
-        <h2 className="display">Números que<br />falam por si.</h2>
-
-        <div className="proof-grid">
-          <div className="proof-cell">
-            <div className="proof-number">+<span>38%</span></div>
-            <div className="proof-label">Aumento médio em conversão*</div>
-            <p className="proof-desc">Benchmark do setor de e-commerce de moda com provadores virtuais. O Reflexy foi desenhado para entregar essa transformação na sua operação.</p>
-          </div>
-          <div className="proof-cell">
-            <div className="proof-number">−<span>52%</span></div>
-            <div className="proof-label">Redução em devoluções*</div>
-            <p className="proof-desc">Clientes que provam antes de comprar devolvem menos. Benchmark consolidado de lojas de moda que adotaram provadores virtuais com IA.</p>
-          </div>
-          <div className="proof-cell">
-            <div className="proof-number" style={{fontFamily:'var(--f-m)',fontWeight:400,color:'var(--verdigris)'}}>&lt; 15<span style={{fontSize:'.5em',color:'var(--dusk)'}}>s</span></div>
-            <div className="proof-label">Tempo de geração confirmado</div>
-            <p className="proof-desc">O provador opera no modo balanced — simulação hiper-realista entregue em até 15 segundos. Rápido o suficiente para não interromper a decisão de compra.</p>
-          </div>
-          <div className="proof-cell">
-            <div className="proof-number" style={{fontFamily:'var(--f-m)',fontWeight:400,color:'var(--verdigris)'}}>4K</div>
-            <div className="proof-label">Resolução Studio Pro confirmada</div>
-            <p className="proof-desc">O Studio Pro gera imagens profissionais em alta resolução, em até 60 segundos. Pronto para ads, catálogos e campanhas.</p>
+    <>
+      {/* Metrics grid */}
+      <section className="metrics" id="metrics">
+        <div className="container">
+          <div className="metrics__grid stagger-up">
+            <div className="metric">
+              <div className="metric__value">+<span data-target="38" data-suffix="%">38%</span></div>
+              <div className="metric__label">{t('results.metric1Label')}</div>
+              <div className="metric__sub">{t('results.metric1Sub')}</div>
+              <div className="metric__sparkline" id="spark1"></div>
+              <div className="metric__trend metric__trend--up">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 7L5 3L9 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                {t('results.metric1Trend')}
+              </div>
+            </div>
+            <div className="metric">
+              <div className="metric__value">−<span data-target="52" data-suffix="%">52%</span></div>
+              <div className="metric__label">{t('results.metric2Label')}</div>
+              <div className="metric__sub">{t('results.metric2Sub')}</div>
+              <div className="metric__sparkline" id="spark2"></div>
+              <div className="metric__trend metric__trend--down">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 3L5 7L9 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                {t('results.metric2Trend')}
+              </div>
+            </div>
+            <div className="metric">
+              <div className="metric__value">&lt;<span data-target="15" data-suffix="s">15s</span></div>
+              <div className="metric__label">{t('results.metric3Label')}</div>
+              <div className="metric__sub">{t('results.metric3Sub')}</div>
+              <div className="metric__sparkline" id="spark3"></div>
+              <div className="metric__trend metric__trend--up">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 7L5 3L9 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                {t('results.metric3Trend')}
+              </div>
+            </div>
+            <div className="metric">
+              <div className="metric__value"><span data-target="4" data-suffix="K">4K</span></div>
+              <div className="metric__label">{t('results.metric4Label')}</div>
+              <div className="metric__sub">{t('results.metric4Sub')}</div>
+              <div className="metric__sparkline" id="spark4"></div>
+              <div className="metric__trend metric__trend--up">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 7L5 3L9 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                {t('results.metric4Trend')}
+              </div>
+            </div>
           </div>
         </div>
+      </section>
 
-        <div className="quote-block">
-          <span className="quote-mark">"</span>
-          <p className="quote-text">Os dados de analytics me mostraram que minha peça mais provada não era a mais vendida. Ajustei preço e descrição. Vendi 3× mais no mês seguinte.</p>
-          <div className="quote-attr">
-            <span className="quote-attr-name">Lojista de moda feminina</span>
-            <span className="quote-attr-detail">São Paulo · 90 dias de uso</span>
+      <div className="section-sep" />
+
+      {/* Testimonials carousel */}
+      <section className="testimonial-section">
+        <div className="testimonial-section__header container">
+          <div className="reveal">
+            <div className="section-tag"><span className="section-tag-dot"></span>{t('results.testimonialTag')}</div>
           </div>
-          <div className="quote-source">Depoimento com consentimento · early adopter · resultados individuais podem variar</div>
+          <h2 className="section-title reveal" data-delay="1">
+            {lang === 'en'
+              ? <>Merchants who <span className="text-gradient">already use</span> Reflexy</>
+              : <>Lojistas que <span className="text-gradient">já usam</span> o Reflexy</>
+            }
+          </h2>
         </div>
-      </div>
-    </section>
+        <div style={{overflow:'hidden',position:'relative',padding:'20px 0'}}>
+          <div style={{position:'absolute',top:0,bottom:0,left:0,width:'120px',background:'linear-gradient(to right,var(--bg),transparent)',zIndex:2,pointerEvents:'none'}}></div>
+          <div style={{position:'absolute',top:0,bottom:0,right:0,width:'120px',background:'linear-gradient(to left,var(--bg),transparent)',zIndex:2,pointerEvents:'none'}}></div>
+          <div className="testimonials__track">
+            <div className="testimonial-card">
+              <div className="testimonial-card__glow"></div>
+              <div className="testimonial-stars">
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+              </div>
+              <div className="testimonial-card__text">{t('results.t1Text')}</div>
+              <div className="testimonial-card__author">
+                <div style={{width:'38px',height:'38px',borderRadius:'50%',background:'linear-gradient(135deg,var(--primary),var(--accent))',display:'grid',placeItems:'center',fontSize:'14px',fontWeight:700,color:'#fff',flexShrink:0}}>A</div>
+                <div>
+                  <div className="testimonial-card__name">{t('results.t1Name')}</div>
+                  <div className="testimonial-card__role">{t('results.t1Role')}</div>
+                </div>
+              </div>
+            </div>
+            <div className="testimonial-card">
+              <div className="testimonial-card__glow"></div>
+              <div className="testimonial-stars">
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+              </div>
+              <div className="testimonial-card__text">{t('results.t2Text')}</div>
+              <div className="testimonial-card__author">
+                <div style={{width:'38px',height:'38px',borderRadius:'50%',background:'linear-gradient(135deg,var(--primary),var(--accent))',display:'grid',placeItems:'center',fontSize:'14px',fontWeight:700,color:'#fff',flexShrink:0}}>R</div>
+                <div>
+                  <div className="testimonial-card__name">{t('results.t2Name')}</div>
+                  <div className="testimonial-card__role">{t('results.t2Role')}</div>
+                </div>
+              </div>
+            </div>
+            <div className="testimonial-card">
+              <div className="testimonial-card__glow"></div>
+              <div className="testimonial-stars">
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+              </div>
+              <div className="testimonial-card__text">{t('results.t3Text')}</div>
+              <div className="testimonial-card__author">
+                <div style={{width:'38px',height:'38px',borderRadius:'50%',background:'linear-gradient(135deg,var(--primary),var(--accent))',display:'grid',placeItems:'center',fontSize:'14px',fontWeight:700,color:'#fff',flexShrink:0}}>C</div>
+                <div>
+                  <div className="testimonial-card__name">{t('results.t3Name')}</div>
+                  <div className="testimonial-card__role">{t('results.t3Role')}</div>
+                </div>
+              </div>
+            </div>
+            {/* Duplicates for infinite loop */}
+            <div className="testimonial-card">
+              <div className="testimonial-card__glow"></div>
+              <div className="testimonial-stars">
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+              </div>
+              <div className="testimonial-card__text">{t('results.t1Text')}</div>
+              <div className="testimonial-card__author">
+                <div style={{width:'38px',height:'38px',borderRadius:'50%',background:'linear-gradient(135deg,var(--primary),var(--accent))',display:'grid',placeItems:'center',fontSize:'14px',fontWeight:700,color:'#fff',flexShrink:0}}>A</div>
+                <div>
+                  <div className="testimonial-card__name">{t('results.t1Name')}</div>
+                  <div className="testimonial-card__role">{t('results.t1Role')}</div>
+                </div>
+              </div>
+            </div>
+            <div className="testimonial-card">
+              <div className="testimonial-card__glow"></div>
+              <div className="testimonial-stars">
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+              </div>
+              <div className="testimonial-card__text">{t('results.t2Text')}</div>
+              <div className="testimonial-card__author">
+                <div style={{width:'38px',height:'38px',borderRadius:'50%',background:'linear-gradient(135deg,var(--primary),var(--accent))',display:'grid',placeItems:'center',fontSize:'14px',fontWeight:700,color:'#fff',flexShrink:0}}>R</div>
+                <div>
+                  <div className="testimonial-card__name">{t('results.t2Name')}</div>
+                  <div className="testimonial-card__role">{t('results.t2Role')}</div>
+                </div>
+              </div>
+            </div>
+            <div className="testimonial-card">
+              <div className="testimonial-card__glow"></div>
+              <div className="testimonial-stars">
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+                <span className="testimonial-star">★</span><span className="testimonial-star">★</span><span className="testimonial-star">★</span>
+              </div>
+              <div className="testimonial-card__text">{t('results.t3Text')}</div>
+              <div className="testimonial-card__author">
+                <div style={{width:'38px',height:'38px',borderRadius:'50%',background:'linear-gradient(135deg,var(--primary),var(--accent))',display:'grid',placeItems:'center',fontSize:'14px',fontWeight:700,color:'#fff',flexShrink:0}}>C</div>
+                <div>
+                  <div className="testimonial-card__name">{t('results.t3Name')}</div>
+                  <div className="testimonial-card__role">{t('results.t3Role')}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
 
 // ── §07 PRICING ───────────────────────────────────────────────────────────────
 export function Pricing() {
+  const { lang, t } = useLanguage();
   const handleCheckout = async (planSlug) => {
     if (!planSlug) {
       console.error('Plan slug is missing');
@@ -146,134 +343,196 @@ export function Pricing() {
     }
   };
 
+  const checkOk = (
+    <svg className="pricing-card-v2__check pricing-card-v2__check--ok" viewBox="0 0 18 18" fill="none">
+      <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.2" opacity="0.3"/>
+      <path d="M5.5 9l2.5 2.5 4.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+  const checkNo = (
+    <svg className="pricing-card-v2__check pricing-card-v2__check--no" viewBox="0 0 18 18" fill="none">
+      <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.2" opacity="0.3"/>
+      <path d="M6 12l6-6M12 12L6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+
   return (
-    <section className="sec" id="pricing" style={{background:'var(--onyx)'}}>
-      <div className="wrap">
-        <p className="eyebrow">Planos</p>
-        <h2 className="display">Do primeiro teste<br />à escala real.</h2>
-        <p className="editorial" style={{marginTop:'12px'}}>Três planos. Um caminho claro.</p>
-
-        {/* FREE ENTRY */}
-        <div className="free-entry">
-          <div className="free-entry-left">
-            <div className="free-entry-title">Instale e veja o Reflexy na sua loja</div>
-            <div className="free-entry-desc">10 provas reais por mês. Experiência completa do provador — sem assinatura.</div>
-            <div className="free-entry-note">Marca Reflexy visível · sem coleta de leads · sem analytics avançado</div>
+    <section className="pricing" id="pricing">
+      <div className="container">
+        <div className="pricing__header">
+          <div className="reveal">
+            <div className="section-tag"><span className="section-tag-dot"></span>{t('pricing.tag')}</div>
           </div>
-          <a href="/signup" className="btn-g" style={{whiteSpace:'nowrap',flexShrink:0}}>Instalar agora</a>
+          <h2 className="section-title reveal" data-delay="1">
+            {lang === 'en'
+              ? <>From first test to <span className="text-gradient">real scale.</span></>
+              : <>Do primeiro teste à <span className="text-gradient">escala real.</span></>
+            }
+          </h2>
+          <p className="section-sub reveal" data-delay="2">
+            {t('pricing.sub')}
+          </p>
         </div>
 
-        {/* 3-PLAN GRID */}
-        <div className="pricing-grid">
-          <div className="plan">
-            <div className="plan-badge">Starter</div>
-            <div className="plan-name">Starter</div>
-            <div className="plan-tagline">Para lojas que estão começando.</div>
-            <div className="plan-price-row"><span className="plan-currency">$</span><span className="plan-price">19</span></div>
-            <div className="plan-period">por mês</div>
-            <div className="plan-div"></div>
-            <div className="plan-features">
-              <div className="plan-feat"><div className="plan-feat-dot"></div>100 provas por mês</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>5 renders Studio Pro/mês</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Emails coletados pelo provador</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Peças mais provadas por SKU</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Tempo médio de interação por produto</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Suporte padrão</div>
+        {/* Preview plan banner */}
+        <div className="free-entry-v2 reveal">
+          <div className="free-entry-v2__left">
+            <div className="free-entry-v2__tag">
+              <div className="glow-dot"></div>
+              {t('pricing.previewTag')}
             </div>
-            <button 
+            <div className="free-entry-v2__desc">{t('pricing.previewDesc')}</div>
+            <ul className="free-entry-v2__feats">
+              <li className="free-entry-v2__feat free-entry-v2__feat--ok">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3 6-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {t('pricing.previewF1')}
+              </li>
+              <li className="free-entry-v2__feat free-entry-v2__feat--no">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3.5 3.5l6 6M9.5 3.5l-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+                {t('pricing.previewF2')}
+              </li>
+              <li className="free-entry-v2__feat free-entry-v2__feat--no">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3.5 3.5l6 6M9.5 3.5l-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+                {t('pricing.previewF3')}
+              </li>
+              <li className="free-entry-v2__feat free-entry-v2__feat--no">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3.5 3.5l6 6M9.5 3.5l-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+                {t('pricing.previewF4')}
+              </li>
+            </ul>
+          </div>
+          <a href="/signup" className="btn-free">
+            {t('pricing.previewBtn')}
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </a>
+        </div>
+
+        <div className="pricing__cards stagger-scale">
+          {/* Starter */}
+          <div className="pricing-card-v2 pricing-card-v2--free">
+            <div className="pricing-card-v2__glow"></div>
+            <div className="pricing-card-v2__topbar"></div>
+            <div className="pricing-card-v2__name">Starter</div>
+            <div className="pricing-card-v2__desc">{t('pricing.starterDesc')}</div>
+            <div className="pricing-card-v2__price">
+              <span className="pricing-card-v2__amount">$19</span>
+              <span className="pricing-card-v2__period">{t('pricing.period')}</span>
+            </div>
+            <div className="pricing-card-v2__divider"></div>
+            <div className="pricing-card-v2__features">
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.starterF1')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.starterF2')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.starterF3')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.starterF4')}</div>
+              <div className="pricing-card-v2__feature">{checkNo}<span style={{color:'var(--dim)'}}>{t('pricing.starterF5')}</span></div>
+              <div className="pricing-card-v2__feature">{checkNo}<span style={{color:'var(--dim)'}}>{t('pricing.starterF6')}</span></div>
+            </div>
+            <button
               onClick={() => handleCheckout('starter')}
-              className="plan-cta ghost"
-              style={{ width: '100%' }}
+              className="btn-plan-v2 btn-plan-v2-ghost"
             >
-              Assinar Starter
+              {t('pricing.btnStarter')}
             </button>
           </div>
 
-          <div className="plan featured">
-            <div className="plan-badge">A escolha mais equilibrada</div>
-            <div className="plan-name">Growth</div>
-            <div className="plan-tagline">Para e-commerces em crescimento.</div>
-            <div className="plan-price-row"><span className="plan-currency">$</span><span className="plan-price">39</span></div>
-            <div className="plan-period">por mês</div>
-            <div className="plan-div"></div>
-            <div className="plan-features">
-              <div className="plan-feat"><div className="plan-feat-dot"></div>300 provas por mês</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>10 renders Studio Pro/mês</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Hesitação e abandono por produto</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Analytics de tamanhos — engajamento por variante</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Rastreamento de intenção de compra</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Suporte prioritário</div>
+          {/* Growth (featured) */}
+          <div className="pricing-card-v2 pricing-card-v2--pro">
+            <div className="pricing-card-v2__glow"></div>
+            <div className="pricing-card-v2__topbar"></div>
+            <div className="pricing-card-v2__badge">{t('pricing.mostPopular')}</div>
+            <div className="pricing-card-v2__name">Growth</div>
+            <div className="pricing-card-v2__desc">{t('pricing.growthDesc')}</div>
+            <div className="pricing-card-v2__price">
+              <span className="pricing-card-v2__amount">$39</span>
+              <span className="pricing-card-v2__period">{t('pricing.period')}</span>
             </div>
-            <button 
+            <div className="pricing-card-v2__divider"></div>
+            <div className="pricing-card-v2__features">
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.growthF1')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.growthF2')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.growthF3')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.growthF4')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.growthF5')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.growthF6')}</div>
+            </div>
+            <button
               onClick={() => handleCheckout('growth')}
-              className="plan-cta primary"
-              style={{ width: '100%' }}
+              className="btn-plan-v2 btn-plan-v2-primary"
             >
-              Assinar Growth
+              {t('pricing.btnGrowth')}
             </button>
           </div>
 
-          <div className="plan">
-            <div className="plan-badge">Pro</div>
-            <div className="plan-name">Pro</div>
-            <div className="plan-tagline">Para equipes que operam em escala.</div>
-            <div className="plan-price-row"><span className="plan-currency">$</span><span className="plan-price">99</span></div>
-            <div className="plan-period">por mês</div>
-            <div className="plan-div"></div>
-            <div className="plan-features">
-              <div className="plan-feat"><div className="plan-feat-dot"></div>800 provas por mês</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>20 renders Studio Pro/mês</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Funil completo — prova → carrinho → compra</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Impacto do provador nas vendas</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Jornada de sessão completa por produto</div>
-              <div className="plan-feat"><div className="plan-feat-dot"></div>Suporte prioritário</div>
+          {/* Pro */}
+          <div className="pricing-card-v2 pricing-card-v2--ent">
+            <div className="pricing-card-v2__glow"></div>
+            <div className="pricing-card-v2__topbar"></div>
+            <div className="pricing-card-v2__name">Pro</div>
+            <div className="pricing-card-v2__desc">{t('pricing.proDesc')}</div>
+            <div className="pricing-card-v2__price">
+              <span className="pricing-card-v2__amount">$99</span>
+              <span className="pricing-card-v2__period">{t('pricing.period')}</span>
             </div>
-            <button 
+            <div className="pricing-card-v2__divider"></div>
+            <div className="pricing-card-v2__features">
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.proF1')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.proF2')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.proF3')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.proF4')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.proF5')}</div>
+              <div className="pricing-card-v2__feature">{checkOk}{t('pricing.proF6')}</div>
+            </div>
+            <button
               onClick={() => handleCheckout('pro')}
-              className="plan-cta ghost"
-              style={{ width: '100%' }}
+              className="btn-plan-v2 btn-plan-v2-ghost"
             >
-              Assinar Pro
+              {t('pricing.btnPro')}
             </button>
           </div>
         </div>
 
-        {/* PAY-AS-YOU-GO */}
-        <div className="payg-row">
-          <span className="payg-label">Uso adicional sob demanda</span>
+        {/* Pay-as-you-go note */}
+        <div style={{marginTop:'32px',padding:'18px 36px',background:'var(--abyss)',border:'1px solid var(--glass-border)',borderRadius:'var(--r)',display:'flex',alignItems:'center',gap:'10px'}}>
+          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'11px',letterSpacing:'.15em',textTransform:'uppercase',color:'var(--muted)'}}>{t('pricing.paygLabel')}</span>
+          {/* Hover tooltip trigger */}
           <div className="payg-trigger">
-            ?
+            <span>?</span>
             <div className="payg-tooltip">
-              <div className="tooltip-title">Excedente por plano</div>
-              <div className="tooltip-row"><span className="tooltip-plan">Try-on · Starter</span><span className="tooltip-price">$0.17 / prova</span></div>
-              <div className="tooltip-row"><span className="tooltip-plan">Try-on · Growth</span><span className="tooltip-price">$0.15 / prova</span></div>
-              <div className="tooltip-row"><span className="tooltip-plan">Try-on · Pro</span><span className="tooltip-price">$0.13 / prova</span></div>
-              <div className="tooltip-row"><span className="tooltip-plan">Try-on · Enterprise</span><span className="tooltip-price">$0.10 / prova</span></div>
-              <div className="tooltip-row"><span className="tooltip-plan">Studio Pro · todos os planos</span><span className="tooltip-price" style={{color:'var(--verdigris)'}}>$0.15 / render</span></div>
-              <div className="tooltip-note">Uso adicional cobrado apenas quando o limite mensal é excedido.</div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'10px',letterSpacing:'.2em',textTransform:'uppercase',color:'var(--accent)',marginBottom:'14px'}}>{t('pricing.paygTitle')}</div>
+              {[
+                {label:'Try-on · Starter',     price:'$0.17 / prova'},
+                {label:'Try-on · Growth',      price:'$0.15 / prova'},
+                {label:'Try-on · Pro',         price:'$0.13 / prova'},
+                {label:'Try-on · Enterprise',  price:'$0.10 / prova'},
+                {label:'Studio Pro · todos os planos', price:'$0.15 / render', accent:true},
+              ].map((row,i,arr)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:i<arr.length-1?'1px solid var(--glass-border)':'none',fontSize:'13px'}}>
+                  <span style={{color:'var(--muted)'}}>{row.label}</span>
+                  <span style={{color:row.accent?'var(--accent)':'var(--text)',fontFamily:"'IBM Plex Mono',monospace",fontSize:'12px'}}>{row.price}</span>
+                </div>
+              ))}
+              <div style={{marginTop:'12px',fontSize:'12px',color:'var(--muted)',lineHeight:1.6,borderTop:'1px solid var(--glass-border)',paddingTop:'12px'}}>{t('pricing.paygOverage')}</div>
             </div>
           </div>
-          <span style={{fontFamily:'var(--f-m)',fontSize:'10px',color:'rgba(160,156,192,.4)',letterSpacing:'.1em'}}>— cobrado apenas quando necessário</span>
+          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:'10px',color:'var(--dim)',letterSpacing:'.1em'}}>{t('pricing.paygCharged')}</span>
         </div>
 
-        {/* ENTERPRISE */}
-        <div className="enterprise-block">
+        {/* Enterprise */}
+        <div className="enterprise-card">
           <div>
-            <div className="ent-label">Enterprise</div>
-            <h3 className="ent-title">Para operações de alto volume.</h3>
-            <p className="ent-desc">Stack completo de analytics, limites flexíveis e suporte dedicado para operações de moda que exigem escala real e dados de conversão em produção.</p>
-            <div className="ent-feats">
-              <div className="ent-feat"><div className="ent-feat-dot"></div>1.000+ provas / mês</div>
-              <div className="ent-feat"><div className="ent-feat-dot"></div>Renders Studio Pro — volume customizado</div>
-              <div className="ent-feat"><div className="ent-feat-dot"></div>Funil de conversão completo</div>
-              <div className="ent-feat"><div className="ent-feat-dot"></div>Impacto do provador nas vendas</div>
-              <div className="ent-feat"><div className="ent-feat-dot"></div>Remoção da marca Reflexy no provador</div>
-              <div className="ent-feat"><div className="ent-feat-dot"></div>Integrações customizadas</div>
-              <div className="ent-feat"><div className="ent-feat-dot"></div>Suporte dedicado</div>
-              <div className="ent-feat"><div className="ent-feat-dot"></div>Limites flexíveis</div>
+            <div className="enterprise-card__tag">{t('pricing.enterpriseTag')}</div>
+            <h3 className="enterprise-card__title">{t('pricing.enterpriseTitle')}</h3>
+            <p className="enterprise-card__desc">{t('pricing.enterpriseDesc')}</p>
+            <div className="enterprise-card__feats">
+              {[t('pricing.enterpriseF1'),t('pricing.enterpriseF2'),t('pricing.enterpriseF3'),t('pricing.enterpriseF4'),t('pricing.enterpriseF5'),t('pricing.enterpriseF6'),t('pricing.enterpriseF7'),t('pricing.enterpriseF8')].map((f, i) => (
+                <div key={i} className="enterprise-card__feat">
+                  <div className="enterprise-card__feat-dot"></div>
+                  {f}
+                </div>
+              ))}
             </div>
           </div>
-          <a href="/cdn-cgi/l/email-protection#50333f3e2431243f102235363c3528297e333f" className="btn-g" style={{whiteSpace:'nowrap',flexShrink:0}}>Falar com vendas</a>
+          <a href="/cdn-cgi/l/email-protection#50333f3e2431243f102235363c3528297e333f" className="btn btn-ghost" style={{whiteSpace:'nowrap',flexShrink:0}}>{t('pricing.enterpriseBtn')}</a>
         </div>
       </div>
     </section>
@@ -281,36 +540,45 @@ export function Pricing() {
 }
 
 // ── §08 FAQ ───────────────────────────────────────────────────────────────────
-const FAQ_ITEMS = [
-  {q:'Como o Reflexy se integra à minha loja Shopify?',              a:'A instalação é feita diretamente pela Shopify App Store. Após instalar, o plugin se integra ao seu catálogo. O processo é simples, acompanhado de um guia passo a passo, e leva menos de 5 minutos no total.'},
-  {q:'O provador virtual funciona com qualquer tipo de roupa?',       a:'Sim. O sistema funciona com peças femininas, masculinas, acessórios e calçados. A IA é treinada para lidar com diferentes texturas, estampas e tipos de caimento. Para melhores resultados, recomendamos imagens da peça em fundo neutro com boa iluminação.'},
-  {q:'Os dados dos meus clientes são seguros?',                       a:'Sim. As fotos enviadas pelos clientes são processadas em tempo real e não são armazenadas em nossos servidores após a geração da simulação. Todos os dados analíticos são anonimizados e agregados. Operamos em conformidade com a LGPD e GDPR.'},
-  {q:'Posso cancelar a qualquer momento?',                            a:'Sim. Todos os planos são mensais e podem ser cancelados a qualquer momento diretamente pelo painel da Shopify, sem multa ou burocracia. O acesso continua ativo até o fim do período pago.'},
-  {q:'O que acontece quando esgoto meus créditos?',                   a:'Ao atingir 80% do limite mensal, você recebe uma notificação. Ao atingir 100%, as gerações adicionais são cobradas sob demanda nas tarifas do seu plano — sem interrupção do serviço. Em caso de pendência, o acesso é suspenso após 3 dias e reativado automaticamente após confirmação do pagamento.'},
-  {q:'Como funciona o Analytics de Conversão?',                       a:'O Reflexy rastreia toda a jornada do cliente na loja: do clique no botão de prova à adição ao carrinho e à compra confirmada. Cada evento é associado a um session_id anônimo, permitindo comparar conversão com provador versus sem provador. Os dados ficam disponíveis no painel por produto, tamanho e período — sem configuração adicional.'},
-  {q:'O Reflexy funciona em outras plataformas além do Shopify?',     a:'Atualmente o Reflexy é otimizado para Shopify. Integrações com VTEX, WooCommerce e Nuvemshop estão no roadmap para 2026. Se você opera em outra plataforma, entre em contato — avaliamos integrações customizadas para Enterprise.'},
-];
-
 export function Faq() {
+  const { t } = useLanguage();
+
+  const faqItems = [
+    {q: t('faq.q1'), a: t('faq.a1')},
+    {q: t('faq.q2'), a: t('faq.a2')},
+    {q: t('faq.q3'), a: t('faq.a3')},
+    {q: t('faq.q4'), a: t('faq.a4')},
+    {q: t('faq.q5'), a: t('faq.a5')},
+    {q: t('faq.q6'), a: t('faq.a6')},
+    {q: t('faq.q7'), a: t('faq.a7')},
+  ];
+
   const toggleFaq = (btn) => {
-    const item = btn.closest('.faq-item');
+    const item = btn.closest('.faq-item-v2');
     const isOpen = item.classList.toggle('open');
     btn.setAttribute('aria-expanded', String(isOpen));
   };
 
   return (
-    <section className="sec" id="faq">
-      <div className="wrap">
-        <p className="eyebrow">FAQ</p>
-        <h2 className="display">Perguntas frequentes.</h2>
+    <section className="faq-section" id="faq">
+      <div className="container">
+        <div className="faq__header">
+          <div className="reveal">
+            <div className="section-tag"><span className="section-tag-dot"></span>{t('faq.tag')}</div>
+          </div>
+          <h2 className="section-title reveal" data-delay="1">{t('faq.title')}</h2>
+        </div>
 
-        <div className="faq-list">
-          {FAQ_ITEMS.map(({ q, a }, i) => (
-            <div key={i} className="faq-item">
-              <button className="faq-q" aria-expanded="false" onClick={e => toggleFaq(e.currentTarget)}>
-                {q}<span className="faq-icon">+</span>
+        <div className="faq__list">
+          {faqItems.map(({ q, a }, i) => (
+            <div key={i} className="faq-item-v2">
+              <button className="faq-item-v2__header" aria-expanded="false" onClick={e => toggleFaq(e.currentTarget)}>
+                {q}
+                <svg className="faq-icon-v2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
               </button>
-              <div className="faq-a"><p className="faq-body">{a}</p></div>
+              <div className="faq-item-v2__body"><p>{a}</p></div>
             </div>
           ))}
         </div>
@@ -321,99 +589,130 @@ export function Faq() {
 
 // ── §09 FINAL CTA ─────────────────────────────────────────────────────────────
 export function FinalCta() {
+  const { t } = useLanguage();
   return (
-    <section id="final-cta">
-      {/* Ambient glow */}
-      <div style={{position:'absolute',width:'400px',height:'400px',borderRadius:'50%',top:'50%',left:'50%',transform:'translate(-50%,-50%)',background:'radial-gradient(circle,rgba(43,18,80,.5) 0%,transparent 70%)',pointerEvents:'none',animation:'glowB 8s ease-in-out infinite'}}></div>
-
-      {/* Gem with caustic */}
-      <svg width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style={{filter:'drop-shadow(0 0 20px rgba(112,80,160,.55))',animation:'gemS 90s linear infinite',position:'relative',zIndex:1}}>
-        <defs>
-          <linearGradient id="cF" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#C4B8E4" stopOpacity=".9"/><stop offset="100%" stopColor="#7050A0" stopOpacity=".7"/></linearGradient>
-          <linearGradient id="cT" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#E8E2F8" stopOpacity=".95"/><stop offset="100%" stopColor="#B090D8" stopOpacity=".8"/></linearGradient>
-          <linearGradient id="cP" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0CC89E" stopOpacity=".4"/><stop offset="100%" stopColor="#0CC89E" stopOpacity=".05"/></linearGradient>
-          <clipPath id="cClip"><polygon points="50,3 97,50 50,97 3,50"/></clipPath>
-          <linearGradient id="cCaustic" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="white" stopOpacity="0"/><stop offset="45%" stopColor="white" stopOpacity="0"/><stop offset="50%" stopColor="white" stopOpacity=".2"/><stop offset="55%" stopColor="white" stopOpacity="0"/><stop offset="100%" stopColor="white" stopOpacity="0"/></linearGradient>
-        </defs>
-        <polygon points="50,78 28,50 3,50 50,97" fill="url(#cP)"/><polygon points="50,78 72,50 97,50 50,97" fill="url(#cP)"/>
-        <polygon points="50,22 28,50 3,50 50,3" fill="url(#cF)"/><polygon points="50,22 72,50 97,50 50,3" fill="url(#cF)"/>
-        <polygon points="50,22 72,50 50,78 28,50" fill="url(#cT)"/>
-        <circle cx="50" cy="50" r="2.5" fill="#EDE8F6" opacity=".95"/>
-        <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="#B8AEDD" strokeWidth=".45" opacity=".4"/>
-        <line x1="3" y1="50" x2="97" y2="50" stroke="#0CC89E" strokeWidth=".4" opacity=".4"/>
-        <g clipPath="url(#cClip)">
-          <rect x="-110" y="0" width="220" height="100" fill="url(#cCaustic)">
-            <animateTransform attributeName="transform" type="translate" values="-40,0;140,0;140,0;-40,0" keyTimes="0;0.38;1;1" dur="9s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0 0 1 1;0 0 1 1"/>
-          </rect>
-        </g>
-      </svg>
-
-      <h2 className="display-xl" style={{position:'relative',zIndex:1,marginTop:'32px',maxWidth:'680px'}}>Comece a capturar o reflexo da sua conversão.</h2>
-      <p className="cta-kicker" style={{position:'relative',zIndex:1}}>Instale em minutos. Veja os dados em horas. Tome decisões melhores a partir de hoje.</p>
-
-      <div style={{display:'flex',gap:'16px',flexWrap:'wrap',justifyContent:'center',marginTop:'44px',position:'relative',zIndex:1}}>
-        <a href="#pricing" className="btn-p">Começar gratuitamente <span style={{opacity:.6}}>→</span></a>
-        <a href="/cdn-cgi/l/email-protection#385b57564c594c57784a5d5e545d4041165b57" className="btn-g">Falar com a equipe</a>
+    <section className="cta-section-v2">
+      <div className="container-sm">
+        <div className="cta-panel reveal-scale">
+          <div className="cta-ring cta-ring--1"></div>
+          <div className="cta-ring cta-ring--2"></div>
+          <div className="particles" id="ctaParticles"></div>
+          <h2 className="cta-panel__title">
+            {t('cta.title')}<br />
+            <span className="text-gradient">{t('cta.titleSpan')}</span>
+          </h2>
+          <p className="cta-panel__sub">{t('cta.sub')}</p>
+          <div className="cta-panel__actions">
+            <a href="#pricing" className="btn btn-primary-new btn-lg">
+              {t('cta.btnPrimary')}
+              <svg className="btn-icon" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </a>
+            <a href="mailto:oi@reflexy.co" className="btn btn-ghost btn-lg">{t('cta.btnGhost')}</a>
+          </div>
+          <div className="cta-panel__note">{t('cta.note')}</div>
+        </div>
       </div>
-
-      <p className="cta-note" style={{position:'relative',zIndex:1}}>Instalação simples em menos de 5 minutos · Cancele quando quiser</p>
     </section>
   );
 }
 
 // ── FOOTER ────────────────────────────────────────────────────────────────────
 export function Footer() {
+  const { lang, switchLang, t } = useLanguage();
   return (
-    <footer>
-      <div>
-        <div className="footer-brand">
-          {/* Footer gem */}
-          <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style={{filter:'drop-shadow(0 0 5px rgba(112,80,160,.4))'}}>
-            <defs>
-              <linearGradient id="ffF" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#C4B8E4" stopOpacity=".9"/><stop offset="100%" stopColor="#7050A0" stopOpacity=".7"/></linearGradient>
-              <linearGradient id="ffT" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#E8E2F8" stopOpacity=".9"/><stop offset="100%" stopColor="#B090D8" stopOpacity=".8"/></linearGradient>
-              <linearGradient id="ffP" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0CC89E" stopOpacity=".4"/><stop offset="100%" stopColor="#0CC89E" stopOpacity=".05"/></linearGradient>
-            </defs>
-            <polygon points="50,22 28,50 3,50 50,3" fill="url(#ffF)"/><polygon points="50,22 72,50 97,50 50,3" fill="url(#ffF)"/>
-            <polygon points="50,78 28,50 3,50 50,97" fill="url(#ffP)"/><polygon points="50,78 72,50 97,50 50,97" fill="url(#ffP)"/>
-            <polygon points="50,22 72,50 50,78 28,50" fill="url(#ffT)"/>
-            <circle cx="50" cy="50" r="2.5" fill="#EDEBF5" opacity=".9"/>
-            <line x1="3" y1="50" x2="97" y2="50" stroke="#B8AEDD" strokeWidth=".45" opacity=".35"/>
-          </svg>
-          <span className="footer-wm">REFLEXY</span>
-        </div>
-        <p className="footer-desc">Inteligência comportamental para e-commerce de moda. Plugin nativo Shopify.</p>
-      </div>
+    <footer className="footer-v2">
+      <div className="container">
+        <div className="footer__grid stagger-up">
+          <div className="footer__brand">
+            <div className="footer__logo">
+              <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{filter:'drop-shadow(0 0 5px rgba(112,80,160,.55))'}}>
+                <defs>
+                  <linearGradient id="fF1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#C4B8E4" stopOpacity=".90"/><stop offset="100%" stopColor="#7050A0" stopOpacity=".70"/></linearGradient>
+                  <linearGradient id="fF2" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#B8AEDD" stopOpacity=".70"/><stop offset="100%" stopColor="#4A2880" stopOpacity=".55"/></linearGradient>
+                  <linearGradient id="fF3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#9070C0" stopOpacity=".55"/><stop offset="100%" stopColor="#2B1250" stopOpacity=".80"/></linearGradient>
+                  <linearGradient id="fF4" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#D0C4EC" stopOpacity=".80"/><stop offset="100%" stopColor="#5A38A0" stopOpacity=".60"/></linearGradient>
+                  <linearGradient id="fTbl" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#E8E2F8" stopOpacity=".95"/><stop offset="100%" stopColor="#B090D8" stopOpacity=".80"/></linearGradient>
+                  <linearGradient id="fP1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0CC89E" stopOpacity=".38"/><stop offset="100%" stopColor="#0CC89E" stopOpacity=".05"/></linearGradient>
+                  <linearGradient id="fStr" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#C4B8E4" stopOpacity=".55"/><stop offset="50%" stopColor="#B8AEDD" stopOpacity=".35"/><stop offset="100%" stopColor="#7050A0" stopOpacity=".25"/></linearGradient>
+                  <filter id="fGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                </defs>
+                <polygon points="50,78 28,50 3,50 50,97" fill="url(#fP1)" opacity=".80"/>
+                <polygon points="50,78 72,50 97,50 50,97" fill="url(#fP1)" opacity=".80"/>
+                <polygon points="50,22 28,50 3,50 50,3" fill="url(#fF1)"/>
+                <polygon points="50,22 72,50 97,50 50,3" fill="url(#fF4)"/>
+                <polygon points="3,50 50,22 28,50" fill="url(#fF2)"/>
+                <polygon points="97,50 50,22 72,50" fill="url(#fF3)"/>
+                <polygon points="50,22 72,50 50,78 28,50" fill="url(#fTbl)" filter="url(#fGlow)"/>
+                <circle cx="50" cy="50" r="2.5" fill="#EDE8F6" opacity=".95" filter="url(#fGlow)"/>
+                <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="url(#fStr)" strokeWidth=".45"/>
+              </svg>
+              <span style={{fontFamily:"'Bricolage Grotesque',sans-serif",fontWeight:700,fontSize:'14px',letterSpacing:'.20em'}}>REFLEXY</span>
+            </div>
+            <div className="footer__tagline">{t('footer.tagline')}</div>
+            <div className="footer__socials">
+              <a href="#" className="footer__social" aria-label="Instagram">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+                </svg>
+              </a>
+              <a href="#" className="footer__social" aria-label="LinkedIn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/>
+                </svg>
+              </a>
+            </div>
+          </div>
 
-      <div className="footer-links">
-        <div>
-          <p className="footer-col-title">Produto</p>
-          <a className="footer-link" href="#features">Provador Virtual</a>
-          <a className="footer-link" href="#features">Studio Pro</a>
-          <a className="footer-link" href="#features">Analytics</a>
-          <a className="footer-link" href="#pricing">Preços</a>
-        </div>
-        <div>
-          <p className="footer-col-title">Empresa</p>
-          <a className="footer-link" href="#">Sobre</a>
-          <a className="footer-link" href="#">Blog</a>
-          <a className="footer-link" href="#">Carreiras</a>
-          <a className="footer-link" href="/cdn-cgi/l/email-protection#05666a6b7164716a4577606369607d7c2b666a">Contato</a>
-        </div>
-        <div>
-          <p className="footer-col-title">Legal</p>
-          <a className="footer-link" href="/privacy">Privacidade</a>
-          <a className="footer-link" href="/terms">Termos de Uso</a>
-          <a className="footer-link" href="#">LGPD</a>
-        </div>
-      </div>
+          <div>
+            <div className="footer__col-title">{t('footer.colProduct')}</div>
+            <ul className="footer__links-v2">
+              <li><a href="#reflexy-section" className="footer__link-v2">{t('footer.linkVto')}</a></li>
+              <li><a href="#reflexy-section" className="footer__link-v2">{t('footer.linkStudio')}</a></li>
+              <li><a href="#reflexy-section" className="footer__link-v2">{t('footer.linkAnalytics')}</a></li>
+              <li><a href="#pricing" className="footer__link-v2">{t('footer.linkPricing')}</a></li>
+              <li><a href="https://reflexy.co/demostore" className="footer__link-v2" target="_blank" rel="noopener noreferrer">{t('footer.linkDemoStore')}</a></li>
+            </ul>
+          </div>
 
-      <div className="footer-bottom">
-        <div className="footer-status">
-          <div className="status-dot"></div>
-          All systems operational
+          <div>
+            <div className="footer__col-title">{t('footer.colCompany')}</div>
+            <ul className="footer__links-v2">
+              <li><a href="#" className="footer__link-v2">{t('footer.linkAbout')}</a></li>
+              <li><a href="#" className="footer__link-v2">{t('footer.linkBlog')}</a></li>
+              <li><a href="#" className="footer__link-v2">{t('footer.linkCareers')}</a></li>
+              <li><a href="mailto:oi@reflexy.co" className="footer__link-v2">{t('footer.linkContact')}</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <div className="footer__col-title">{t('footer.colLegal')}</div>
+            <ul className="footer__links-v2">
+              <li><a href="/privacy" className="footer__link-v2">{t('footer.linkPrivacy')}</a></li>
+              <li><a href="/terms" className="footer__link-v2">{t('footer.linkTerms')}</a></li>
+              <li><a href="#" className="footer__link-v2">LGPD</a></li>
+            </ul>
+          </div>
         </div>
-        <p className="footer-copy">© 2026 Reflexy. Todos os direitos reservados.</p>
+
+        <div className="footer__bottom-v2">
+          <div className="footer__copy-v2">{t('footer.copyright')}</div>
+          <div className="lang-toggle">
+            <button
+              className={`lang-toggle__btn${lang === 'pt' ? ' active' : ''}`}
+              onClick={() => switchLang('pt')}
+            >PT</button>
+            <button
+              className={`lang-toggle__btn${lang === 'en' ? ' active' : ''}`}
+              onClick={() => switchLang('en')}
+            >EN</button>
+          </div>
+          <div className="footer__status-v2">
+            <div className="glow-dot" style={{width:'6px',height:'6px'}}></div>
+            {t('footer.status')}
+          </div>
+        </div>
       </div>
     </footer>
   );

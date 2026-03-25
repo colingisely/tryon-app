@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflexy — Hero Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200;12..96,300;12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+@property --angle { syntax:'<angle>'; initial-value:0deg; inherits:false; }
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:#06050F;color:#EDEBF5;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+ul{list-style:none}
+
+:root{
+  --abyss:#06050F; --onyx:#0F0D1E; --plum:#2B1250; --mauve:#7050A0;
+  --lavender:#B8AEDD; --mist:#EDEBF5; --verdigris:#0CC89E; --dusk:#B8B4D4;
+  --rule:rgba(184,174,221,0.14); --rule-v:rgba(184,174,221,0.22);
+  --f-d:'Bricolage Grotesque',sans-serif; --f-s:'Instrument Serif',serif;
+  --f-b:'DM Sans',sans-serif; --f-m:'IBM Plex Mono',monospace;
+  --glass-bg:rgba(255,255,255,.03); --glass-border:rgba(255,255,255,.07); --r-lg:22px;
+  /* Reference palette */
+  --primary:#7C3AED; --primary-dim:rgba(124,58,237,.16); --primary-glow:rgba(124,58,237,.38);
+  --accent:#C084FC; --peak:#F0EAFF;
+}
+
+/* ═══ NAVBAR ═══ */
+#navbar{
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  padding:0 32px; height:60px;
+  display:flex; align-items:center;
+  transition:background .3s, border-color .3s;
+  border-bottom:1px solid transparent;
+}
+#navbar.scrolled{background:rgba(6,5,15,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-color:var(--rule)}
+.nav-inner{display:flex;align-items:center;width:100%;max-width:1200px;margin:0 auto;position:relative}
+.nav-brand{display:flex;align-items:center;gap:9px;font-family:var(--f-d);font-weight:700;font-size:15px;letter-spacing:.18em;text-transform:uppercase;color:var(--mist);flex-shrink:0}
+.nav-brand svg{filter:drop-shadow(0 0 6px rgba(112,80,160,.55))}
+/* Nav links — absolutely centered in the bar */
+.nav-links{
+  display:flex;align-items:center;gap:28px;
+  position:absolute;left:50%;transform:translateX(-50%);
+  padding:0;
+}
+.nav-links a{font-family:var(--f-b);font-size:13px;font-weight:400;color:var(--dusk);transition:color .2s;letter-spacing:.01em}
+.nav-links a:hover{color:var(--mist)}
+/* Action group — login + cta, pushed to right */
+.nav-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0}
+.nav-login{
+  display:inline-flex;align-items:center;
+  padding:8px 18px;border-radius:100px;
+  background:transparent;color:var(--dusk);
+  border:1px solid rgba(184,174,221,.22);
+  font-family:var(--f-b);font-weight:400;font-size:13px;letter-spacing:.01em;
+  transition:all .2s cubic-bezier(.4,0,.2,1);
+  white-space:nowrap;
+}
+.nav-login:hover{color:var(--mist);border-color:rgba(184,174,221,.45);background:rgba(255,255,255,.04)}
+.nav-cta{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:9px 22px;border-radius:100px;
+  background:var(--primary);color:#fff;
+  border:1px solid rgba(192,132,252,.35);
+  font-family:var(--f-b);font-weight:500;font-size:13px;letter-spacing:.01em;
+  transition:all .2s cubic-bezier(.4,0,.2,1);
+  white-space:nowrap;
+  box-shadow:0 0 22px rgba(124,58,237,.30);
+}
+.nav-cta:hover{background:rgba(124,58,237,.85);box-shadow:0 0 36px rgba(124,58,237,.50)}
+
+/* ═══ HERO ═══ */
+#hero{
+  position:relative; min-height:100vh;
+  display:flex; flex-direction:column;
+  align-items:flex-start; justify-content:center;
+  overflow:hidden; padding:100px 32px 64px;
+}
+.hero__bg{
+  position:absolute;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 30%, rgba(124,58,237,.14) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 70%, rgba(147,51,234,.10) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 50% at 20% 60%, rgba(192,132,252,.07) 0%, transparent 55%),
+    linear-gradient(180deg, var(--abyss) 0%, rgba(10,8,21,.96) 100%);
+}
+.hero__grid{
+  position:absolute;inset:0;z-index:1;
+  background-image:
+    linear-gradient(rgba(124,58,237,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(124,58,237,.04) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 80%);
+  -webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 80%);
+  animation:grid-drift 20s ease-in-out infinite;
+}
+@keyframes grid-drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+
+/* Floating orbs — depth effect from reference */
+.orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:1;animation:orb-float 10s ease-in-out infinite}
+.orb--1{width:600px;height:400px;background:rgba(124,58,237,.08);top:-200px;right:-150px;animation-delay:0s}
+.orb--2{width:400px;height:500px;background:rgba(192,132,252,.055);bottom:-200px;left:-100px;animation-delay:-5s}
+.orb--3{width:320px;height:320px;background:rgba(124,58,237,.05);top:35%;left:48%;animation-delay:-2.5s}
+@keyframes orb-float{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-40px)}}
+
+/* Left-to-right fade so text is readable */
+.hero__overlay{
+  position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:
+    linear-gradient(to right, #06050F 22%, rgba(6,5,15,.75) 48%, transparent 65%),
+    linear-gradient(to bottom, rgba(6,5,15,.2) 0%,transparent 18%,transparent 68%,#06050F 100%);
+}
+#hero::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:200px;
+  background:linear-gradient(to top,#06050F 0%,rgba(6,5,15,.4) 55%,transparent 100%);
+  z-index:3;pointer-events:none;
+}
+
+/* ═══ LARGE GEM — right side ═══ */
+.hero__gem{
+  position:absolute;
+  right:-60px; top:50%;
+  transform:translateY(-50%);
+  z-index:2;
+  width:540px;height:540px;
+  pointer-events:none;
+  animation:gem-float 9s ease-in-out infinite;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+/* Veil: top shadow giving depth — gem recedes into background */
+.hero__gem::after{
+  content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:
+    linear-gradient(to bottom, rgba(6,5,15,.52) 0%, rgba(6,5,15,.18) 30%, transparent 55%),
+    radial-gradient(ellipse 85% 50% at 50% 0%, rgba(6,5,15,.40) 0%, transparent 70%);
+  border-radius:50%;
+}
+@keyframes gem-float{
+  0%,100%{transform:translateY(-50%) rotate(0deg)}
+  50%    {transform:translateY(calc(-50% - 24px)) rotate(2deg)}
+}
+
+/* axis girdle line */
+.gem-axis{
+  width:100%;height:1px;
+  background:linear-gradient(to right,transparent,rgba(184,174,221,.12) 18%,rgba(184,174,221,.65) 38%,rgba(12,200,158,.9) 50%,rgba(184,174,221,.65) 62%,rgba(184,174,221,.12) 82%,transparent);
+  position:relative;margin:-1px 0;flex-shrink:0;
+}
+.gem-axis::before{content:'';position:absolute;left:20%;top:50%;transform:translateY(-50%);width:5px;height:5px;border-radius:50%;background:#B8AEDD;box-shadow:0 0 8px #B8AEDD,0 0 16px rgba(184,174,221,.4)}
+.gem-axis::after {content:'';position:absolute;right:20%;top:50%;transform:translateY(-50%);width:5px;height:5px;border-radius:50%;background:#0CC89E;box-shadow:0 0 8px #0CC89E,0 0 16px rgba(12,200,158,.4)}
+
+/* ═══ PARTICLES ═══ */
+.particles{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}
+.particle{position:absolute;border-radius:50%;background:rgba(112,80,160,.65);animation:float-up linear infinite}
+@keyframes float-up{0%{transform:translateY(0) translateX(0);opacity:0}12%{opacity:1}88%{opacity:1}100%{transform:translateY(-100vh) translateX(28px);opacity:0}}
+
+/* ═══ CONTENT ═══ */
+.hero__content{
+  position:relative;z-index:4;max-width:620px;
+  margin-left:48px;
+}
+
+/* Badge */
+.hero__badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 16px 6px 10px;border-radius:100px;
+  background:var(--primary-dim);border:1px solid rgba(124,58,237,.35);
+  font-size:12px;font-weight:500;color:var(--accent);
+  margin-bottom:32px;font-family:var(--f-m);letter-spacing:-.01em;
+  animation:badge-breathe 3s ease-in-out infinite;
+}
+@keyframes badge-breathe{0%,100%{box-shadow:0 0 16px rgba(124,58,237,.15)}50%{box-shadow:0 0 32px rgba(124,58,237,.40)}}
+.badge-pill{
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.12em;
+}
+.glow-dot{width:7px;height:7px;border-radius:50%;background:var(--verdigris);box-shadow:0 0 8px var(--verdigris),0 0 16px rgba(12,200,158,.3);animation:blink 2.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* Title */
+.hero__title{
+  font-family:var(--f-d);font-weight:200;
+  font-size:clamp(52px,6vw,86px);line-height:1.0;
+  letter-spacing:-.055em;color:#ffffff;
+  text-shadow:0 4px 60px rgba(0,0,0,.9);margin-bottom:4px;
+}
+.hero__title-sub{
+  font-family:var(--f-s);font-style:italic;
+  font-size:clamp(44px,5vw,72px);font-weight:400;
+  letter-spacing:-.025em;line-height:1.08;display:block;margin-bottom:32px;
+  background:linear-gradient(135deg,var(--peak) 0%,var(--accent) 45%,var(--primary) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+
+.hero__desc{
+  font-size:clamp(13px,1.2vw,15px);color:var(--dusk);
+  line-height:1.7;max-width:440px;margin-bottom:40px;letter-spacing:-.01em;
+}
+
+/* CTAs */
+.hero__actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:52px}
+
+.btn-primary{
+  position:relative;padding:16px 36px;min-width:230px;height:54px;
+  justify-content:center;font-size:15px;font-weight:400;font-family:var(--f-b);
+  background:rgba(124,58,237,.18);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+  border-radius:100px;color:#fff;border:1px solid rgba(192,132,252,.50);
+  box-shadow:0 0 32px rgba(124,58,237,.35),0 0 80px rgba(124,58,237,.12),inset 0 1px 0 rgba(255,255,255,.18);
+  letter-spacing:-.02em;transition:all .35s cubic-bezier(.16,1,.3,1);
+  overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;gap:10px;
+  animation:btn-breathe 4s ease-in-out infinite;cursor:pointer;
+}
+@keyframes btn-breathe{
+  0%,100%{box-shadow:0 0 32px rgba(124,58,237,.35),0 0 80px rgba(124,58,237,.12),inset 0 1px 0 rgba(255,255,255,.18)}
+  50%    {box-shadow:0 0 52px rgba(124,58,237,.60),0 0 120px rgba(124,58,237,.22),inset 0 1px 0 rgba(255,255,255,.18)}
+}
+.btn-primary::before{
+  content:'';position:absolute;inset:-1px;border-radius:inherit;
+  background:conic-gradient(from var(--angle),transparent 0%,rgba(192,132,252,.90) 18%,rgba(124,58,237,.60) 35%,transparent 52%,transparent 100%);
+  animation:spin-angle 3.5s linear infinite;z-index:-1;
+}
+@keyframes spin-angle{to{--angle:360deg}}
+.btn-primary::after{
+  content:'';position:absolute;top:0;left:-80%;width:50%;height:100%;
+  background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,.22) 50%,transparent 100%);
+  transform:skewX(-15deg);animation:shimmer 4.5s ease-in-out infinite .8s;pointer-events:none;
+}
+@keyframes shimmer{0%,100%{left:-80%;opacity:0}8%{opacity:1}45%{left:140%;opacity:0}}
+.btn-primary:hover{background:rgba(124,58,237,.35);border-color:rgba(192,132,252,.75);transform:translateY(-2px);animation:none;box-shadow:0 0 64px rgba(124,58,237,.65),0 0 120px rgba(124,58,237,.28),inset 0 1px 0 rgba(255,255,255,.25)}
+
+.btn-ghost{
+  position:relative;padding:16px 32px;min-width:190px;height:54px;
+  justify-content:center;font-size:15px;font-weight:400;font-family:var(--f-b);
+  color:rgba(237,235,245,.72);letter-spacing:-.02em;
+  transition:all .25s cubic-bezier(.16,1,.3,1);display:inline-flex;align-items:center;gap:10px;
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);
+  backdrop-filter:blur(12px);border-radius:100px;overflow:hidden;cursor:pointer;
+}
+.btn-ghost:hover{color:rgba(237,235,245,.95);border-color:rgba(255,255,255,.26);background:rgba(255,255,255,.08)}
+.btn-ghost svg{transition:transform .3s cubic-bezier(.16,1,.3,1);flex-shrink:0}
+.btn-ghost:hover svg{transform:translateX(3px)}
+
+/* Stats strip */
+.hero__stats{
+  position:absolute;bottom:44px;left:0;right:0;margin-left:auto;margin-right:auto;
+  z-index:4;display:flex;gap:1px;
+  border-radius:var(--r-lg);overflow:hidden;
+  border:1px solid var(--glass-border);
+  width:calc(100% - 96px);max-width:680px;
+}
+.hero__stat{
+  flex:1;padding:11px 16px;
+  background:rgba(255,255,255,.028);backdrop-filter:blur(32px);
+  text-align:center;position:relative;
+}
+.hero__stat::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:1px;background:var(--glass-border)}
+.hero__stat:first-child::before{display:none}
+.hero__stat-val{
+  font-family:var(--f-d);font-size:19px;font-weight:800;letter-spacing:-.045em;
+  background:linear-gradient(135deg,var(--peak) 0%,var(--accent) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero__stat-label{font-size:9px;color:var(--dusk);opacity:.55;letter-spacing:.07em;text-transform:uppercase;margin-top:3px;font-family:var(--f-m)}
+
+/* Gem keyframes */
+@keyframes gemS{
+  0%  {filter:drop-shadow(0 0 28px rgba(112,80,160,.75)) drop-shadow(0 0 70px rgba(43,18,80,.55))}
+  25% {filter:drop-shadow(0 0 36px rgba(184,174,221,.65)) drop-shadow(0 0 80px rgba(43,18,80,.6))}
+  50% {filter:drop-shadow(0 0 28px rgba(12,200,158,.42)) drop-shadow(0 0 70px rgba(43,18,80,.55))}
+  75% {filter:drop-shadow(0 0 32px rgba(112,80,160,.80)) drop-shadow(0 0 75px rgba(43,18,80,.58))}
+  100%{filter:drop-shadow(0 0 28px rgba(112,80,160,.75)) drop-shadow(0 0 70px rgba(43,18,80,.55))}
+}
+@keyframes pavP{0%,100%{opacity:.65}50%{opacity:.85}}
+@keyframes glowB{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:.9;transform:scale(1.08)}}
+
+.preview-tag{position:fixed;bottom:16px;right:16px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;color:rgba(184,174,221,.25);text-transform:uppercase;z-index:9999}
+
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .85s cubic-bezier(.16,1,.3,1),transform .85s cubic-bezier(.16,1,.3,1)}
+.reveal.visible{opacity:1;transform:none}
+.reveal[data-d="2"]{transition-delay:.18s}
+.reveal[data-d="4"]{transition-delay:.34s}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="#hero" class="nav-brand">
+      <!-- Static gem mark — favicon SVG -->
+      <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="filter:drop-shadow(0 0 6px rgba(112,80,160,.6))">
+        <defs>
+          <linearGradient id="nF1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#C4B8E4" stop-opacity=".90"/><stop offset="100%" stop-color="#7050A0" stop-opacity=".70"/></linearGradient>
+          <linearGradient id="nF2" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#B8AEDD" stop-opacity=".70"/><stop offset="100%" stop-color="#4A2880" stop-opacity=".55"/></linearGradient>
+          <linearGradient id="nF3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9070C0" stop-opacity=".55"/><stop offset="100%" stop-color="#2B1250" stop-opacity=".80"/></linearGradient>
+          <linearGradient id="nF4" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#D0C4EC" stop-opacity=".80"/><stop offset="100%" stop-color="#5A38A0" stop-opacity=".60"/></linearGradient>
+          <linearGradient id="nTbl" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#E8E2F8" stop-opacity=".95"/><stop offset="100%" stop-color="#B090D8" stop-opacity=".80"/></linearGradient>
+          <linearGradient id="nP1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0CC89E" stop-opacity=".38"/><stop offset="100%" stop-color="#0CC89E" stop-opacity=".05"/></linearGradient>
+          <linearGradient id="nStr" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#C4B8E4" stop-opacity=".55"/><stop offset="50%" stop-color="#B8AEDD" stop-opacity=".35"/><stop offset="100%" stop-color="#7050A0" stop-opacity=".25"/></linearGradient>
+          <filter id="nGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <polygon points="50,78 28,50 3,50 50,97" fill="url(#nP1)" opacity=".80"/>
+        <polygon points="50,78 72,50 97,50 50,97" fill="url(#nP1)" opacity=".80"/>
+        <polygon points="50,22 28,50 3,50 50,3" fill="url(#nF1)"/>
+        <polygon points="50,22 72,50 97,50 50,3" fill="url(#nF4)"/>
+        <polygon points="3,50 50,22 28,50" fill="url(#nF2)"/>
+        <polygon points="97,50 50,22 72,50" fill="url(#nF3)"/>
+        <polygon points="50,22 72,50 50,78 28,50" fill="url(#nTbl)" filter="url(#nGlow)"/>
+        <circle cx="50" cy="50" r="2.5" fill="#EDE8F6" opacity=".95" filter="url(#nGlow)"/>
+        <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="url(#nStr)" stroke-width=".45"/>
+      </svg>
+      <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:15px;letter-spacing:.20em">REFLEXY</span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#problem">O Problema</a></li>
+      <li><a href="#reflexy-section">A Solução</a></li>
+      <li><a href="#how">Como Funciona</a></li>
+      <li><a href="#pricing">Planos</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <a href="/login" class="nav-login">Entrar</a>
+      <a href="#pricing" class="nav-cta">Começar grátis →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section id="hero">
+  <div class="hero__bg"></div>
+  <div class="hero__grid"></div>
+  <div class="orb orb--1"></div>
+  <div class="orb orb--2"></div>
+  <div class="orb orb--3"></div>
+  <div class="particles" id="heroParticles"></div>
+
+  <!-- Large gem — right side, using the full Reflexy gem SVG -->
+  <div class="hero__gem">
+    <!-- Ambient glow behind gem -->
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:460px;height:460px;border-radius:50%;background:radial-gradient(circle,rgba(43,18,80,.55) 0%,rgba(112,80,160,.15) 45%,transparent 70%);animation:glowB 7s ease-in-out infinite;pointer-events:none;z-index:0"></div>
+
+    <svg width="460" height="460" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+      style="position:relative;z-index:1;overflow:visible;animation:gemS 90s linear infinite;filter:drop-shadow(0 0 28px rgba(112,80,160,.75)) drop-shadow(0 0 70px rgba(43,18,80,.55))">
+      <defs>
+        <linearGradient id="gF1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#C4B8E4" stop-opacity=".92"/><stop offset="100%" stop-color="#7050A0" stop-opacity=".75"/></linearGradient>
+        <linearGradient id="gF2" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#B8AEDD" stop-opacity=".75"/><stop offset="100%" stop-color="#4A2880" stop-opacity=".60"/></linearGradient>
+        <linearGradient id="gF3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9070C0" stop-opacity=".60"/><stop offset="100%" stop-color="#2B1250" stop-opacity=".85"/></linearGradient>
+        <linearGradient id="gF4" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#D8CCEF" stop-opacity=".88"/><stop offset="100%" stop-color="#5A38A0" stop-opacity=".65"/></linearGradient>
+        <linearGradient id="gTbl" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EDE8F8" stop-opacity=".98"/><stop offset="100%" stop-color="#B090D8" stop-opacity=".85"/></linearGradient>
+        <linearGradient id="gP1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0CC89E" stop-opacity=".45"/><stop offset="100%" stop-color="#0CC89E" stop-opacity=".06"/></linearGradient>
+        <linearGradient id="gP2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7ADAC8" stop-opacity=".32"/><stop offset="100%" stop-color="#0CC89E" stop-opacity=".04"/></linearGradient>
+        <linearGradient id="gStr" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#D4C8E8" stop-opacity=".65"/><stop offset="50%" stop-color="#C4BADF" stop-opacity=".45"/><stop offset="100%" stop-color="#8060B8" stop-opacity=".30"/></linearGradient>
+        <filter id="gGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <clipPath id="gClip"><polygon points="50,3 97,50 50,97 3,50"/></clipPath>
+        <linearGradient id="gCaustic" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="white" stop-opacity="0"/><stop offset="40%" stop-color="white" stop-opacity="0"/>
+          <stop offset="50%" stop-color="white" stop-opacity=".22"/><stop offset="60%" stop-color="white" stop-opacity="0"/><stop offset="100%" stop-color="white" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- Pavilion -->
+      <polygon points="50,78 28,50 3,50 50,97"  fill="url(#gP1)" opacity=".85"/>
+      <polygon points="50,78 72,50 97,50 50,97"  fill="url(#gP2)" opacity=".85"/>
+      <!-- Crown facets -->
+      <polygon points="50,22 28,50 3,50 50,3"    fill="url(#gF1)"/>
+      <polygon points="50,22 72,50 97,50 50,3"   fill="url(#gF4)"/>
+      <polygon points="3,50  50,22 28,50"         fill="url(#gF2)"/>
+      <polygon points="97,50 50,22 72,50"         fill="url(#gF3)"/>
+      <!-- Table -->
+      <polygon points="50,22 72,50 50,78 28,50"  fill="url(#gTbl)" filter="url(#gGlow)"/>
+      <!-- Culet -->
+      <circle cx="50" cy="50" r="2.8" fill="#EDE8F6" opacity=".98" filter="url(#gGlow)"/>
+      <!-- Strokes -->
+      <polygon points="50,3 97,50 50,97 3,50"    fill="none" stroke="url(#gStr)" stroke-width=".45"/>
+      <polygon points="50,22 72,50 50,78 28,50"  fill="none" stroke="#C4B8E4"    stroke-width=".4"  opacity=".28"/>
+      <!-- Facet lines -->
+      <line x1="50" y1="3"  x2="50" y2="22" stroke="#C4B8E4" stroke-width=".35" opacity=".55"/>
+      <line x1="3"  y1="50" x2="28" y2="50" stroke="#C4B8E4" stroke-width=".35" opacity=".42"/>
+      <line x1="97" y1="50" x2="72" y2="50" stroke="#C4B8E4" stroke-width=".35" opacity=".42"/>
+      <line x1="50" y1="22" x2="28" y2="50" stroke="#C4B8E4" stroke-width=".30" opacity=".35"/>
+      <line x1="50" y1="22" x2="72" y2="50" stroke="#C4B8E4" stroke-width=".30" opacity=".35"/>
+      <line x1="50" y1="78" x2="28" y2="50" stroke="#0CC89E" stroke-width=".28" opacity=".30"/>
+      <line x1="50" y1="78" x2="72" y2="50" stroke="#0CC89E" stroke-width=".28" opacity=".30"/>
+      <!-- Caustic shimmer -->
+      <g clip-path="url(#gClip)">
+        <rect x="-110" y="0" width="220" height="100" fill="url(#gCaustic)">
+          <animateTransform attributeName="transform" type="translate" values="-40,0;140,0;140,0;-40,0" keyTimes="0;0.38;1;1" dur="9s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0 0 1 1;0 0 1 1"/>
+        </rect>
+        <rect x="-110" y="50" width="220" height="50" opacity="0">
+          <animateTransform attributeName="transform" type="translate" values="-40,0;140,0;140,0;-40,0" keyTimes="0;0.38;1;1" dur="9s" begin="4.5s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0 0 1 1;0 0 1 1"/>
+          <animate attributeName="opacity" values="0;0;.28;.28;0;0" keyTimes="0;0.1;0.2;0.35;0.45;1" dur="9s" begin="4.5s" repeatCount="indefinite"/>
+        </rect>
+      </g>
+    </svg>
+
+    <div class="gem-axis"></div>
+
+    <!-- Pavilion reflection -->
+    <svg width="460" height="460" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+      style="transform:scaleY(-1);mask-image:linear-gradient(to bottom,rgba(0,0,0,.28) 0%,transparent 50%);-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.28) 0%,transparent 50%);margin-top:2px;animation:pavP 8s ease-in-out infinite;filter:drop-shadow(0 0 12px rgba(12,200,158,.18));position:relative;z-index:1;">
+      <defs>
+        <linearGradient id="rvF" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#C4B8E4" stop-opacity=".65"/><stop offset="100%" stop-color="#7050A0" stop-opacity=".42"/></linearGradient>
+        <linearGradient id="rvT" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EDE8F8" stop-opacity=".75"/><stop offset="100%" stop-color="#B090D8" stop-opacity=".52"/></linearGradient>
+      </defs>
+      <polygon points="50,22 28,50 3,50 50,3"  fill="url(#rvF)"/>
+      <polygon points="50,22 72,50 97,50 50,3" fill="url(#rvF)"/>
+      <polygon points="50,22 72,50 50,78 28,50" fill="url(#rvT)" opacity=".72"/>
+      <circle cx="50" cy="50" r="2.5" fill="#EDE8F6" opacity=".52"/>
+      <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="#C4B8E4" stroke-width=".4" opacity=".32"/>
+    </svg>
+  </div>
+
+  <div class="hero__overlay"></div>
+
+  <!-- ═══ HERO CONTENT ═══ -->
+  <div class="hero__content reveal">
+
+    <div class="hero__badge">
+      <div class="glow-dot"></div>
+      <span class="badge-pill">Novo</span>
+      Plugin Shopify · Analytics comportamental com IA →
+    </div>
+
+    <h1 class="hero__title">
+      O reflexo da
+      <span class="hero__title-sub">sua conversão.</span>
+    </h1>
+
+    <p class="hero__desc">
+      Provador virtual com IA, geração de imagens profissionais e analytics comportamental —
+      numa única plataforma nativa Shopify.
+    </p>
+
+    <div class="hero__actions">
+      <a href="#pricing" class="btn-primary">
+        Começar gratuitamente
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="#features" class="btn-ghost">
+        Ver como funciona
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats strip — centered -->
+  <div class="hero__stats reveal" data-d="4">
+    <div class="hero__stat"><div class="hero__stat-val">+38%</div><div class="hero__stat-label">Aumento em conversão</div></div>
+    <div class="hero__stat"><div class="hero__stat-val">−52%</div><div class="hero__stat-label">Redução em devoluções</div></div>
+    <div class="hero__stat"><div class="hero__stat-val">&lt;15s</div><div class="hero__stat-label">Tempo de geração IA</div></div>
+    <div class="hero__stat"><div class="hero__stat-val">4K</div><div class="hero__stat-label">Resolução Studio Pro</div></div>
+  </div>
+</section>
+
+<div class="preview-tag">Hero Preview · Reflexy Design System v4</div>
+
+<script>
+(function(){
+  // Navbar scroll
+  var nav=document.getElementById('navbar');
+  window.addEventListener('scroll',function(){nav.classList.toggle('scrolled',window.scrollY>24)},{passive:true});
+
+  // Particles
+  var el=document.getElementById('heroParticles');
+  if(el){for(var i=0;i<32;i++){var p=document.createElement('div');p.className='particle';var sz=(1.2+Math.random()*3.2)+'px';p.style.cssText='left:'+(Math.random()*90)+'%;top:'+(20+Math.random()*80)+'%;width:'+sz+';height:'+sz+';animation-duration:'+(7+Math.random()*13)+'s;animation-delay:'+(Math.random()*15)+'s';p.style.background=Math.random()>.5?'rgba(192,132,252,.52)':'rgba(124,58,237,.58)';el.appendChild(p);}}
+
+  // Reveal
+  setTimeout(function(){document.querySelectorAll('.reveal').forEach(function(e){e.classList.add('visible');});},100);
+
+  // Magnetic primary button
+  document.querySelectorAll('.btn-primary').forEach(function(b){
+    b.addEventListener('mousemove',function(e){var r=b.getBoundingClientRect();b.style.transform='translate('+(e.clientX-r.left-r.width/2)*.18+'px,'+(e.clientY-r.top-r.height/2)*.18+'px)';});
+    b.addEventListener('mouseleave',function(){b.style.transform='';});
+  });
+})();
+</script>
+</body>
+</html>
