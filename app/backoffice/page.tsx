@@ -456,7 +456,7 @@ export default function BackofficePage() {
                     <XAxis dataKey="month" tick={{ fill: T.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: T.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip
-                      formatter={(v: number | undefined) => [`R$ ${(v ?? 0).toFixed(2)}`, 'MRR']}
+                      formatter={(v: unknown) => [`R$ ${(Number(v) || 0).toFixed(2)}`, 'MRR'] as [string, string]}
                       contentStyle={{ background: T.onyxMid, border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, fontSize: 12 }}
                     />
                     <Bar dataKey="mrr" fill={T.cobalt} radius={[4,4,0,0]} name="MRR" />
