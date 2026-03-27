@@ -1,11 +1,15 @@
 import { ImageResponse } from 'next/og'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
-export const runtime = 'edge'
 export const alt = 'Reflexy — O reflexo da sua conversão'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
 export default async function Image() {
+  const gemSvg = readFileSync(join(process.cwd(), 'public/reflexy-gem.svg'))
+  const gemSrc = `data:image/svg+xml;base64,${gemSvg.toString('base64')}`
+
   return new ImageResponse(
     (
       <div
@@ -50,23 +54,8 @@ export default async function Image() {
 
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 52 }}>
-          <div
-            style={{
-              width: 46,
-              height: 46,
-              background: 'linear-gradient(135deg, #7C3AED, #C084FC)',
-              borderRadius: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 22,
-              fontWeight: 800,
-              color: '#fff',
-              boxShadow: '0 0 28px rgba(124,58,237,0.55)',
-            }}
-          >
-            R
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={gemSrc} width={44} height={44} alt="" />
           <span
             style={{
               fontSize: 20,

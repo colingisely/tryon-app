@@ -31,11 +31,11 @@ function baseLayout(content: string) {
             <td align="center" style="padding-bottom:40px">
               <table cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="background:linear-gradient(135deg,#7C3AED,#C084FC);
-                    border-radius:10px;width:38px;height:38px;text-align:center;
-                    vertical-align:middle;font-size:18px;font-weight:800;color:#fff">R</td>
+                  <td style="vertical-align:middle">
+                    <img src="https://reflexy.co/reflexy-gem.svg" width="36" height="36" alt="Reflexy" style="display:block" />
+                  </td>
                   <td style="padding-left:10px;font-size:16px;font-weight:700;
-                    letter-spacing:.18em;text-transform:uppercase;color:#EDEBF5">REFLEXY</td>
+                    letter-spacing:.18em;text-transform:uppercase;color:#EDEBF5;vertical-align:middle">REFLEXY</td>
                 </tr>
               </table>
             </td>
