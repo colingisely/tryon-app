@@ -190,7 +190,22 @@ function SignupPageInner() {
         console.error('[Reflexy] merchants insert error:', merchantError.message)
       }
 
-      // ── Step 3: Link Stripe session to new merchant (if came from payment) ──
+      // ── Step 3: Welcome email ─────────────────────────────────────────────
+      try {
+        await fetch('/api/email/welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: form.email.trim().toLowerCase(),
+            storeName: form.storeName.trim(),
+          }),
+        })
+      } catch (e) {
+        // non-fatal
+        console.warn('welcome email failed:', e)
+      }
+
+      // ── Step 4: Link Stripe session to new merchant (if came from payment) ──
       if (sessionId) {
         try {
           await fetch('/api/payments/link-session', {
@@ -204,7 +219,7 @@ function SignupPageInner() {
         }
       }
 
-      // ── Step 4: Redirect ou estado de sucesso ─────────────────────────────
+      // ── Step 5: Redirect ou estado de sucesso ─────────────────────────────
       if (data.session) {
         // Confirmação de e-mail desabilitada → session imediata
         router.push('/dashboard')

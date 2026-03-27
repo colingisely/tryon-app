@@ -2,9 +2,25 @@ import type { Metadata } from "next";
 import "./globals.css";
 import '@/app/landing.css';
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://reflexy.co'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(BASE_URL),
   title: 'REFLEXY — O reflexo da sua conversão',
   description: 'Provador virtual com IA, geração de imagens profissionais e analytics comportamental para e-commerce de moda. Integração nativa Shopify.',
+  openGraph: {
+    type: 'website',
+    url: BASE_URL,
+    siteName: 'Reflexy',
+    title: 'REFLEXY — O reflexo da sua conversão',
+    description: 'Provador virtual com IA, Studio Pro e Analytics comportamental para e-commerce de moda.',
+    locale: 'pt_BR',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'REFLEXY — O reflexo da sua conversão',
+    description: 'Provador virtual com IA, Studio Pro e Analytics para e-commerce de moda no Shopify.',
+  },
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },

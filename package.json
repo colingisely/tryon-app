@@ -23,6 +23,7 @@
     "react-dom": "19.2.3",
     "recharts": "^3.7.0",
     "replicate": "^1.4.0",
+    "resend": "^6.9.4",
     "stripe": "^20.4.1",
     "tailwind-merge": "^3.5.0"
   },
@@ -37,6 +38,9 @@
     "typescript": "^5"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["sharp", "unrs-resolver"]
+    "onlyBuiltDependencies": [
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }

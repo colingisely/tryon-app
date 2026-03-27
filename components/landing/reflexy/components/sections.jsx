@@ -672,7 +672,7 @@ export function Footer() {
               <li><a href="#reflexy-section" className="footer__link-v2">{t('footer.linkStudio')}</a></li>
               <li><a href="#reflexy-section" className="footer__link-v2">{t('footer.linkAnalytics')}</a></li>
               <li><a href="#pricing" className="footer__link-v2">{t('footer.linkPricing')}</a></li>
-              <li><a href="https://reflexy.co/demostore" className="footer__link-v2" target="_blank" rel="noopener noreferrer">{t('footer.linkDemoStore')}</a></li>
+              <li><a href="https://tryonapp-2.myshopify.com/" className="footer__link-v2" target="_blank" rel="noopener noreferrer">{t('footer.linkDemoStore')}</a></li>
             </ul>
           </div>
 

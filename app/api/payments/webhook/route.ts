@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { sendSubscriptionEmail } from '@/lib/email';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -112,6 +113,29 @@ export async function POST(req: NextRequest) {
         });
 
         console.log(`Subscription activated for merchant ${userId} -> plan ${planSlug}`);
+
+        // Send subscription confirmation email
+        try {
+          const { data: merchant } = await supabase
+            .from('merchants')
+            .select('email, store_name')
+            .eq('id', userId)
+            .single();
+
+          if (merchant?.email) {
+            const planLabel: Record<string, string> = {
+              starter: 'Starter', growth: 'Growth', pro: 'Pro', enterprise: 'Enterprise',
+            };
+            await sendSubscriptionEmail(
+              merchant.email,
+              planLabel[planSlug] ?? planSlug,
+              merchant.store_name
+            );
+          }
+        } catch (emailErr) {
+          console.error('Failed to send subscription email:', emailErr);
+        }
+
         break;
       }
 
