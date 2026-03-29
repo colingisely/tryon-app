@@ -87,10 +87,10 @@ interface GenerationResult {
 }
 
 interface MerchantData {
-  storeName:                 string
-  plan:                      'free' | 'starter' | 'growth' | 'pro' | 'enterprise'
-  fast_credits_remaining:    number
-  premium_credits_remaining: number
+  storeName:          string
+  plan:               'free' | 'starter' | 'growth' | 'pro' | 'enterprise'
+  credits_remaining:  number
+  stripe_customer_id: string | null
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -154,10 +154,10 @@ export default function StudioPage() {
 
   // ── Merchant data ────────────────────────────────────────────────────────
   const [merchant, setMerchant] = useState<MerchantData>({
-    storeName:                 '',
-    plan:                      'free',
-    fast_credits_remaining:    0,
-    premium_credits_remaining: 0,
+    storeName:          '',
+    plan:               'free',
+    credits_remaining:  0,
+    stripe_customer_id: null,
   })
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function StudioPage() {
 
       const { data } = await supabase
         .from('merchants')
-        .select('store_name, fast_credits_remaining, premium_credits_remaining, plans!plan_id(slug)')
+        .select('store_name, credits_remaining, stripe_customer_id, plans!plan_id(slug)')
         .eq('id', user.id)
         .single()
 
@@ -176,10 +176,10 @@ export default function StudioPage() {
         const features = getPlanFeatures(planSlug)
         if (!features.studioPro) setPlanLocked(true)
         setMerchant({
-          storeName:                 data.store_name ?? '',
-          plan:                      planSlug as MerchantData['plan'],
-          fast_credits_remaining:    data.fast_credits_remaining ?? 0,
-          premium_credits_remaining: (data as any).premium_credits_remaining ?? 0,
+          storeName:          data.store_name ?? '',
+          plan:               planSlug as MerchantData['plan'],
+          credits_remaining:  (data as any).credits_remaining ?? 0,
+          stripe_customer_id: (data as any).stripe_customer_id ?? null,
         })
       }
     }
@@ -199,7 +199,23 @@ export default function StudioPage() {
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null)
 
   // ── Plan gate ─────────────────────────────────────────────────────────────
-  const [planLocked, setPlanLocked] = useState(false)
+  const [planLocked,   setPlanLocked]   = useState(false)
+  const [upgradingPlan, setUpgradingPlan] = useState(false)
+
+  async function handleUpgrade() {
+    if (merchant.stripe_customer_id) {
+      setUpgradingPlan(true)
+      try {
+        const res  = await fetch('/api/payments/create-portal-session', { method: 'POST' })
+        const data = await res.json()
+        if (data.url) { window.location.href = data.url; return }
+        alert(data.error || 'Não foi possível abrir o portal.')
+      } catch { alert('Erro ao conectar com o portal.') }
+      finally { setUpgradingPlan(false) }
+    } else {
+      window.location.href = '/#pricing'
+    }
+  }
 
   // ── Generation state ─────────────────────────────────────────────────────
   const [status,   setStatus]   = useState<GenerationStatus>('idle')
@@ -354,7 +370,7 @@ export default function StudioPage() {
       setStatus('done')
       setResult(data.url)
 
-      setMerchant(prev => ({ ...prev, premium_credits_remaining: Math.max(0, prev.premium_credits_remaining - 1) }))
+      setMerchant(prev => ({ ...prev, credits_remaining: Math.max(0, prev.credits_remaining - 4) }))
       setGallery(prev => [{
         id:        Date.now().toString(),
         url:       data.url,
@@ -403,16 +419,19 @@ export default function StudioPage() {
             Gere fotos profissionais com modelos usando inteligência artificial de alta qualidade.
           </p>
           <button
-            onClick={() => window.location.href = '/#pricing'}
+            onClick={handleUpgrade}
+            disabled={upgradingPlan}
             style={{
               background: 'linear-gradient(135deg, #2B1250 0%, #7050A0 100%)',
               border: 'none', color: '#EDEBF5',
               padding: '13px 32px', fontSize: 14, fontWeight: 600,
               fontFamily: "'DM Sans', sans-serif",
-              cursor: 'pointer', letterSpacing: '0.02em',
+              cursor: upgradingPlan ? 'not-allowed' : 'pointer',
+              opacity: upgradingPlan ? 0.7 : 1,
+              letterSpacing: '0.02em',
             }}
           >
-            Ver planos
+            {upgradingPlan ? 'Abrindo…' : merchant.stripe_customer_id ? 'Gerenciar plano ↗' : 'Ver planos'}
           </button>
           <div style={{ marginTop: 16 }}>
             <button
@@ -488,11 +507,11 @@ export default function StudioPage() {
           )}
 
           {/* Credits counter or upgrade CTA */}
-          {merchant.premium_credits_remaining > 0 ? (
+          {merchant.credits_remaining > 0 ? (
             <div className="flex items-center gap-1.5">
               <Zap size={11} style={{ color: '#A09CC0' }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '.16em', color: '#A09CC0' }}>
-                {merchant.premium_credits_remaining} crédito{merchant.premium_credits_remaining !== 1 ? 's' : ''}
+                {merchant.credits_remaining} crédito{merchant.credits_remaining !== 1 ? 's' : ''}
               </span>
             </div>
           ) : (
