@@ -1,110 +1,69 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function Navbar() {
+  const { t } = useLanguage();
+
   useEffect(() => {
-    /* ── NAVBAR ── */
-    const navbar     = document.getElementById('navbar');
-    const hamburger  = document.getElementById('nav-hamburger');
-    const mobileMenu = document.getElementById('nav-mobile');
-    const mobileLinks = mobileMenu ? mobileMenu.querySelectorAll('a') : [];
+    const nav = document.getElementById('navbar');
 
     function onScroll() {
-      if (navbar) navbar.classList.toggle('scrolled', window.scrollY > 24);
-
-      // Active link highlight based on scroll position
-      const sections = ['problem', 'reflexy-section', 'how', 'pricing', 'faq'];
-      let current = '';
-      sections.forEach(id => {
-        const el = document.getElementById(id);
-        if (el && window.scrollY >= el.offsetTop - 100) current = id;
-      });
-      document.querySelectorAll('.nav-links a').forEach(a => {
-        const href = a.getAttribute('href').replace('#', '');
-        a.classList.toggle('active', href === current);
-      });
+      if (nav) nav.classList.toggle('scrolled', window.scrollY > 24);
     }
-
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
 
-    function hamburgerClick() {
-      if (!mobileMenu || !hamburger) return;
-      const isOpen = mobileMenu.classList.toggle('open');
-      hamburger.classList.toggle('open', isOpen);
-      hamburger.setAttribute('aria-expanded', String(isOpen));
-    }
-    if (hamburger) hamburger.addEventListener('click', hamburgerClick);
-
-    mobileLinks.forEach(link => {
-      link.addEventListener('click', function() {
-        if (!mobileMenu || !hamburger) return;
-        mobileMenu.classList.remove('open');
-        hamburger.classList.remove('open');
-        hamburger.setAttribute('aria-expanded', 'false');
-      });
-    });
-
     return () => {
       window.removeEventListener('scroll', onScroll);
-      if (hamburger) hamburger.removeEventListener('click', hamburgerClick);
     };
   }, []);
 
   return (
-    <>
-      <nav id="navbar" aria-label="Navegação principal">
-        <div className="nav-inner">
+    <nav id="navbar" aria-label={t('nav.ariaLabel')}>
+      <div className="nav-inner">
 
-          {/* Brand */}
-          <a href="#hero" className="nav-brand" aria-label="REFLEXY — início">
-            <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{filter:'drop-shadow(0 0 6px rgba(112,80,160,.5))'}}>
-              <defs>
-                <linearGradient id="nF" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#C4B8E4" stopOpacity=".9"/><stop offset="100%" stopColor="#7050A0" stopOpacity=".7"/></linearGradient>
-                <linearGradient id="nT" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#E8E2F8" stopOpacity=".95"/><stop offset="100%" stopColor="#B090D8" stopOpacity=".8"/></linearGradient>
-                <linearGradient id="nP" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0CC89E" stopOpacity=".4"/><stop offset="100%" stopColor="#0CC89E" stopOpacity=".05"/></linearGradient>
-              </defs>
-              <polygon points="50,22 28,50 3,50 50,3" fill="url(#nF)"/>
-              <polygon points="50,22 72,50 97,50 50,3" fill="url(#nF)"/>
-              <polygon points="50,78 28,50 3,50 50,97" fill="url(#nP)"/>
-              <polygon points="50,78 72,50 97,50 50,97" fill="url(#nP)"/>
-              <polygon points="50,22 72,50 50,78 28,50" fill="url(#nT)"/>
-              <circle cx="50" cy="50" r="2.5" fill="#EDEBF5" opacity=".9"/>
-              <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="#B8AEDD" strokeWidth=".5" opacity=".35"/>
-            </svg>
-            <span className="nav-wm">REFLEXY</span>
-          </a>
+        {/* Logo */}
+        <a href="#hero" className="nav-brand">
+          <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{filter:'drop-shadow(0 0 6px rgba(112,80,160,.6))'}}>
+            <defs>
+              <linearGradient id="nF1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#C4B8E4" stopOpacity=".90"/><stop offset="100%" stopColor="#7050A0" stopOpacity=".70"/></linearGradient>
+              <linearGradient id="nF2" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#B8AEDD" stopOpacity=".70"/><stop offset="100%" stopColor="#4A2880" stopOpacity=".55"/></linearGradient>
+              <linearGradient id="nF3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#9070C0" stopOpacity=".55"/><stop offset="100%" stopColor="#2B1250" stopOpacity=".80"/></linearGradient>
+              <linearGradient id="nF4" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#D0C4EC" stopOpacity=".80"/><stop offset="100%" stopColor="#5A38A0" stopOpacity=".60"/></linearGradient>
+              <linearGradient id="nTbl" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#E8E2F8" stopOpacity=".95"/><stop offset="100%" stopColor="#B090D8" stopOpacity=".80"/></linearGradient>
+              <linearGradient id="nP1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0CC89E" stopOpacity=".38"/><stop offset="100%" stopColor="#0CC89E" stopOpacity=".05"/></linearGradient>
+              <linearGradient id="nStr" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#C4B8E4" stopOpacity=".55"/><stop offset="50%" stopColor="#B8AEDD" stopOpacity=".35"/><stop offset="100%" stopColor="#7050A0" stopOpacity=".25"/></linearGradient>
+              <filter id="nGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <polygon points="50,78 28,50 3,50 50,97" fill="url(#nP1)" opacity=".80"/>
+            <polygon points="50,78 72,50 97,50 50,97" fill="url(#nP1)" opacity=".80"/>
+            <polygon points="50,22 28,50 3,50 50,3" fill="url(#nF1)"/>
+            <polygon points="50,22 72,50 97,50 50,3" fill="url(#nF4)"/>
+            <polygon points="3,50 50,22 28,50" fill="url(#nF2)"/>
+            <polygon points="97,50 50,22 72,50" fill="url(#nF3)"/>
+            <polygon points="50,22 72,50 50,78 28,50" fill="url(#nTbl)" filter="url(#nGlow)"/>
+            <circle cx="50" cy="50" r="2.5" fill="#EDE8F6" opacity=".95" filter="url(#nGlow)"/>
+            <polygon points="50,3 97,50 50,97 3,50" fill="none" stroke="url(#nStr)" strokeWidth=".45"/>
+          </svg>
+          <span className="nav-brand__text">REFLEXY</span>
+        </a>
 
-          {/* Desktop links */}
-          <ul className="nav-links" role="list">
-            <li><a href="#problem">O Problema</a></li>
-            <li><a href="#reflexy-section">A Solução</a></li>
-            <li><a href="#how">Como Funciona</a></li>
-            <li><a href="#pricing">Planos</a></li>
-            <li><a href="#faq">FAQ</a></li>
-          </ul>
+        {/* Desktop links — absolutely centered */}
+        <ul className="nav-links">
+          <li><a href="#problem">{t('nav.problem')}</a></li>
+          <li><a href="#reflexy-section">{t('nav.solution')}</a></li>
+          <li><a href="#how">{t('nav.how')}</a></li>
+          <li><a href="#pricing">{t('nav.pricing')}</a></li>
+          <li><a href="#faq">{t('nav.faq')}</a></li>
+        </ul>
 
-          {/* Desktop CTA */}
-          <a href="#pricing" className="nav-cta">Começar grátis <span style={{opacity:.6}}>→</span></a>
-
-          {/* Mobile hamburger */}
-          <button className="nav-hamburger" id="nav-hamburger" aria-label="Menu" aria-expanded="false" aria-controls="nav-mobile">
-            <span></span><span></span><span></span>
-          </button>
-
+        {/* Action buttons */}
+        <div className="nav-actions">
+          <a href="/login" className="nav-login">{t('nav.login')}</a>
         </div>
-      </nav>
-
-      {/* Mobile menu */}
-      <div className="nav-mobile" id="nav-mobile" role="navigation" aria-label="Menu mobile">
-        <a href="#problem" className="nav-mobile-link">O Problema</a>
-        <a href="#reflexy-section" className="nav-mobile-link">A Solução</a>
-        <a href="#how" className="nav-mobile-link">Como Funciona</a>
-        <a href="#pricing" className="nav-mobile-link">Planos</a>
-        <a href="#faq" className="nav-mobile-link">FAQ</a>
-        <a href="#pricing" className="nav-cta-mobile">Começar gratuitamente →</a>
       </div>
-    </>
+    </nav>
   );
 }

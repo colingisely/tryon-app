@@ -88,7 +88,7 @@ interface GenerationResult {
 
 interface MerchantData {
   storeName:                 string
-  plan:                      'preview' | 'starter' | 'premium' | 'enterprise'
+  plan:                      'free' | 'starter' | 'growth' | 'pro' | 'enterprise'
   fast_credits_remaining:    number
   premium_credits_remaining: number
 }
@@ -155,7 +155,7 @@ export default function StudioPage() {
   // ── Merchant data ────────────────────────────────────────────────────────
   const [merchant, setMerchant] = useState<MerchantData>({
     storeName:                 '',
-    plan:                      'premium',
+    plan:                      'free',
     fast_credits_remaining:    0,
     premium_credits_remaining: 0,
   })
@@ -403,7 +403,7 @@ export default function StudioPage() {
             Gere fotos profissionais com modelos usando inteligência artificial de alta qualidade.
           </p>
           <button
-            onClick={() => router.push('/planos')}
+            onClick={() => window.location.href = '/#pricing'}
             style={{
               background: 'linear-gradient(135deg, #2B1250 0%, #7050A0 100%)',
               border: 'none', color: '#EDEBF5',
@@ -471,7 +471,7 @@ export default function StudioPage() {
         <div className="flex items-center gap-2.5">
 
           {/* Premium badge */}
-          {(merchant.plan === 'premium' || merchant.plan === 'enterprise') && (
+          {(merchant.plan === 'pro' || merchant.plan === 'enterprise') && (
             <div
               className="flex items-center gap-2 px-3 py-1.5"
               style={{ background: 'rgba(43,18,80,.60)', border: '1px solid rgba(112,80,160,.35)' }}

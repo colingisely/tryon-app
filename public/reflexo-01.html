@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflexo 01 · Provador Virtual com IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --abyss: #06050F;
+    --primary: #7C3AED;
+    --accent: #C084FC;
+    --mist: #EDEBF5;
+    --dusk: #B8B4D4;
+    --dim: rgba(245,240,255,.25);
+    --glass-border: rgba(255,255,255,.07);
+    --glass-bg: rgba(255,255,255,.03);
+    --green: rgba(74,222,128,.9);
+    --yellow: rgba(254,188,46,.9);
+    --img-bg: #0b0917;
+  }
+
+  body {
+    background: #06050F;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Ambient glow */
+  .glow {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px; height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,58,237,.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Top bar */
+  .top-bar {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: rgba(245,240,255,.25);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  /* Wordmark */
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .wordmark-text {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: rgba(245,240,255,.55);
+    letter-spacing: 0.03em;
+  }
+
+  /* Card */
+  .card {
+    position: relative;
+    z-index: 1;
+    width: 440px;
+    border-radius: 22px;
+    background: linear-gradient(145deg, rgba(124,58,237,.06) 0%, rgba(14,11,22,.6) 40%, rgba(192,132,252,.04) 100%);
+    border: 1px solid rgba(255,255,255,.07);
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(124,58,237,.08) inset;
+  }
+
+  /* Card top */
+  .card-top { padding: 28px 28px 20px; }
+
+  .card-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: rgba(124,58,237,.18);
+    border: 1px solid rgba(192,132,252,.2);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 14px;
+  }
+
+  .card-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: rgba(192,132,252,.6);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .card-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #EDEBF5;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .card-body {
+    font-size: 13px;
+    font-weight: 300;
+    color: rgba(184,180,212,.7);
+    line-height: 1.55;
+    margin-bottom: 4px;
+  }
+
+  /* Steps */
+  .steps { display: flex; gap: 8px; padding-top: 14px; flex-wrap: wrap; }
+  .step {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.07);
+    font-size: 11px; color: rgba(245,240,255,.4);
+    font-family: 'IBM Plex Mono', monospace;
+    transition: all .3s;
+  }
+  .step.active { border-color: rgba(192,132,252,.4); color: #C084FC; background: rgba(124,58,237,.12); }
+  .step-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(245,240,255,.2); transition: background .3s; }
+  .step.active .step-dot { background: #C084FC; box-shadow: 0 0 6px rgba(192,132,252,.7); }
+
+  /* Divider */
+  .divider { height: 1px; background: rgba(255,255,255,.05); }
+
+  /* Modal */
+  .modal { background: rgba(255,255,255,.02); }
+
+  .modal-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+
+  .modal-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    opacity: .85;
+  }
+
+  .modal-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: rgba(245,240,255,.3);
+    margin-left: 6px;
+  }
+
+  /* Frames — tall portrait container */
+  .frames { position: relative; height: 500px; }
+  .frame {
+    position: absolute; inset: 0;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity .4s ease, transform .4s ease;
+    padding: 18px;
+    display: flex; flex-direction: column;
+  }
+  .frame.active { opacity: 1; transform: translateY(0); }
+
+  /* ── Frame 0 · Produto ────────────────────── */
+  .product-card {
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 14px;
+    overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  /* Image zone — fills remaining space, shows full portrait */
+  .product-img-wrap {
+    flex: 1;
+    background: var(--img-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .product-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .product-info {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .product-name { font-size: 13px; font-weight: 500; color: #EDEBF5; }
+  .product-price {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; color: rgba(192,132,252,.8); white-space: nowrap;
+  }
+  .btn-try {
+    display: block;
+    width: calc(100% - 32px);
+    margin: 0 16px 14px;
+    padding: 10px;
+    background: linear-gradient(135deg, #7C3AED, #9333EA);
+    border: none; border-radius: 10px;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    text-align: center; cursor: pointer;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(124,58,237,.35);
+    flex-shrink: 0;
+  }
+  .cursor-wrap {
+    position: absolute;
+    bottom: 54px; right: 30px;
+    animation: cursorClick 1.1s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes cursorClick {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(.85); }
+  }
+
+  /* ── Frame 1 · Upload ─────────────────────── */
+  .upload-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: rgba(192,132,252,.7);
+    letter-spacing: 0.1em; margin-bottom: 10px; flex-shrink: 0;
+  }
+  .upload-zone {
+    flex: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+    position: relative;
+    background: var(--img-bg);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 0;
+  }
+  .upload-zone img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .upload-badge {
+    position: absolute;
+    bottom: 12px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(74,222,128,.15);
+    border: 1px solid rgba(74,222,128,.35);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: rgba(74,222,128,.9); white-space: nowrap;
+  }
+  .btn-continue {
+    margin-top: 10px; flex-shrink: 0;
+    padding: 10px;
+    background: rgba(124,58,237,.15);
+    border: 1px solid rgba(192,132,252,.25);
+    border-radius: 10px; color: #C084FC;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    text-align: center; cursor: pointer;
+  }
+
+  /* ── Frame 2 · IA Processing ──────────────── */
+  .proc-zone {
+    flex: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background: var(--img-bg);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 0;
+  }
+  .proc-zone img {
+    width: 100%; height: 100%;
+    object-fit: contain; opacity: .75; display: block;
+  }
+  .scanline {
+    position: absolute; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(192,132,252,.6), transparent);
+    animation: scan 1.4s linear infinite;
+  }
+  @keyframes scan {
+    0%  { top: 0%; }
+    100%{ top: 100%; }
+  }
+  .progress-wrap { margin-top: 12px; flex-shrink: 0; }
+  .progress-label {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+    font-size: 12px; font-weight: 500; color: rgba(192,132,252,.8);
+  }
+  .pulse-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #C084FC;
+    box-shadow: 0 0 8px rgba(192,132,252,.8);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .4; transform: scale(.7); }
+  }
+  .progress-track {
+    height: 4px; background: rgba(255,255,255,.06);
+    border-radius: 4px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, #7C3AED, #C084FC);
+    width: 0%; transition: none;
+  }
+  .frame.active .progress-fill {
+    animation: fillBar 2.4s ease-out forwards;
+  }
+  @keyframes fillBar {
+    0%  { width: 0%; }
+    100%{ width: 80%; }
+  }
+
+  /* ── Frame 3 · Resultado ──────────────────── */
+  .result-zone {
+    flex: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background: var(--img-bg);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 0;
+  }
+  .result-zone img {
+    width: 100%; height: 100%;
+    object-fit: contain; display: block;
+  }
+  .result-badge {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(74,222,128,.15);
+    border: 1px solid rgba(74,222,128,.4);
+    border-radius: 20px; padding: 4px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: rgba(74,222,128,.9);
+  }
+  .result-actions {
+    display: flex; gap: 10px; margin-top: 10px; flex-shrink: 0;
+  }
+  .btn-dl {
+    flex: 1; padding: 10px;
+    background: linear-gradient(135deg, #7C3AED, #9333EA);
+    border: none; border-radius: 10px; color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    text-align: center; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(124,58,237,.3);
+  }
+  .btn-alt {
+    flex: 1; padding: 10px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 10px; color: rgba(245,240,255,.6);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 400;
+    text-align: center; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="glow"></div>
+
+<!-- Wordmark -->
+<div class="wordmark">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L14.8 8.6L22 9.3L17 14L18.6 21.2L12 17.5L5.4 21.2L7 14L2 9.3L9.2 8.6L12 2Z" fill="url(#g1)" stroke="none"/>
+    <defs>
+      <linearGradient id="g1" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#7C3AED"/>
+        <stop offset="100%" stop-color="#C084FC"/>
+      </linearGradient>
+    </defs>
+  </svg>
+  <span class="wordmark-text">reflexy</span>
+</div>
+
+<!-- Top bar -->
+<div class="top-bar">REFLEXO 01 · PROVADOR VIRTUAL COM IA</div>
+
+<!-- Card -->
+<div class="card">
+
+  <!-- Card top -->
+  <div class="card-top">
+    <div class="card-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" fill="#C084FC"/>
+      </svg>
+    </div>
+    <div class="card-num">REFLEXO 01</div>
+    <div class="card-title">Provador Virtual com IA</div>
+    <div class="card-body">Experimente roupas em segundos sem precisar visitar uma loja. Nossa IA coloca qualquer peça em você com realismo fotográfico.</div>
+    <div class="steps">
+      <div class="step active"><div class="step-dot"></div><span>Provar</span></div>
+      <div class="step"><div class="step-dot"></div><span>Upload</span></div>
+      <div class="step"><div class="step-dot"></div><span>IA</span></div>
+      <div class="step"><div class="step-dot"></div><span>Resultado</span></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Modal -->
+  <div class="modal">
+    <div class="modal-bar">
+      <div class="modal-dot" style="background:#FF5F57"></div>
+      <div class="modal-dot" style="background:#FEBC2E"></div>
+      <div class="modal-dot" style="background:#28C840"></div>
+      <span class="modal-label">reflexy · provador</span>
+    </div>
+
+    <div class="frames">
+
+      <!-- Frame 0: Experimentar -->
+      <div class="frame active" id="f0">
+        <div class="product-card">
+          <div class="product-img-wrap">
+            <img src="./demo-modal-before.png" alt="Produto">
+          </div>
+          <div class="product-info">
+            <div class="product-name">Suéter Rosa de Pelos</div>
+            <div class="product-price">R$ 249,90</div>
+          </div>
+          <div class="btn-try">✦ Experimentar em mim</div>
+          <div class="cursor-wrap">
+            <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+              <path d="M4 1L4 18L8 14L11 20L13 19L10 13L16 13L4 1Z" fill="white" stroke="rgba(0,0,0,.5)" stroke-width="1"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Frame 1: Upload -->
+      <div class="frame" id="f1">
+        <div class="upload-label">↑ ESCOLHA SUA FOTO</div>
+        <div class="upload-zone">
+          <img src="./demo-upload-before.png" alt="Foto carregada">
+          <div class="upload-badge">✓ Foto carregada</div>
+        </div>
+        <div class="btn-continue">Continuar →</div>
+      </div>
+
+      <!-- Frame 2: IA gerando -->
+      <div class="frame" id="f2">
+        <div class="proc-zone">
+          <img src="./demo-upload-before.png" alt="Processando">
+          <div class="scanline"></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <div class="pulse-dot"></div>
+            Processando com IA...
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Frame 3: Resultado -->
+      <div class="frame" id="f3">
+        <div class="result-zone">
+          <img src="./demo-result-after.png" alt="Resultado">
+          <div class="result-badge">✓ 15s</div>
+        </div>
+        <div class="result-actions">
+          <div class="btn-dl">Baixar</div>
+          <div class="btn-alt">Tentar outra</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const DURATIONS = [2500, 2500, 2500, 3000];
+  let frame = 0;
+
+  function setFrame(n) {
+    document.querySelectorAll('.frame').forEach((f, i) => f.classList.toggle('active', i === n));
+    document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i === n));
+  }
+
+  function advance() {
+    frame = (frame + 1) % 4;
+    setFrame(frame);
+    setTimeout(advance, DURATIONS[frame]);
+  }
+
+  setFrame(0);
+  setTimeout(advance, DURATIONS[0]);
+</script>
+</body>
+</html>

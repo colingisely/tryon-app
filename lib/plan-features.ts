@@ -53,7 +53,9 @@ export const PLAN_FEATURES: Record<string, PlanFeatures> = {
   },
 };
 
-/** Returns feature flags for the given plan slug. Defaults to 'free' if unknown. */
+/** Returns feature flags for the given plan slug. Defaults to 'free' if unknown.
+ *  Legacy: treats 'preview' as 'free' for any old data still in the DB. */
 export function getPlanFeatures(planSlug: string | null | undefined): PlanFeatures {
-  return PLAN_FEATURES[planSlug ?? 'free'] ?? PLAN_FEATURES.free;
+  const slug = planSlug === 'preview' ? 'free' : (planSlug ?? 'free');
+  return PLAN_FEATURES[slug] ?? PLAN_FEATURES.free;
 }

@@ -1,3 +1,6 @@
+// @ts-check
+const { withSentryConfig } = require('@sentry/nextjs')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -8,4 +11,25 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = withSentryConfig(nextConfig, {
+  org: 'reflexy',
+  project: 'javascript-nextjs',
+
+  // Upload source maps silenciosamente
+  silent: !process.env.CI,
+
+  // Desativa source maps no bundle do cliente (não expõe código fonte)
+  widenClientFileUpload: true,
+
+  // Esconde source maps do bundle final
+  hideSourceMaps: true,
+
+  // Desativa logger do Sentry no browser
+  disableLogger: true,
+
+  // Tunneling para evitar bloqueio de ad-blockers
+  tunnelRoute: '/monitoring',
+
+  // Auto-instrumentação de rotas
+  automaticVercelMonitors: true,
+})

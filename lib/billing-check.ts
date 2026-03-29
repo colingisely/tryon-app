@@ -26,9 +26,12 @@ export async function checkBillingAndDeduct(
 ): Promise<BillingCheckResult> {
   const supabase = getSupabase()
 
+  // Unified credit model: 1 credit for fast, 4 credits for premium (tryon-max)
+  const creditCost = type === 'premium' ? 4 : 1
+
   const { data: merchant, error } = await supabase
     .from('merchants')
-    .select('id, fast_credits_remaining, premium_credits_remaining, overage_status, suspended_at')
+    .select('id, credits_remaining, overage_status, suspended_at')
     .eq('id', merchantId)
     .single()
 
@@ -53,11 +56,10 @@ export async function checkBillingAndDeduct(
     }
   }
 
-  const creditsRemaining: number =
-    type === 'fast' ? (merchant.fast_credits_remaining ?? 0) : (merchant.premium_credits_remaining ?? 0)
+  const creditsRemaining: number = merchant.credits_remaining ?? 0
 
   // Tem créditos inclusos → deduz do saldo
-  if (creditsRemaining > 0) {
+  if (creditsRemaining >= creditCost) {
     return {
       allowed: true,
       deductCredit: async () => {
@@ -66,6 +68,7 @@ export async function checkBillingAndDeduct(
           p_type:         type,
           p_reason:       'widget_tryon',
           p_source:       'api/tryon',
+          p_amount:       creditCost,
         })
       },
     }

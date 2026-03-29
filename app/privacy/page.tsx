@@ -150,7 +150,7 @@ const PRIVACY_HTML = `
 <li>Use <strong>Reflexy</strong> — a SaaS platform with AI-powered virtual try-on for fashion e-commerce merchants (such as Shopify stores). Our solution allows end users to visualize how clothing would look on their own bodies using generative AI. We also offer Studio Pro for digital model creation and an Analytics tool providing insights on purchasing behavior, conversion, and customer engagement.</li>
 <li>Engage with us in other related ways, including any marketing or events</li>
 </ul>
-<div><strong>Questions or concerns?</strong> Reading this Privacy Notice will help you understand your privacy rights and choices. If you do not agree with our policies and practices, please do not use our Services. If you still have any questions or concerns, please contact us at <a href="mailto:reflexy.co@gmail.com">reflexy.co@gmail.com</a>.</div>
+<div><strong>Questions or concerns?</strong> Reading this Privacy Notice will help you understand your privacy rights and choices. If you do not agree with our policies and practices, please do not use our Services. If you still have any questions or concerns, please contact us at <a href="mailto:suporte@reflexy.co">suporte@reflexy.co</a>.</div>
 <br>
 
 <h2>SUMMARY OF KEY POINTS</h2>
@@ -274,7 +274,7 @@ const PRIVACY_HTML = `
 
 <h2 id="infominors">10. DO WE COLLECT INFORMATION FROM MINORS?</h2>
 <div><em><strong>In Short:</strong> We do not knowingly collect data from or market to children under 18 years of age.</em></div><br>
-<div>We do not knowingly collect, solicit data from, or market to children under 18 years of age, nor do we knowingly sell such personal information. By using the Services, you represent that you are at least 18 or that you are the parent or guardian of such a minor and consent to such minor dependent&apos;s use of the Services. If we learn that personal information from users less than 18 years of age has been collected, we will deactivate the account and take reasonable measures to promptly delete such data from our records. If you become aware of any data we may have collected from children under age 18, please contact us at <a href="mailto:reflexy.co@gmail.com">reflexy.co@gmail.com</a>.</div>
+<div>We do not knowingly collect, solicit data from, or market to children under 18 years of age, nor do we knowingly sell such personal information. By using the Services, you represent that you are at least 18 or that you are the parent or guardian of such a minor and consent to such minor dependent&apos;s use of the Services. If we learn that personal information from users less than 18 years of age has been collected, we will deactivate the account and take reasonable measures to promptly delete such data from our records. If you become aware of any data we may have collected from children under age 18, please contact us at <a href="mailto:suporte@reflexy.co">suporte@reflexy.co</a>.</div>
 <br>
 
 <h2 id="privacyrights">11. WHAT ARE YOUR PRIVACY RIGHTS?</h2>
@@ -287,7 +287,7 @@ const PRIVACY_HTML = `
 <h3>Account Information</h3>
 <div>If you would at any time like to review or change the information in your account or terminate your account, you can log in to your account settings and update your user account.</div><br>
 <div>Upon your request to terminate your account, we will deactivate or delete your account and information from our active databases. However, we may retain some information in our files to prevent fraud, troubleshoot problems, assist with any investigations, enforce our legal terms and/or comply with applicable legal requirements.</div><br>
-<div>If you have questions or comments about your privacy rights, you may email us at <a href="mailto:reflexy.co@gmail.com">reflexy.co@gmail.com</a>.</div>
+<div>If you have questions or comments about your privacy rights, you may email us at <a href="mailto:suporte@reflexy.co">suporte@reflexy.co</a>.</div>
 <br>
 
 <h2 id="DNT">12. CONTROLS FOR DO-NOT-TRACK FEATURES</h2>
@@ -298,7 +298,7 @@ const PRIVACY_HTML = `
 <div><em><strong>In Short:</strong> If you are a resident of California, Colorado, Connecticut, Delaware, Florida, Indiana, Iowa, Kentucky, Maryland, Minnesota, Montana, Nebraska, New Hampshire, New Jersey, Oregon, Rhode Island, Tennessee, Texas, Utah, or Virginia, you may have the right to request access to and receive details about the personal information we maintain about you.</em></div><br>
 <div>We have not disclosed, sold, or shared any personal information to third parties for a business or commercial purpose in the preceding twelve (12) months. We will not sell or share personal information in the future belonging to website visitors, users, and other consumers.</div><br>
 <h3>How to Exercise Your Rights</h3>
-<div>To exercise these rights, you can contact us by submitting a <a href="https://app.termly.io/dsar/b1e3b002-63ea-49a1-a84a-31d859c9c79d" rel="noopener noreferrer" target="_blank">data subject access request</a>, by emailing us at <a href="mailto:reflexy.co@gmail.com">reflexy.co@gmail.com</a>, or by visiting <a href="https://www.reflexy.co/">https://www.reflexy.co/</a>.</div>
+<div>To exercise these rights, you can contact us by submitting a <a href="https://app.termly.io/dsar/b1e3b002-63ea-49a1-a84a-31d859c9c79d" rel="noopener noreferrer" target="_blank">data subject access request</a>, by emailing us at <a href="mailto:suporte@reflexy.co">suporte@reflexy.co</a>, or by visiting <a href="https://www.reflexy.co/">https://www.reflexy.co/</a>.</div>
 <br>
 
 <h2 id="policyupdates">14. DO WE MAKE UPDATES TO THIS NOTICE?</h2>
@@ -307,7 +307,7 @@ const PRIVACY_HTML = `
 <br>
 
 <h2 id="contact">15. HOW CAN YOU CONTACT US ABOUT THIS NOTICE?</h2>
-<div>If you have questions or comments about this notice, you may contact us by email at <a href="mailto:reflexy.co@gmail.com">reflexy.co@gmail.com</a> or by visiting <a href="https://www.reflexy.co/">https://www.reflexy.co/</a>.</div>
+<div>If you have questions or comments about this notice, you may contact us by email at <a href="mailto:suporte@reflexy.co">suporte@reflexy.co</a> or by visiting <a href="https://www.reflexy.co/">https://www.reflexy.co/</a>.</div>
 <br>
 
 <h2 id="request">16. HOW CAN YOU REVIEW, UPDATE, OR DELETE THE DATA WE COLLECT FROM YOU?</h2>

@@ -188,7 +188,7 @@ const TERMS_HTML = `
 <ul>
 <li>manter a confidencialidade de suas credenciais de acesso (e-mail e senha);</li>
 <li>todas as atividades realizadas por meio de sua conta;</li>
-<li>notificar imediatamente a Reflexy em caso de acesso não autorizado ou suspeita de violação de segurança, pelo e-mail <a href="mailto:reflexy.co@gmail.com">reflexy.co@gmail.com</a>.</li>
+<li>notificar imediatamente a Reflexy em caso de acesso não autorizado ou suspeita de violação de segurança, pelo e-mail <a href="mailto:suporte@reflexy.co">suporte@reflexy.co</a>.</li>
 </ul>
 <div>A Reflexy não se responsabiliza por perdas ou danos decorrentes do uso indevido de suas credenciais por terceiros em razão de falha de guarda por parte do usuário.</div>
 <br>
@@ -244,7 +244,7 @@ const TERMS_HTML = `
 <div>Você pode alterar seu plano a qualquer momento. Upgrades têm efeito imediato (com cobrança proporcional ao período restante, conforme política do Stripe). Downgrades entram em vigor no próximo ciclo de cobrança.</div>
 <br>
 <h3>Política de Reembolso</h3>
-<div>Não são concedidos reembolsos por períodos parciais de uso, créditos já consumidos ou por mudança de plano. Reembolsos excepcionais podem ser avaliados pela equipe Reflexy caso a caso, a exclusivo critério da plataforma, em situações de cobrança indevida comprovada. Solicitações devem ser enviadas para <a href="mailto:reflexy.co@gmail.com">reflexy.co@gmail.com</a> em até 7 dias após a cobrança.</div>
+<div>Não são concedidos reembolsos por períodos parciais de uso, créditos já consumidos ou por mudança de plano. Reembolsos excepcionais podem ser avaliados pela equipe Reflexy caso a caso, a exclusivo critério da plataforma, em situações de cobrança indevida comprovada. Solicitações devem ser enviadas para <a href="mailto:suporte@reflexy.co">suporte@reflexy.co</a> em até 7 dias após a cobrança.</div>
 <br>
 
 <h2 id="creditos">5. Sistema de Créditos</h2>
@@ -376,7 +376,7 @@ const TERMS_HTML = `
 <br>
 <div><strong>Reflexy</strong> — plataforma operada por seus fundadores e colaboradores</div>
 <div>Site: <a href="https://www.reflexy.co" target="_blank">www.reflexy.co</a></div>
-<div>E-mail: <a href="mailto:reflexy.co@gmail.com">reflexy.co@gmail.com</a></div>
+<div>E-mail: <a href="mailto:suporte@reflexy.co">suporte@reflexy.co</a></div>
 <br>
 <div>Nos comprometemos a responder sua mensagem em até 5 (cinco) dias úteis.</div>
 </div>

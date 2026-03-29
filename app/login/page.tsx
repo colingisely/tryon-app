@@ -1,5 +1,6 @@
 'use client'
 
+
 /**
  * Reflexy — app/login/page.tsx
  * Brand System V5 · Deep Amethyst
@@ -73,10 +74,17 @@ function parseError(raw: string): AuthError {
 export default function LoginPage() {
   const router   = useRouter()
   const supabase = createClient()
-  const [mounted, setMounted] = useState(false)
+  const [mounted,      setMounted]      = useState(false)
+  const [planSlug,     setPlanSlug]     = useState('')
+  const [fromPayment,  setFromPayment]  = useState(false)
 
   useEffect(() => {
     setMounted(true)
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search)
+      setPlanSlug(p.get('plan') ?? '')
+      setFromPayment(p.get('payment') === 'success')
+    }
   }, [])
 
   const [email,    setEmail]    = useState('')
@@ -103,7 +111,34 @@ export default function LoginPage() {
         return
       }
 
-      router.push('/dashboard')
+      // If a paid plan was selected, redirect to Stripe checkout
+      const paidPlans = ['starter', 'growth', 'pro']
+      if (planSlug && paidPlans.includes(planSlug)) {
+        try {
+          const { data: { user: loggedInUser } } = await supabase.auth.getUser()
+          if (loggedInUser) {
+            const res = await fetch('/api/payments/create-checkout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                planSlug,
+                userId: loggedInUser.id,
+                userEmail: loggedInUser.email,
+              }),
+            })
+            const { url } = await res.json()
+            if (url) {
+              window.location.href = url
+              return
+            }
+          }
+        } catch (e) {
+          console.warn('[login] create-checkout failed:', e)
+        }
+      }
+
+      // Default: go to dashboard (payment=success adds a banner)
+      router.push(fromPayment ? '/dashboard?payment=success' : '/dashboard')
       router.refresh()
     } catch {
       setError({ kind: 'generic', message: 'Algo deu errado. Tente novamente.' })
@@ -125,6 +160,30 @@ export default function LoginPage() {
       <AmbientGlow />
 
       <div className="relative z-10 w-full" style={{ maxWidth: 420 }}>
+
+        {/* ── Payment success banner ── */}
+        {fromPayment && (
+          <div style={{
+            marginBottom: 20,
+            padding: '14px 20px',
+            background: 'rgba(112,80,160,0.18)',
+            border: '1px solid rgba(112,80,160,0.45)',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}>
+            <span style={{ fontSize: 18 }}>🎉</span>
+            <div>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#EDEBF5', fontFamily: "'DM Sans', sans-serif" }}>
+                Pagamento confirmado!
+              </p>
+              <p style={{ margin: 0, fontSize: 12, color: '#A09CC0', fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
+                Faça login para acessar seu plano ativo.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ── Brand header ── */}
         <header className="flex flex-col items-center mb-10">

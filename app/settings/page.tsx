@@ -45,6 +45,11 @@ import {
   ShoppingBag,
   Settings,
   Info,
+  CreditCard,
+  Zap,
+  Star,
+  ExternalLink,
+  Loader2,
 } from 'lucide-react'
 import ReflexGem from '@/components/ui/ReflexGem'
 import {
@@ -60,16 +65,21 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type SettingsTab = 'store' | 'api' | 'widget' | 'danger'
+type SettingsTab = 'store' | 'api' | 'widget' | 'billing' | 'danger'
 
 interface MerchantSettings {
-  id:                     string
-  storeName:              string
-  email:                  string
-  apiKey:                 string
-  widgetEnabled:          boolean
-  planId:                 string
-  fast_credits_remaining: number
+  id:                             string
+  storeName:                      string
+  email:                          string
+  apiKey:                         string
+  widgetEnabled:                  boolean
+  tryonMode:                      'fast' | 'premium'
+  planId:                         string
+  planSlug:                       string
+  credits_remaining:              number
+  credits_monthly:                number
+  stripe_customer_id:             string | null
+  subscription_current_period_end: string | null
 }
 
 interface SaveState {
@@ -80,10 +90,11 @@ interface SaveState {
 // ─── Nav tabs ─────────────────────────────────────────────────────────────────
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
-  { id: 'store',  label: 'Perfil da Loja',  icon: <Store size={14} />       },
-  { id: 'api',    label: 'API & Integração', icon: <Key size={14} />         },
-  { id: 'widget', label: 'Widget',           icon: <ShoppingBag size={14} /> },
-  { id: 'danger', label: 'Conta',            icon: <Settings size={14} />    },
+  { id: 'store',   label: 'Perfil da Loja',     icon: <Store size={14} />      },
+  { id: 'api',     label: 'API & Integração',   icon: <Key size={14} />        },
+  { id: 'widget',  label: 'Widget',             icon: <ShoppingBag size={14} />},
+  { id: 'billing', label: 'Plano & Faturamento',icon: <CreditCard size={14} /> },
+  { id: 'danger',  label: 'Conta',              icon: <Settings size={14} />   },
 ]
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -95,13 +106,18 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('store')
   const [loading,   setLoading]   = useState(true)
   const [settings,  setSettings]  = useState<MerchantSettings>({
-    id:                     '',
-    storeName:              '',
-    email:                  '',
-    apiKey:                 '',
-    widgetEnabled:          true,
-    planId:                 'preview',
-    fast_credits_remaining: 0,
+    id:                              '',
+    storeName:                       '',
+    email:                           '',
+    apiKey:                          '',
+    widgetEnabled:                   true,
+    tryonMode:                       'fast',
+    planId:                          'free',
+    planSlug:                        'free',
+    credits_remaining:               0,
+    credits_monthly:                 10,
+    stripe_customer_id:              null,
+    subscription_current_period_end: null,
   })
   const [saveState, setSaveState] = useState<SaveState>({ status: 'idle', message: '' })
 
@@ -115,23 +131,34 @@ export default function SettingsPage() {
 
         const { data, error } = await supabase
           .from('merchants')
-          .select('id, store_name, email, api_key, widget_enabled, plan_id, fast_credits_remaining')
+          .select(`
+            id, store_name, email, api_key, widget_enabled, tryon_mode,
+            plan_id, stripe_customer_id, subscription_current_period_end,
+            credits_remaining, credits_monthly,
+            plans!plan_id(slug, credits_monthly)
+          `)
           .eq('id', user.id)
           .single()
 
         if (error) throw error
 
+        const plan = (data as any).plans ?? {}
         setSettings({
-          id:            data.id            ?? user.id,
-          storeName:     data.store_name    ?? '',
-          email:         data.email         ?? user.email ?? '',
-          apiKey:        data.api_key       ?? generateDemoKey(),
-          widgetEnabled: data.widget_enabled ?? true,
-          planId:        data.plan_id        ?? 'preview',
-          fast_credits_remaining: data.fast_credits_remaining ?? 0,
+          id:                              data.id            ?? user.id,
+          storeName:                       data.store_name    ?? '',
+          email:                           data.email         ?? user.email ?? '',
+          apiKey:                          data.api_key       ?? generateDemoKey(),
+          widgetEnabled:                   data.widget_enabled ?? true,
+          tryonMode:                       (data as any).tryon_mode ?? 'fast',
+          planId:                          data.plan_id        ?? 'free',
+          planSlug:                        plan.slug ?? 'free',
+          credits_remaining:               (data as any).credits_remaining ?? 0,
+          credits_monthly:                 plan.credits_monthly ?? (data as any).credits_monthly ?? 10,
+          stripe_customer_id:              (data as any).stripe_customer_id ?? null,
+          subscription_current_period_end: (data as any).subscription_current_period_end ?? null,
         })
       } catch {
-        // Fallback for preview/demo
+        // Fallback for free/demo
         setSettings(prev => ({ ...prev, apiKey: generateDemoKey() }))
       } finally {
         setLoading(false)
@@ -151,6 +178,7 @@ export default function SettingsPage() {
       const payload: Record<string, unknown> = {}
       if (updates.storeName     !== undefined) payload.store_name     = updates.storeName.trim()
       if (updates.widgetEnabled !== undefined) payload.widget_enabled = updates.widgetEnabled
+      if (updates.tryonMode     !== undefined) payload.tryon_mode     = updates.tryonMode
 
       if (Object.keys(payload).length === 0) {
         setSaveState({ status: 'saved', message: 'Nenhuma alteração detectada.' })
@@ -274,10 +302,11 @@ export default function SettingsPage() {
               <SaveBanner state={saveState} />
             )}
 
-            {activeTab === 'store'  && <StoreProfileSection  settings={settings} onSave={handleSave} />}
-            {activeTab === 'api'    && <ApiKeySection         settings={settings} setSettings={setSettings} supabase={supabase} />}
-            {activeTab === 'widget' && <WidgetSection         settings={settings} onSave={handleSave} />}
-            {activeTab === 'danger' && <DangerSection         onSignOut={handleSignOut} />}
+            {activeTab === 'store'   && <StoreProfileSection  settings={settings} onSave={handleSave} />}
+            {activeTab === 'api'     && <ApiKeySection         settings={settings} setSettings={setSettings} supabase={supabase} />}
+            {activeTab === 'widget'  && <WidgetSection         settings={settings} onSave={handleSave} />}
+            {activeTab === 'billing' && <BillingSection        settings={settings} />}
+            {activeTab === 'danger'  && <DangerSection         onSignOut={handleSignOut} />}
           </div>
         </div>
       </div>
@@ -835,6 +864,185 @@ function RegenModal({
   )
 }
 
+// ─── BillingSection ───────────────────────────────────────────────────────────
+
+const PLAN_LABELS: Record<string, string> = {
+  free: 'Free', starter: 'Starter', growth: 'Growth', pro: 'Pro', enterprise: 'Enterprise',
+}
+
+function BillingSection({ settings }: { settings: MerchantSettings }) {
+  const [upgrading, setUpgrading] = useState(false)
+
+  async function handleManagePlan() {
+    if (!settings.stripe_customer_id) {
+      window.location.href = '/#pricing'
+      return
+    }
+    setUpgrading(true)
+    try {
+      const res  = await fetch('/api/payments/create-portal-session', { method: 'POST' })
+      const data = await res.json()
+      if (data.url) { window.location.href = data.url; return }
+      alert(data.error || 'Não foi possível abrir o portal. Tente novamente.')
+    } catch {
+      alert('Erro ao conectar com o portal. Verifique sua conexão.')
+    } finally {
+      setUpgrading(false)
+    }
+  }
+
+  const creditsLimit  = settings.credits_monthly  || 10
+  const creditsRem    = settings.credits_remaining ?? creditsLimit
+  const creditsPct    = Math.round((creditsRem / creditsLimit) * 100)
+  const creditsColor  = creditsPct > 50 ? '#0CC89E' : creditsPct > 20 ? '#FFB432' : '#FF5A5A'
+
+  const planLabel = PLAN_LABELS[settings.planSlug] ?? settings.planSlug
+  const isFree    = settings.planSlug === 'free'
+
+  const renewalDate = settings.subscription_current_period_end
+    ? new Date(settings.subscription_current_period_end).toLocaleDateString('pt-BR', {
+        day: '2-digit', month: 'long', year: 'numeric',
+      })
+    : null
+
+  return (
+    <div className="flex flex-col gap-4">
+
+      {/* Plan overview card */}
+      <SectionCard
+        title="Plano atual"
+        description="Resumo da sua assinatura e uso de créditos."
+        action={
+          <button
+            type="button"
+            onClick={handleManagePlan}
+            disabled={upgrading}
+            className="flex items-center gap-1.5 px-3 py-2 transition-all shrink-0"
+            style={{
+              background:   isFree
+                ? 'linear-gradient(135deg,#2B1250 0%,#7050A0 100%)'
+                : 'rgba(43,18,80,.55)',
+              border:       '1px solid rgba(112,80,160,.5)',
+              color:        '#B8AEDD',
+              fontFamily:   "'DM Sans', sans-serif",
+              fontSize:      12,
+              fontWeight:    500,
+              cursor:        upgrading ? 'not-allowed' : 'pointer',
+              opacity:       upgrading ? 0.7 : 1,
+              whiteSpace:   'nowrap',
+            }}
+          >
+            {upgrading
+              ? <><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> Abrindo…</>
+              : isFree
+                ? <><ExternalLink size={12} /> Fazer upgrade</>
+                : <><ExternalLink size={12} /> Gerenciar plano</>
+            }
+          </button>
+        }
+      >
+        <div className="flex flex-col gap-5">
+
+          {/* Plan badge + renewal */}
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <span style={{
+                padding:      '4px 12px',
+                background:    isFree ? 'rgba(184,174,221,.08)' : 'rgba(12,200,158,.08)',
+                border:       `1px solid ${isFree ? 'rgba(184,174,221,.22)' : 'rgba(12,200,158,.3)'}`,
+                fontFamily:   "'IBM Plex Mono', monospace",
+                fontSize:      10,
+                letterSpacing: '.18em',
+                textTransform: 'uppercase',
+                color:          isFree ? '#A09CC0' : '#0CC89E',
+              }}>
+                {planLabel}
+              </span>
+              {!isFree && (
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0' }}>
+                  Assinatura ativa
+                </span>
+              )}
+            </div>
+            {renewalDate && (
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0' }}>
+                Renova em {renewalDate}
+              </span>
+            )}
+          </div>
+
+          {/* Credits bar */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Zap size={13} style={{ color: creditsColor }} />
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#EDEBF5', fontWeight: 500 }}>
+                  Créditos restantes
+                </span>
+              </div>
+              <span style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize:    13,
+                color:       creditsColor,
+                fontWeight:  600,
+              }}>
+                {creditsRem.toLocaleString('pt-BR')} <span style={{ color: '#A09CC0', fontWeight: 400 }}>/ {creditsLimit.toLocaleString('pt-BR')}</span>
+              </span>
+            </div>
+
+            {/* Progress bar */}
+            <div style={{ height: 4, background: 'rgba(184,174,221,.10)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{
+                height:      '100%',
+                width:       `${Math.min(100, creditsPct)}%`,
+                background:   creditsColor,
+                borderRadius:  2,
+                transition:   'width .4s ease',
+              }} />
+            </div>
+
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#A09CC0' }}>
+              Prova virtual rápida = 1 crédito · Studio Pro (tryon-max) = 4 créditos
+            </p>
+          </div>
+
+          {/* Credit usage hint */}
+          {creditsRem === 0 && (
+            <div className="flex items-center gap-2 p-3" style={{
+              background: 'rgba(255,90,90,.06)',
+              border:     '1px solid rgba(255,90,90,.18)',
+            }}>
+              <AlertTriangle size={13} style={{ color: '#FF5A5A', flexShrink: 0 }} />
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#FF5A5A', lineHeight: 1.5 }}>
+                Seus créditos acabaram.{' '}
+                {isFree
+                  ? 'Faça upgrade para continuar gerando try-ons.'
+                  : 'Gerencie seu plano para adicionar créditos ou aguarde a renovação.'}
+              </span>
+            </div>
+          )}
+        </div>
+      </SectionCard>
+
+      {/* Credit model info */}
+      <div style={{
+        padding:    '14px 18px',
+        background: 'rgba(184,174,221,.03)',
+        border:     '1px solid rgba(184,174,221,.10)',
+      }}>
+        <div className="flex items-start gap-2.5">
+          <Info size={13} style={{ color: '#7050A0', marginTop: 2, flexShrink: 0 }} />
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', lineHeight: 1.7, margin: 0 }}>
+            <strong style={{ color: '#EDEBF5' }}>Modelo de crédito unificado:</strong>{' '}
+            todos os tipos de geração usam o mesmo saldo. Prova virtual rápida consome 1 crédito,
+            Studio Pro consome 4. Os créditos não acumulam entre ciclos.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── WidgetSection ────────────────────────────────────────────────────────────
 
 function WidgetSection({
@@ -844,16 +1052,26 @@ function WidgetSection({
   settings: MerchantSettings
   onSave:   (updates: Partial<MerchantSettings>) => Promise<void>
 }) {
-  const [enabled, setEnabled] = useState(settings.widgetEnabled)
-  const [saving,  setSaving]  = useState(false)
+  const [enabled,   setEnabled]   = useState(settings.widgetEnabled)
+  const [tryonMode, setTryonMode] = useState<'fast' | 'premium'>(settings.tryonMode)
+  const [saving,    setSaving]    = useState(false)
 
-  useEffect(() => { setEnabled(settings.widgetEnabled) }, [settings.widgetEnabled])
+  useEffect(() => { setEnabled(settings.widgetEnabled)   }, [settings.widgetEnabled])
+  useEffect(() => { setTryonMode(settings.tryonMode)     }, [settings.tryonMode])
 
   async function handleToggle() {
     const next = !enabled
     setEnabled(next)
     setSaving(true)
     await onSave({ widgetEnabled: next })
+    setSaving(false)
+  }
+
+  async function handleModeChange(mode: 'fast' | 'premium') {
+    if (mode === tryonMode) return
+    setTryonMode(mode)
+    setSaving(true)
+    await onSave({ tryonMode: mode })
     setSaving(false)
   }
 
@@ -928,8 +1146,75 @@ function WidgetSection({
           </span>
         </div>
 
+        {/* Try-on mode toggle */}
+        <div className="flex flex-col gap-3 pt-4" style={{ borderTop: '1px solid rgba(184,174,221,.08)' }}>
+          <div>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 4 }}>
+              Modo de geração
+            </p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', lineHeight: 1.6, marginBottom: 12 }}>
+              Define a qualidade padrão das provas virtuais do widget.
+            </p>
+            <div className="flex gap-2">
+              {/* Fast mode */}
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => handleModeChange('fast')}
+                className="flex-1 flex flex-col gap-1.5 p-3 transition-all text-left"
+                style={{
+                  background:  tryonMode === 'fast' ? 'rgba(12,200,158,.07)' : 'rgba(184,174,221,.03)',
+                  border:     `1px solid ${tryonMode === 'fast' ? 'rgba(12,200,158,.35)' : 'rgba(184,174,221,.12)'}`,
+                  cursor:      saving ? 'not-allowed' : 'pointer',
+                  opacity:     saving ? 0.7 : 1,
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Zap size={13} style={{ color: tryonMode === 'fast' ? '#0CC89E' : '#A09CC0' }} />
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: tryonMode === 'fast' ? '#EDEBF5' : '#A09CC0', fontWeight: 500 }}>
+                      Fast
+                    </span>
+                  </div>
+                  {tryonMode === 'fast' && <Check size={11} style={{ color: '#0CC89E' }} />}
+                </div>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#A09CC0', lineHeight: 1.5, margin: 0 }}>
+                  12–17s · 1 crédito
+                </p>
+              </button>
+
+              {/* Premium mode */}
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => handleModeChange('premium')}
+                className="flex-1 flex flex-col gap-1.5 p-3 transition-all text-left"
+                style={{
+                  background:  tryonMode === 'premium' ? 'rgba(112,80,160,.12)' : 'rgba(184,174,221,.03)',
+                  border:     `1px solid ${tryonMode === 'premium' ? 'rgba(112,80,160,.50)' : 'rgba(184,174,221,.12)'}`,
+                  cursor:      saving ? 'not-allowed' : 'pointer',
+                  opacity:     saving ? 0.7 : 1,
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Star size={13} style={{ color: tryonMode === 'premium' ? '#B8AEDD' : '#A09CC0' }} />
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: tryonMode === 'premium' ? '#EDEBF5' : '#A09CC0', fontWeight: 500 }}>
+                      Premium
+                    </span>
+                  </div>
+                  {tryonMode === 'premium' && <Check size={11} style={{ color: '#B8AEDD' }} />}
+                </div>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#A09CC0', lineHeight: 1.5, margin: 0 }}>
+                  ~50s · 4K · 4 créditos
+                </p>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Snippet section */}
-        <div className="flex flex-col gap-2 pt-2" style={{ borderTop: '1px solid rgba(184,174,221,.08)' }}>
+        <div className="flex flex-col gap-2 pt-4" style={{ borderTop: '1px solid rgba(184,174,221,.08)' }}>
           <FieldLabel>Snippet de integração</FieldLabel>
           <div
             className="relative"

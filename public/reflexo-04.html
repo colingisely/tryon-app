@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflexo 04 · Dashboard Estratégico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --abyss: #06050F;
+    --primary: #7C3AED;
+    --accent: #C084FC;
+    --mist: #EDEBF5;
+    --dusk: #B8B4D4;
+    --dim: rgba(245,240,255,.25);
+    --glass-border: rgba(255,255,255,.07);
+    --glass-bg: rgba(255,255,255,.03);
+    --green: rgba(74,222,128,.9);
+    --yellow: rgba(254,188,46,.9);
+  }
+
+  body {
+    background: #06050F;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+  }
+
+  .top-bar {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: rgba(245,240,255,.25);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .wordmark-text {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: rgba(245,240,255,.55);
+    letter-spacing: 0.03em;
+  }
+
+  .glow {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,58,237,.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .card {
+    position: relative;
+    z-index: 1;
+    width: 520px;
+    border-radius: 22px;
+    background: linear-gradient(145deg, rgba(124,58,237,.06) 0%, rgba(14,11,22,.6) 40%, rgba(192,132,252,.04) 100%);
+    border: 1px solid rgba(255,255,255,.07);
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(124,58,237,.08) inset;
+  }
+
+  .card-top { padding: 28px 28px 20px; }
+
+  .card-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: rgba(124,58,237,.18);
+    border: 1px solid rgba(192,132,252,.2);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 14px;
+  }
+
+  .card-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: rgba(192,132,252,.6);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .card-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #EDEBF5;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .card-body {
+    font-size: 13px;
+    font-weight: 300;
+    color: rgba(184,180,212,.7);
+    line-height: 1.55;
+    margin-bottom: 4px;
+  }
+
+  .steps { display: flex; gap: 8px; padding-top: 14px; flex-wrap: wrap; }
+  .step {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.07);
+    font-size: 11px; color: rgba(245,240,255,.4);
+    font-family: 'IBM Plex Mono', monospace;
+    transition: all .3s;
+  }
+  .step.active { border-color: rgba(192,132,252,.4); color: #C084FC; background: rgba(124,58,237,.12); }
+  .step-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(245,240,255,.2); transition: background .3s; }
+  .step.active .step-dot { background: #C084FC; box-shadow: 0 0 6px rgba(192,132,252,.7); }
+
+  .divider { height: 1px; background: rgba(255,255,255,.05); }
+
+  .modal { background: rgba(255,255,255,.02); }
+
+  .modal-bar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+
+  .modal-dot { width: 10px; height: 10px; border-radius: 50%; opacity: .85; }
+
+  .modal-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: rgba(245,240,255,.3);
+    margin-left: 6px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: rgba(74,222,128,.9);
+    box-shadow: 0 0 6px rgba(74,222,128,.7);
+    animation: livePulse 1.5s ease-in-out infinite;
+  }
+  @keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+
+  .frames { position: relative; min-height: 340px; }
+  .frame {
+    position: absolute; inset: 0;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity .4s ease, transform .4s ease;
+    padding: 20px;
+    display: flex; flex-direction: column;
+  }
+  .frame.active { opacity: 1; transform: translateY(0); }
+
+  /* Frame headers */
+  .frame-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: rgba(245,240,255,.3);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  /* Frame 0 — Funnel */
+  .funnel-block {
+    margin-bottom: 10px;
+  }
+  .funnel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .funnel-name {
+    font-size: 12px;
+    color: rgba(245,240,255,.6);
+  }
+  .funnel-num {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #EDEBF5;
+  }
+  .funnel-pct {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: rgba(245,240,255,.3);
+  }
+  .funnel-track {
+    height: 8px;
+    background: rgba(255,255,255,.04);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .funnel-fill {
+    height: 100%;
+    border-radius: 8px;
+    width: 0%;
+  }
+  .frame.active .funnel-fill { transition: width 1s ease-out; }
+  .frame.active .funnel-fill.f1 { width: 100%; transition-delay: .1s; }
+  .frame.active .funnel-fill.f2 { width: 48.6%; transition-delay: .3s; }
+  .frame.active .funnel-fill.f3 { width: 34.6%; transition-delay: .5s; }
+  .funnel-fill.f1 { background: linear-gradient(90deg, #7C3AED, #9333EA); }
+  .funnel-fill.f2 { background: linear-gradient(90deg, rgba(124,58,237,.6), rgba(192,132,252,.7)); }
+  .funnel-fill.f3 { background: linear-gradient(90deg, rgba(74,222,128,.6), rgba(74,222,128,.9)); }
+
+  .funnel-footer {
+    margin-top: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: rgba(74,222,128,.7);
+    line-height: 1.5;
+  }
+
+  /* Frame 1 — Sparkline */
+  .spark-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .spark-badge {
+    background: rgba(74,222,128,.1);
+    border: 1px solid rgba(74,222,128,.3);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: rgba(74,222,128,.9);
+    white-space: nowrap;
+  }
+  .spark-svg-wrap {
+    position: relative;
+    flex: 1;
+  }
+  .spark-svg {
+    width: 100%;
+    height: 160px;
+    overflow: visible;
+  }
+  .spark-path {
+    stroke-dasharray: 300;
+    stroke-dashoffset: 300;
+  }
+  .frame.active .spark-path {
+    animation: drawLine 1.4s ease-out .2s forwards;
+  }
+  @keyframes drawLine {
+    to { stroke-dashoffset: 0; }
+  }
+  .spark-annotation {
+    position: absolute;
+    top: 18px;
+    left: 52%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+  }
+  .spark-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: rgba(254,188,46,.7);
+    white-space: nowrap;
+    margin-top: 4px;
+  }
+
+  /* Frame 2 — Top SKUs */
+  .sku-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    background: rgba(255,255,255,.02);
+    border: 1px solid rgba(255,255,255,.05);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  .frame.active .sku-row:nth-child(2) { animation: slideIn .35s ease forwards 0.08s; }
+  .frame.active .sku-row:nth-child(3) { animation: slideIn .35s ease forwards 0.22s; }
+  .frame.active .sku-row:nth-child(4) { animation: slideIn .35s ease forwards 0.38s; }
+  @keyframes slideIn {
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .sku-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .sku-dot.green { background: rgba(74,222,128,.9); box-shadow: 0 0 6px rgba(74,222,128,.5); }
+  .sku-dot.yellow { background: rgba(254,188,46,.9); box-shadow: 0 0 6px rgba(254,188,46,.4); }
+  .sku-name {
+    flex: 1;
+    font-size: 12px;
+    color: rgba(245,240,255,.7);
+    font-weight: 400;
+  }
+  .sku-metric {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .sku-metric.green { color: rgba(74,222,128,.85); }
+  .sku-metric.yellow { color: rgba(254,188,46,.8); }
+
+  /* Frame 3 — Revenue count-up */
+  .revenue-frame {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+  }
+  .revenue-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: rgba(245,240,255,.3);
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .revenue-number {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 42px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #7C3AED 0%, #C084FC 50%, rgba(74,222,128,.9) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .revenue-subtitle {
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(74,222,128,.8);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="glow"></div>
+
+<div class="wordmark">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L14.8 8.6L22 9.3L17 14L18.6 21.2L12 17.5L5.4 21.2L7 14L2 9.3L9.2 8.6L12 2Z" fill="url(#g1)" stroke="none"/>
+    <defs>
+      <linearGradient id="g1" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#7C3AED"/>
+        <stop offset="100%" stop-color="#C084FC"/>
+      </linearGradient>
+    </defs>
+  </svg>
+  <span class="wordmark-text">reflexy</span>
+</div>
+
+<div class="top-bar">REFLEXO 04 · DASHBOARD ESTRATÉGICO</div>
+
+<div class="card">
+
+  <div class="card-top">
+    <div class="card-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="3" width="7" height="9" rx="1.5" fill="rgba(192,132,252,.4)" stroke="#C084FC" stroke-width="1"/>
+        <rect x="3" y="15" width="7" height="6" rx="1.5" fill="rgba(192,132,252,.15)" stroke="#C084FC" stroke-width="1"/>
+        <rect x="14" y="3" width="7" height="5" rx="1.5" fill="rgba(192,132,252,.15)" stroke="#C084FC" stroke-width="1"/>
+        <rect x="14" y="12" width="7" height="9" rx="1.5" fill="rgba(192,132,252,.4)" stroke="#C084FC" stroke-width="1"/>
+      </svg>
+    </div>
+    <div class="card-num">REFLEXO 04</div>
+    <div class="card-title">Dashboard Estratégico</div>
+    <div class="card-body">Visualize o impacto real do provador virtual no seu negócio. Funil, tendências, SKUs de alto impacto e receita gerada — tudo em tempo real.</div>
+    <div class="steps">
+      <div class="step active"><div class="step-dot"></div><span>Funil</span></div>
+      <div class="step"><div class="step-dot"></div><span>Tendência</span></div>
+      <div class="step"><div class="step-dot"></div><span>SKUs</span></div>
+      <div class="step"><div class="step-dot"></div><span>Impacto</span></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="modal">
+    <div class="modal-bar">
+      <div class="modal-dot" style="background:#FF5F57"></div>
+      <div class="modal-dot" style="background:#FEBC2E"></div>
+      <div class="modal-dot" style="background:#28C840"></div>
+      <span class="modal-label">
+        reflexy · dashboard
+        <div class="live-dot"></div>
+      </span>
+    </div>
+
+    <div class="frames">
+
+      <!-- Frame 0: Conversion funnel -->
+      <div class="frame active" id="f0">
+        <div class="frame-title">Funil de Conversão · últimos 30 dias</div>
+
+        <div class="funnel-block">
+          <div class="funnel-header">
+            <div class="funnel-name">Provas virtuais</div>
+            <div style="display:flex;align-items:baseline;gap:10px;">
+              <div class="funnel-num">847</div>
+              <div class="funnel-pct">100%</div>
+            </div>
+          </div>
+          <div class="funnel-track"><div class="funnel-fill f1"></div></div>
+        </div>
+
+        <div class="funnel-block">
+          <div class="funnel-header">
+            <div class="funnel-name">Adicionaram ao carrinho</div>
+            <div style="display:flex;align-items:baseline;gap:10px;">
+              <div class="funnel-num">412</div>
+              <div class="funnel-pct">48.6%</div>
+            </div>
+          </div>
+          <div class="funnel-track"><div class="funnel-fill f2"></div></div>
+        </div>
+
+        <div class="funnel-block">
+          <div class="funnel-header">
+            <div class="funnel-name">Compraram</div>
+            <div style="display:flex;align-items:baseline;gap:10px;">
+              <div class="funnel-num">293</div>
+              <div class="funnel-pct">34.6%</div>
+            </div>
+          </div>
+          <div class="funnel-track"><div class="funnel-fill f3"></div></div>
+        </div>
+
+        <div class="funnel-footer">Taxa de conversão: 34.6% · +38% vs sem provador</div>
+      </div>
+
+      <!-- Frame 1: Sparkline trend -->
+      <div class="frame" id="f1">
+        <div class="spark-header">
+          <div class="frame-title" style="margin:0;">Taxa de conversão ao longo do tempo</div>
+          <div class="spark-badge">+38% com Reflexy</div>
+        </div>
+        <div class="spark-svg-wrap">
+          <svg class="spark-svg" viewBox="0 0 440 160" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="rgba(124,58,237,.6)"/>
+                <stop offset="55%" stop-color="rgba(124,58,237,.6)"/>
+                <stop offset="100%" stop-color="rgba(74,222,128,.8)"/>
+              </linearGradient>
+              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="rgba(124,58,237,.15)"/>
+                <stop offset="100%" stop-color="rgba(124,58,237,.0)"/>
+              </linearGradient>
+            </defs>
+            <!-- Grid lines -->
+            <line x1="0" y1="40" x2="440" y2="40" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+            <line x1="0" y1="80" x2="440" y2="80" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+            <line x1="0" y1="120" x2="440" y2="120" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+            <!-- Area fill under path -->
+            <path d="M0,120 L60,118 L120,115 L180,112 L220,112 L240,95 L280,70 L320,42 L360,28 L400,20 L440,18 L440,155 L0,155 Z"
+                  fill="url(#areaGrad)"/>
+            <!-- Sparkline path -->
+            <path class="spark-path"
+                  d="M0,120 L60,118 L120,115 L180,112 L220,112 L240,95 L280,70 L320,42 L360,28 L400,20 L440,18"
+                  fill="none"
+                  stroke="url(#sparkGrad)"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"/>
+            <!-- Activation point -->
+            <line x1="220" y1="20" x2="220" y2="150" stroke="rgba(254,188,46,.2)" stroke-width="1" stroke-dasharray="4 3"/>
+            <circle cx="220" cy="112" r="4" fill="rgba(254,188,46,.9)"/>
+            <!-- Label -->
+            <text x="225" y="108" font-family="IBM Plex Mono, monospace" font-size="9" fill="rgba(254,188,46,.7)">⬆ Reflexy ativado</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Frame 2: Top SKUs -->
+      <div class="frame" id="f2">
+        <div class="frame-title">Top SKUs por impacto do provador</div>
+        <div class="sku-row">
+          <div class="sku-dot green"></div>
+          <div class="sku-name">Suéter Rosa de Pelos</div>
+          <div class="sku-metric green">+41% conv.</div>
+        </div>
+        <div class="sku-row">
+          <div class="sku-dot yellow"></div>
+          <div class="sku-name">Jaqueta Oversized</div>
+          <div class="sku-metric yellow">⚠ revisar preço</div>
+        </div>
+        <div class="sku-row">
+          <div class="sku-dot green"></div>
+          <div class="sku-name">Vestido Midi</div>
+          <div class="sku-metric green">−63% dev.</div>
+        </div>
+      </div>
+
+      <!-- Frame 3: Revenue count-up -->
+      <div class="frame" id="f3">
+        <div class="revenue-frame">
+          <div class="revenue-label">Receita gerada pelo provador<br>mês atual</div>
+          <div class="revenue-number" id="revenue-display">R$ 0</div>
+          <div class="revenue-subtitle">↑ 23% vs mês anterior</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const DURATIONS = [3000, 3000, 3000, 3000];
+  let frame = 0;
+  let countUpStarted = false;
+
+  function formatBRL(value) {
+    const floored = Math.floor(value);
+    return 'R$ ' + floored.toLocaleString('pt-BR');
+  }
+
+  function runCountUp() {
+    const el = document.getElementById('revenue-display');
+    const target = 48320;
+    const duration = 2200;
+    const start = performance.now();
+
+    function tick(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // Cubic ease-out
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = formatBRL(eased * target);
+      if (progress < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        el.textContent = 'R$ 48.320';
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function setFrame(n) {
+    document.querySelectorAll('.frame').forEach((f, i) => f.classList.toggle('active', i === n));
+    document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i === n));
+
+    if (n === 3) {
+      // Reset and run count-up every time frame 3 becomes active
+      document.getElementById('revenue-display').textContent = 'R$ 0';
+      setTimeout(runCountUp, 200);
+    }
+  }
+
+  function advance() {
+    frame = (frame + 1) % 4;
+    setFrame(frame);
+    setTimeout(advance, DURATIONS[frame]);
+  }
+
+  setFrame(0);
+  setTimeout(advance, DURATIONS[0]);
+</script>
+</body>
+</html>

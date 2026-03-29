@@ -28,17 +28,26 @@ function getSupabase(): any {
   return _supabase;
 }
 
-const OVERAGE_RATES: Record<string, { fast_cents: number; premium_cents: number }> = {
-  free:       { fast_cents: 0,  premium_cents: 0  },
-  starter:    { fast_cents: 17, premium_cents: 15 },
-  growth:     { fast_cents: 15, premium_cents: 15 },
-  pro:        { fast_cents: 13, premium_cents: 15 },
-  enterprise: { fast_cents: 10, premium_cents: 15 },
+// Overage rate per unified credit (1 credit = 1 fast try-on, 4 credits = 1 Studio Pro)
+// These rates guarantee ≥40% gross margin ($0.075 cost per credit):
+//   Starter: $0.13/credit → 40% margin   Growth: $0.12/credit → 37%
+//   Pro:     $0.13/credit → 40%          Enterprise: negotiated
+// NOTE: Studio Pro on-demand is NOT yet live. When activated, ensure the widget
+// passes p_amount=4 so the correct credit count is deducted.
+const OVERAGE_RATES_PER_CREDIT: Record<string, number> = {
+  free:       0,   // no overage for free plan
+  starter:    13,  // $0.13/credit
+  growth:     12,  // $0.12/credit
+  pro:        13,  // $0.13/credit
+  enterprise: 10,  // $0.10/credit (custom contracts)
 };
 
 export function getOverageRate(planSlug: string, type: 'fast' | 'premium'): number {
-  const rates = OVERAGE_RATES[planSlug] ?? OVERAGE_RATES.starter;
-  return type === 'fast' ? rates.fast_cents : rates.premium_cents;
+  // In the unified model, 'type' determines amount (1 or 4 credits), not price per credit.
+  // The cost per credit is the same regardless of type.
+  const ratePerCredit = OVERAGE_RATES_PER_CREDIT[planSlug] ?? OVERAGE_RATES_PER_CREDIT.starter;
+  const amount = type === 'premium' ? 4 : 1;
+  return ratePerCredit * amount;
 }
 
 export async function getMerchantBillingState(merchantId: string) {
@@ -48,7 +57,7 @@ export async function getMerchantBillingState(merchantId: string) {
       id, stripe_customer_id, stripe_subscription_id,
       overage_status, overage_cap_cents, overage_used_cents,
       overage_payment_intent_id, payment_failed_at, suspended_at,
-      fast_credits_remaining, premium_credits_remaining,
+      credits_remaining,
       plans!plan_id ( slug, price_usd )
     `)
     .eq('id', merchantId)

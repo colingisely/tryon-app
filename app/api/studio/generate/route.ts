@@ -222,13 +222,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Imagem do produto inválida' }, { status: 400 });
     }
 
-    // 1. Verificar plano e créditos premium
-    // BUG FIX: use (merchant.premium_credits_remaining ?? 0) so that a NULL
-    // value in the DB column does not falsely trigger the "insufficient credits"
-    // guard (null <= 0 is true in JS, which blocked valid users).
+    // 1. Verificar plano e créditos
+    // Studio Pro consumes 4 credits (tryon-max = 4× fashn.ai credits = $0.30)
+    const STUDIO_CREDIT_COST = 4;
+
     const { data: merchant, error: mErr } = await supabase
       .from('merchants')
-      .select('premium_credits_remaining, plans!plan_id(slug)')
+      .select('credits_remaining, plans!plan_id(slug)')
       .eq('id', user.id)
       .single();
 
@@ -246,9 +246,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const creditsRemaining = merchant.premium_credits_remaining ?? 0;
-    if (creditsRemaining <= 0) {
-      return NextResponse.json({ error: 'Créditos premium insuficientes' }, { status: 403 });
+    const creditsRemaining = merchant.credits_remaining ?? 0;
+    if (creditsRemaining < STUDIO_CREDIT_COST) {
+      return NextResponse.json({ error: 'Créditos insuficientes. Studio Pro consome 4 créditos por geração.' }, { status: 403 });
     }
 
     // 2. Analisar peça com GPT Vision para obter prompt de styling
@@ -264,10 +264,11 @@ export async function POST(req: Request) {
     const resultUrl = await tryOnMax(finalModelImage, finalProductImage, garmentPrompt || undefined);
     console.log('Studio Pro: imagem gerada com sucesso');
 
-    // 4. Decrementar crédito premium SOMENTE após geração bem-sucedida.
+    // 4. Decrementar 4 créditos SOMENTE após geração bem-sucedida.
+    // Studio Pro usa tryon-max = 4× fashn.ai credits = $0.30 de custo.
     // Usa o RPC decrement_credit (SECURITY DEFINER) para garantir:
-    //   - atomicidade (WHERE remaining > 0 previne race conditions)
-    //   - atualização de premium_credits_used_total
+    //   - atomicidade (WHERE remaining >= p_amount previne race conditions)
+    //   - atualização de credits_used_total
     //   - bypass de RLS via service role
     // NOTA: este ponto só é alcançado se tryOnMax retornou uma URL válida.
     const { error: deductError } = await getServiceSupabase()
@@ -276,6 +277,7 @@ export async function POST(req: Request) {
         p_type:        'premium',
         p_reason:      'studio_pro',
         p_source:      'api/studio/generate',
+        p_amount:      4,
       });
     if (deductError) {
       console.error('[studio/generate] decrement_credit failed (non-fatal):', deductError.message);
