@@ -61,9 +61,10 @@ export async function POST(req: Request) {
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: userId
-        ? `${baseUrl}/dashboard?payment=success&plan=${planSlug}`
-        : `${baseUrl}/signup?plan=${planSlug}&payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      // Always redirect to /login after payment — this guarantees the user has
+      // an active session before reaching the dashboard, regardless of whether
+      // Supabase email confirmation is enabled (which means no session after signUp).
+      success_url: `${baseUrl}/login?payment=success&plan=${planSlug}`,
       cancel_url: `${baseUrl}/#pricing`,
       allow_promotion_codes: true,
       billing_address_collection: "auto",

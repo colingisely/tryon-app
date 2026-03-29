@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 
 // ── §04 HOW IT WORKS ──────────────────────────────────────────────────────────
@@ -321,26 +322,37 @@ export function Results() {
 // ── §07 PRICING ───────────────────────────────────────────────────────────────
 export function Pricing() {
   const { lang, t } = useLanguage();
-  const handleCheckout = async (planSlug) => {
-    if (!planSlug) {
-      console.error('Plan slug is missing');
-      return;
-    }
+  const [showEntModal, setShowEntModal] = useState(false);
+  const [entForm, setEntForm] = useState({ name:'', email:'', store:'', volume:'', message:'' });
+  const [entState, setEntState] = useState('idle'); // idle | sending | success | error
+
+  useEffect(() => {
+    if (!showEntModal) return;
+    const onKey = (e) => { if (e.key === 'Escape') setShowEntModal(false); };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [showEntModal]);
+
+  const handleEntSubmit = async (e) => {
+    e.preventDefault();
+    setEntState('sending');
     try {
-      const response = await fetch('/api/payments/create-checkout', {
+      const res = await fetch('/api/email/enterprise', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planSlug }),
+        body: JSON.stringify(entForm),
       });
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        console.error('Checkout error:', data.error);
-      }
-    } catch (err) {
-      console.error('Checkout error:', err);
-    }
+      if (res.ok) { setEntState('success'); }
+      else { setEntState('error'); }
+    } catch { setEntState('error'); }
+  };
+
+  // Auth-first checkout: require login/signup before Stripe to guarantee userId in metadata.
+  // This prevents duplicate Stripe customers and ensures the webhook can always identify the merchant.
+  const handleCheckout = (planSlug) => {
+    if (!planSlug) return;
+    window.location.href = `/signup?plan=${planSlug}&intent=checkout`;
   };
 
   const checkOk = (
@@ -357,6 +369,7 @@ export function Pricing() {
   );
 
   return (
+    <>
     <section className="pricing" id="pricing">
       <div className="container">
         <div className="pricing__header">
@@ -532,10 +545,96 @@ export function Pricing() {
               ))}
             </div>
           </div>
-          <a href="/cdn-cgi/l/email-protection#50333f3e2431243f102235363c3528297e333f" className="btn btn-ghost" style={{whiteSpace:'nowrap',flexShrink:0}}>{t('pricing.enterpriseBtn')}</a>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:8,flexShrink:0}}>
+            <button onClick={() => { setShowEntModal(true); setEntState('idle'); setEntForm({ name:'', email:'', store:'', volume:'', message:'' }); }}
+              className="btn btn-primary-new" style={{whiteSpace:'nowrap',cursor:'pointer',border:'none'}}>
+              {t('pricing.enterpriseBtn')}
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{marginLeft:6}}>
+                <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <span style={{fontSize:11,color:'var(--dim)',fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'.06em'}}>
+              {t('pricing.enterpriseNote')}
+            </span>
+          </div>
         </div>
       </div>
     </section>
+
+    {/* Enterprise Modal */}
+    {showEntModal && (
+      <div className="ent-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowEntModal(false); }}>
+        <div className="ent-modal-card" role="dialog" aria-modal="true">
+          {/* Close */}
+          <button className="ent-modal-close" onClick={() => setShowEntModal(false)} aria-label="Fechar">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+
+          {entState === 'success' ? (
+            <div className="ent-modal-success">
+              <div className="ent-modal-success__icon">✓</div>
+              <h2 className="ent-modal-success__title">{t('pricing.enterpriseSuccessTitle')}</h2>
+              <p className="ent-modal-success__msg">{t('pricing.enterpriseSuccessMsg')}</p>
+            </div>
+          ) : (
+            <>
+              <div className="ent-modal-header">
+                <h2 className="ent-modal-title">{t('pricing.enterpriseModalTitle')}</h2>
+                <p className="ent-modal-sub">{t('pricing.enterpriseModalSub')}</p>
+              </div>
+              <form className="ent-modal-form" onSubmit={handleEntSubmit}>
+                <div className="ent-modal-row">
+                  <div className="ent-modal-field">
+                    <label className="ent-modal-label">{t('pricing.enterpriseLabelName')}</label>
+                    <input className="ent-modal-input" type="text" required
+                      value={entForm.name} onChange={e => setEntForm(f => ({...f, name: e.target.value}))} />
+                  </div>
+                  <div className="ent-modal-field">
+                    <label className="ent-modal-label">{t('pricing.enterpriseLabelEmail')}</label>
+                    <input className="ent-modal-input" type="email" required
+                      value={entForm.email} onChange={e => setEntForm(f => ({...f, email: e.target.value}))} />
+                  </div>
+                </div>
+                <div className="ent-modal-row">
+                  <div className="ent-modal-field">
+                    <label className="ent-modal-label">{t('pricing.enterpriseLabelStore')}</label>
+                    <input className="ent-modal-input" type="text" required
+                      value={entForm.store} onChange={e => setEntForm(f => ({...f, store: e.target.value}))} />
+                  </div>
+                  <div className="ent-modal-field">
+                    <label className="ent-modal-label">{t('pricing.enterpriseLabelVolume')}</label>
+                    <select className="ent-modal-input" required
+                      value={entForm.volume} onChange={e => setEntForm(f => ({...f, volume: e.target.value}))}>
+                      <option value=""></option>
+                      <option value={t('pricing.enterpriseVolOpt1')}>{t('pricing.enterpriseVolOpt1')}</option>
+                      <option value={t('pricing.enterpriseVolOpt2')}>{t('pricing.enterpriseVolOpt2')}</option>
+                      <option value={t('pricing.enterpriseVolOpt3')}>{t('pricing.enterpriseVolOpt3')}</option>
+                      <option value={t('pricing.enterpriseVolOpt4')}>{t('pricing.enterpriseVolOpt4')}</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="ent-modal-field">
+                  <label className="ent-modal-label">{t('pricing.enterpriseLabelMsg')}</label>
+                  <textarea className="ent-modal-input ent-modal-textarea"
+                    placeholder={t('pricing.enterprisePlaceholderMsg')} rows={3}
+                    value={entForm.message} onChange={e => setEntForm(f => ({...f, message: e.target.value}))} />
+                </div>
+                {entState === 'error' && (
+                  <p style={{fontSize:13,color:'rgba(248,113,113,.8)',margin:'0 0 8px'}}>Algo deu errado. Tente novamente.</p>
+                )}
+                <button type="submit" className="btn-plan-v2 btn-plan-v2-primary"
+                  style={{marginTop:8}} disabled={entState === 'sending'}>
+                  {entState === 'sending' ? t('pricing.enterpriseSending') : t('pricing.enterpriseSubmit')}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
@@ -590,7 +689,36 @@ export function Faq() {
 // ── §09 FINAL CTA ─────────────────────────────────────────────────────────────
 export function FinalCta() {
   const { t } = useLanguage();
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [contactState, setContactState] = useState('idle'); // idle | sending | success | error
+
+  useEffect(() => {
+    if (!showContactModal) return;
+    const onKey = (e) => { if (e.key === 'Escape') setShowContactModal(false); };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [showContactModal]);
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setContactState('sending');
+    try {
+      const res = await fetch('/api/email/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactForm),
+      });
+      if (!res.ok) throw new Error();
+      setContactState('success');
+    } catch {
+      setContactState('error');
+    }
+  };
+
   return (
+    <>
     <section className="cta-section-v2">
       <div className="container-sm">
         <div className="cta-panel reveal-scale">
@@ -609,12 +737,77 @@ export function FinalCta() {
                 <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </a>
-            <a href="mailto:oi@reflexy.co" className="btn btn-ghost btn-lg">{t('cta.btnGhost')}</a>
+            <button onClick={() => { setShowContactModal(true); setContactState('idle'); setContactForm({ name: '', email: '', subject: '', message: '' }); }}
+              className="btn btn-ghost btn-lg" style={{cursor:'pointer',border:'1px solid var(--glass-border-hi)'}}>
+              {t('cta.btnGhost')}
+            </button>
           </div>
           <div className="cta-panel__note">{t('cta.note')}</div>
         </div>
       </div>
     </section>
+
+    {/* Contact Modal */}
+    {showContactModal && (
+      <div className="ent-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowContactModal(false); }}>
+        <div className="ent-modal-card" role="dialog" aria-modal="true">
+          <button className="ent-modal-close" onClick={() => setShowContactModal(false)} aria-label="Fechar">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+
+          {contactState === 'success' ? (
+            <div className="ent-modal-success">
+              <div className="ent-modal-success__icon">✓</div>
+              <h2 className="ent-modal-success__title">{t('cta.contactSuccessTitle')}</h2>
+              <p className="ent-modal-success__msg">{t('cta.contactSuccessMsg')}</p>
+            </div>
+          ) : (
+            <>
+              <div className="ent-modal-header">
+                <h2 className="ent-modal-title">{t('cta.contactModalTitle')}</h2>
+                <p className="ent-modal-sub">{t('cta.contactModalSub')}</p>
+              </div>
+              <form className="ent-modal-form" onSubmit={handleContactSubmit}>
+                <div className="ent-modal-row">
+                  <div className="ent-modal-field">
+                    <label className="ent-modal-label">{t('cta.contactLabelName')}</label>
+                    <input className="ent-modal-input" type="text" required
+                      value={contactForm.name} onChange={e => setContactForm(f => ({...f, name: e.target.value}))} />
+                  </div>
+                  <div className="ent-modal-field">
+                    <label className="ent-modal-label">{t('cta.contactLabelEmail')}</label>
+                    <input className="ent-modal-input" type="email" required
+                      value={contactForm.email} onChange={e => setContactForm(f => ({...f, email: e.target.value}))} />
+                  </div>
+                </div>
+                <div className="ent-modal-field">
+                  <label className="ent-modal-label">{t('cta.contactLabelSubject')}</label>
+                  <input className="ent-modal-input" type="text" required
+                    placeholder={t('cta.contactPlaceholderSubject')}
+                    value={contactForm.subject} onChange={e => setContactForm(f => ({...f, subject: e.target.value}))} />
+                </div>
+                <div className="ent-modal-field">
+                  <label className="ent-modal-label">{t('cta.contactLabelMsg')}</label>
+                  <textarea className="ent-modal-input ent-modal-textarea"
+                    placeholder={t('cta.contactPlaceholderMsg')} rows={3}
+                    value={contactForm.message} onChange={e => setContactForm(f => ({...f, message: e.target.value}))} />
+                </div>
+                {contactState === 'error' && (
+                  <p style={{fontSize:13,color:'rgba(248,113,113,.8)',margin:'0 0 8px'}}>Algo deu errado. Tente novamente.</p>
+                )}
+                <button type="submit" className="btn-plan-v2 btn-plan-v2-primary"
+                  style={{marginTop:8}} disabled={contactState === 'sending'}>
+                  {contactState === 'sending' ? t('cta.contactSending') : t('cta.contactSubmit')}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

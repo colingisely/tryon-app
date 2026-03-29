@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-import { sendSubscriptionEmail } from '@/lib/email';
+import { sendSubscriptionEmail, sendCancellationEmail, sendPaymentFailedEmail } from '@/lib/email';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
         // Try to find plan by stripe_price_id in DB
         let { data: plan } = await supabase
           .from('plans')
-          .select('id, fast_credits_monthly, premium_credits_monthly')
+          .select('id, credits_monthly')
           .eq('stripe_price_id', priceId)
           .single();
 
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         if (!plan) {
           const { data: planBySlug } = await supabase
             .from('plans')
-            .select('id, fast_credits_monthly, premium_credits_monthly')
+            .select('id, credits_monthly')
             .eq('slug', planSlug)
             .single();
           plan = planBySlug;
@@ -88,6 +88,10 @@ export async function POST(req: NextRequest) {
           break;
         }
 
+        const periodEnd = subscription.current_period_end
+          ? new Date(subscription.current_period_end * 1000).toISOString()
+          : null;
+
         await supabase
           .from('merchants')
           .update({
@@ -96,8 +100,8 @@ export async function POST(req: NextRequest) {
             plan_id: plan.id,
             subscription_status: 'active',
             subscription_started_at: new Date().toISOString(),
-            fast_credits_remaining: plan.fast_credits_monthly,
-            premium_credits_remaining: plan.premium_credits_monthly,
+            subscription_current_period_end: periodEnd,
+            credits_remaining: plan.credits_monthly,
             payment_failed_at: null,
           })
           .eq('id', userId);
@@ -105,8 +109,7 @@ export async function POST(req: NextRequest) {
         // Audit: log the credit grant for this activation
         await supabase.rpc('log_credit_set', {
           p_merchant_id:  userId,
-          p_fast_new:     plan.fast_credits_monthly,
-          p_premium_new:  plan.premium_credits_monthly,
+          p_credits_new:  plan.credits_monthly,
           p_reason:       'plan_activation',
           p_source:       'webhook:checkout.session.completed',
           p_reference_id: subscriptionId,
@@ -143,13 +146,14 @@ export async function POST(req: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
 
-        // CRITICAL: Only reset credits on monthly RENEWAL cycles.
-        // billing_reason = 'subscription_create' fires when the subscription
-        // is first created — checkout.session.completed already handled that.
-        // Resetting here would wipe any credits used in the gap between the
-        // two events (seconds to minutes), causing billing discrepancies.
-        if ((invoice as any).billing_reason === 'subscription_create') {
-          console.log(`invoice.payment_succeeded: initial invoice (subscription_create), skipping credit reset for customer ${customerId}`);
+        // CRITICAL: Only reset credits on monthly RENEWAL cycles (subscription_cycle).
+        //   - subscription_create → checkout.session.completed already set credits; skip.
+        //   - subscription_update → proration invoice from mid-cycle upgrade/downgrade;
+        //     customer.subscription.updated already handled the credit diff; skip.
+        //   - subscription_cycle → genuine monthly renewal; reset credits here. ✅
+        const billingReason = (invoice as any).billing_reason as string | undefined;
+        if (billingReason !== 'subscription_cycle') {
+          console.log(`invoice.payment_succeeded: billing_reason=${billingReason}, skipping credit reset for customer ${customerId}`);
           break;
         }
 
@@ -163,25 +167,32 @@ export async function POST(req: NextRequest) {
 
         const { data: plan } = await supabase
           .from('plans')
-          .select('fast_credits_monthly, premium_credits_monthly')
+          .select('credits_monthly')
           .eq('id', merchant.plan_id)
           .single();
+
+        // Fetch subscription to get updated period end
+        const renewedSub = merchant.plan_id
+          ? await stripe.subscriptions.list({ customer: customerId, limit: 1 }).then(r => r.data[0]).catch(() => null)
+          : null;
+        const renewedPeriodEnd = renewedSub?.current_period_end
+          ? new Date(renewedSub.current_period_end * 1000).toISOString()
+          : null;
 
         await supabase
           .from('merchants')
           .update({
             subscription_status: 'active',
             payment_failed_at: null,
-            fast_credits_remaining: plan?.fast_credits_monthly ?? 0,
-            premium_credits_remaining: plan?.premium_credits_monthly ?? 0,
+            credits_remaining: plan?.credits_monthly ?? 0,
+            ...(renewedPeriodEnd && { subscription_current_period_end: renewedPeriodEnd }),
           })
           .eq('id', merchant.id);
 
         // Audit: log the credit renewal
         await supabase.rpc('log_credit_set', {
           p_merchant_id:  merchant.id,
-          p_fast_new:     plan?.fast_credits_monthly ?? 0,
-          p_premium_new:  plan?.premium_credits_monthly ?? 0,
+          p_credits_new:  plan?.credits_monthly ?? 0,
           p_reason:       'plan_renewal',
           p_source:       'webhook:invoice.payment_succeeded',
           p_reference_id: (invoice as any).id ?? null,
@@ -203,6 +214,35 @@ export async function POST(req: NextRequest) {
           })
           .eq('stripe_customer_id', customerId);
 
+        // Send payment failed email
+        try {
+          const { data: failedMerchant } = await supabase
+            .from('merchants')
+            .select('email, plan_id')
+            .eq('stripe_customer_id', customerId)
+            .single();
+
+          if (failedMerchant?.email) {
+            let failedPlanName = 'seu plano';
+            if (failedMerchant.plan_id) {
+              const { data: failedPlan } = await supabase
+                .from('plans')
+                .select('slug')
+                .eq('id', failedMerchant.plan_id)
+                .single();
+              const planLabel: Record<string, string> = {
+                starter: 'Starter', growth: 'Growth', pro: 'Pro', enterprise: 'Enterprise',
+              };
+              if (failedPlan?.slug) {
+                failedPlanName = planLabel[failedPlan.slug] ?? failedPlan.slug;
+              }
+            }
+            await sendPaymentFailedEmail(failedMerchant.email, failedPlanName);
+          }
+        } catch (emailErr) {
+          console.error('Failed to send payment failed email:', emailErr);
+        }
+
         console.warn(`Payment failed for customer ${customerId}`);
         break;
       }
@@ -211,6 +251,7 @@ export async function POST(req: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
         const priceId = subscription.items.data[0].price.id;
+        const isActive = subscription.status === 'active';
 
         let planSlug = 'free';
         if (priceId === process.env.STRIPE_PRICE_STARTER_MONTHLY) planSlug = 'starter';
@@ -219,27 +260,100 @@ export async function POST(req: NextRequest) {
 
         let { data: plan } = await supabase
           .from('plans')
-          .select('id')
+          .select('id, slug, credits_monthly')
           .eq('stripe_price_id', priceId)
           .single();
 
         if (!plan) {
           const { data: planBySlug } = await supabase
             .from('plans')
-            .select('id')
+            .select('id, slug, credits_monthly')
             .eq('slug', planSlug)
             .single();
           plan = planBySlug;
         }
 
         if (plan) {
+          // Check if the price actually changed (upgrade/downgrade)
+          const prevItems = (event.data.previous_attributes as any)?.items;
+          const priceChanged = prevItems !== undefined;
+
+          const updatePayload: Record<string, unknown> = {
+            plan_id: plan.id,
+            subscription_status: isActive ? 'active' : subscription.status,
+          };
+
+          // On plan change: add credits (upgrade) or reset credits (downgrade)
+          if (priceChanged && isActive) {
+            // Fetch current merchant to determine upgrade vs downgrade
+            const { data: currentMerchant } = await supabase
+              .from('merchants')
+              .select('id, plan_id, credits_remaining')
+              .eq('stripe_customer_id', customerId)
+              .single();
+
+            if (currentMerchant) {
+              // Check old plan to determine if upgrade or downgrade
+              const { data: oldPlan } = await supabase
+                .from('plans')
+                .select('credits_monthly')
+                .eq('id', currentMerchant.plan_id)
+                .single();
+
+              const isUpgrade = plan.credits_monthly > (oldPlan?.credits_monthly ?? 0);
+
+              if (isUpgrade) {
+                // Upgrade: ADD only the DIFFERENCE between old and new plan.
+                // Adding the full new plan total would grant free credits already
+                // paid for in the current cycle — causing margin erosion on prorated upgrades.
+                const diff = Math.max(0, plan.credits_monthly - (oldPlan?.credits_monthly ?? 0));
+                updatePayload.credits_remaining = currentMerchant.credits_remaining + diff;
+              } else {
+                // Downgrade: reset to new plan credits
+                updatePayload.credits_remaining = plan.credits_monthly;
+              }
+            } else {
+              // Fallback: reset to new plan credits
+              updatePayload.credits_remaining = plan.credits_monthly;
+            }
+
+            updatePayload.payment_failed_at = null;
+          }
+
+          // Save updated period end on plan change
+          if (subscription.current_period_end) {
+            updatePayload.subscription_current_period_end =
+              new Date(subscription.current_period_end * 1000).toISOString();
+          }
+
           await supabase
             .from('merchants')
-            .update({
-              plan_id: plan.id,
-              subscription_status: subscription.status === 'active' ? 'active' : subscription.status,
-            })
+            .update(updatePayload)
             .eq('stripe_customer_id', customerId);
+
+          // Send confirmation email on plan upgrade/change
+          if (priceChanged && isActive) {
+            try {
+              const { data: merchant } = await supabase
+                .from('merchants')
+                .select('email, store_name')
+                .eq('stripe_customer_id', customerId)
+                .single();
+
+              if (merchant?.email) {
+                const planLabel: Record<string, string> = {
+                  starter: 'Starter', growth: 'Growth', pro: 'Pro', enterprise: 'Enterprise',
+                };
+                await sendSubscriptionEmail(
+                  merchant.email,
+                  planLabel[planSlug] ?? planSlug,
+                  merchant.store_name
+                );
+              }
+            } catch (emailErr) {
+              console.error('Failed to send upgrade email:', emailErr);
+            }
+          }
         }
         break;
       }
@@ -250,20 +364,54 @@ export async function POST(req: NextRequest) {
 
         const { data: freePlan } = await supabase
           .from('plans')
-          .select('id, fast_credits_monthly, premium_credits_monthly')
+          .select('id')
           .eq('slug', 'free')
           .single();
 
+        // Get merchant info before updating for the cancellation email
+        const { data: cancelledMerchant } = await supabase
+          .from('merchants')
+          .select('email, plan_id')
+          .eq('stripe_customer_id', customerId)
+          .single();
+
+        // Get the plan name for the email
+        let cancelledPlanName = 'seu plano';
+        if (cancelledMerchant?.plan_id) {
+          const { data: cancelledPlan } = await supabase
+            .from('plans')
+            .select('slug')
+            .eq('id', cancelledMerchant.plan_id)
+            .single();
+          const planLabel: Record<string, string> = {
+            starter: 'Starter', growth: 'Growth', pro: 'Pro', enterprise: 'Enterprise',
+          };
+          if (cancelledPlan?.slug) {
+            cancelledPlanName = planLabel[cancelledPlan.slug] ?? cancelledPlan.slug;
+          }
+        }
+
+        // Credits go to 0 on cancellation — free credits were given once at initial signup
         await supabase
           .from('merchants')
           .update({
             subscription_status: 'cancelled',
             stripe_subscription_id: null,
             plan_id: freePlan?.id ?? null,
-            fast_credits_remaining: freePlan?.fast_credits_monthly ?? 0,
-            premium_credits_remaining: freePlan?.premium_credits_monthly ?? 0,
+            credits_remaining: 0,
           })
           .eq('stripe_customer_id', customerId);
+
+        // Send cancellation email
+        if (cancelledMerchant?.email) {
+          try {
+            const accessUntil = new Date(subscription.current_period_end * 1000)
+              .toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            await sendCancellationEmail(cancelledMerchant.email, cancelledPlanName, accessUntil);
+          } catch (emailErr) {
+            console.error('Failed to send cancellation email:', emailErr);
+          }
+        }
 
         console.log(`Subscription cancelled for customer ${customerId}`);
         break;

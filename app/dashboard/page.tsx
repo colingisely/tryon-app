@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { InternalFooter } from '@/components/ui/InternalFooter';
 import {
@@ -26,11 +27,10 @@ interface Lead {
 interface MerchantData {
   id: string;
   store_name: string;
-  fast_credits_remaining: number;
-  premium_credits_remaining: number;
-  fast_credits_monthly: number;
-  premium_credits_monthly: number;
+  credits_remaining: number;
+  credits_monthly: number;
   plan_slug: string | null;
+  stripe_customer_id?: string | null;
 }
 
 interface UsageDay { label: string; fast: number; premium: number; }
@@ -190,10 +190,12 @@ const StatCard = ({
 /* ─────────────── Main ─────────────── */
 export default function DashboardPage() {
   const supabase = createClient();
+  const router   = useRouter();
 
   const [merchant, setMerchant]       = useState<MerchantData | null>(null);
   const [stats, setStats]             = useState<DashStats | null>(null);
   const [usageData, setUsageData]     = useState<UsageDay[]>([]);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [period, setPeriod]           = useState<Period>(7);
   const [loading, setLoading]         = useState(true);
@@ -204,31 +206,82 @@ export default function DashboardPage() {
   const [leads, setLeads]             = useState<Lead[]>([]);
   const [leadsLocked, setLeadsLocked] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+  const [upgradingPlan, setUpgradingPlan] = useState<string | null>(null);
+
+  // Refs to store current user identity for upgrade calls (avoids stale closure)
+  const currentUserRef = useRef<{ id: string; email: string } | null>(null);
 
   const fetchData = useCallback(async () => {
     setRefreshing(true);
     try {
       const { data: { user }, error: uErr } = await supabase.auth.getUser();
       if (uErr || !user) throw new Error('Não autenticado.');
+      // Store for upgrade calls
+      currentUserRef.current = { id: user.id, email: user.email ?? '' };
+
+      let merchantRaw: any = null;
 
       const { data: m, error: mErr } = await supabase
         .from('merchants')
-        .select('id,store_name,fast_credits_remaining,premium_credits_remaining,plans!plan_id(slug,fast_credits_monthly,premium_credits_monthly)')
+        .select('id,store_name,credits_remaining,subscription_status,stripe_customer_id,plans!plan_id(slug,credits_monthly)')
         .eq('id', user.id)
         .single();
-      if (mErr) throw mErr;
-      const plan = (m as any)?.plans ?? {};
+
+      if (mErr && mErr.code === 'PGRST116') {
+        // No merchant record found — self-healing: create one with free plan
+        const { data: freePlan } = await supabase
+          .from('plans')
+          .select('id, credits_monthly')
+          .eq('slug', 'free')
+          .single();
+
+        await supabase.from('merchants').insert({
+          id: user.id,
+          store_name: user.user_metadata?.store_name ?? 'Minha Loja',
+          email: user.email ?? '',
+          plan_id: freePlan?.id ?? null,
+          credits_remaining: freePlan?.credits_monthly ?? 10,
+          api_key: 'tk_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+          created_at: new Date().toISOString(),
+        });
+
+        // Re-fetch the merchant after insert
+        const { data: m2, error: m2Err } = await supabase
+          .from('merchants')
+          .select('id,store_name,credits_remaining,subscription_status,stripe_customer_id,plans!plan_id(slug,credits_monthly)')
+          .eq('id', user.id)
+          .single();
+        if (m2Err) throw m2Err;
+        merchantRaw = m2;
+      } else if (mErr) {
+        throw mErr;
+      } else {
+        merchantRaw = m;
+      }
+
+      const plan = merchantRaw?.plans ?? {};
       const planSlug = plan.slug ?? 'free';
-      const merchant_normalized = m ? {
-        id:                       m.id,
-        store_name:               m.store_name,
-        fast_credits_remaining:   m.fast_credits_remaining,
-        premium_credits_remaining: m.premium_credits_remaining,
-        fast_credits_monthly:     plan.fast_credits_monthly  ?? 0,
-        premium_credits_monthly:  plan.premium_credits_monthly ?? 0,
-        plan_slug:                planSlug,
+      const merchant_normalized = merchantRaw ? {
+        id:                merchantRaw.id,
+        store_name:        merchantRaw.store_name,
+        credits_remaining: merchantRaw.credits_remaining ?? 0,
+        credits_monthly:   plan.credits_monthly ?? 0,
+        plan_slug:         planSlug,
+        stripe_customer_id: merchantRaw.stripe_customer_id ?? null,
       } : null;
       setMerchant(merchant_normalized as any);
+
+      // ── Access Gate ────────────────────────────────────────────────────────
+      // Allow access if the merchant has an active paid subscription OR is on
+      // the free plan (slug='free' in DB, 10 try-ons).
+      // Block anyone with no plan assigned (null planSlug).
+      const hasAccess =
+        merchantRaw?.subscription_status === 'active' ||
+        planSlug === 'free'
+      if (!hasAccess) {
+        router.replace('/?gate=true#pricing')
+        return
+      }
 
       // Leads — disponível a partir do Starter
       const features = getPlanFeatures(planSlug);
@@ -239,7 +292,7 @@ export default function DashboardPage() {
         const { data: leadsData } = await supabase
           .from('tryon_leads')
           .select('id, email, created_at, result_url')
-          .eq('merchant_id', m.id)
+          .eq('merchant_id', merchantRaw.id)
           .order('created_at', { ascending: false })
           .limit(50);
         setLeads(leadsData ?? []);
@@ -251,7 +304,7 @@ export default function DashboardPage() {
       const { data: events, error: eErr } = await supabase
         .from('analytics_events')
         .select('event_type, created_at, metadata')
-        .eq('merchant_id', m.id)
+        .eq('merchant_id', merchantRaw.id)
         .gte('created_at', since.toISOString());
       if (eErr) throw eErr;
 
@@ -309,17 +362,69 @@ export default function DashboardPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [supabase, period]);
+  }, [supabase, period, router]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('payment') === 'success') {
+        setPaymentSuccess(true);
+        // Remove param from URL without re-render
+        window.history.replaceState({}, '', '/dashboard');
+        // Auto-dismiss after 6s
+        setTimeout(() => setPaymentSuccess(false), 6000);
+      }
+    }
+  }, []);
+
+  // ── Upgrade handler — user is already authenticated ────────────────────────
+  const handleUpgrade = useCallback(async () => {
+    const currentUser = currentUserRef.current;
+    if (!currentUser) {
+      window.location.href = '/#pricing';
+      return;
+    }
+
+    // If merchant has a Stripe customer → open Stripe Portal for plan management
+    if (merchant?.stripe_customer_id) {
+      setUpgradingPlan('portal');
+      try {
+        const res = await fetch('/api/payments/create-portal-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+        // Portal call succeeded but no URL returned — show error
+        console.error('[portal] no url:', data);
+        alert(data.error || 'Não foi possível abrir o portal. Tente novamente.');
+        return;
+      } catch (err) {
+        console.error('[portal] fetch error:', err);
+        alert('Erro ao conectar com o portal. Verifique sua conexão e tente novamente.');
+        return;
+      } finally {
+        setUpgradingPlan(null);
+      }
+    }
+
+    // No Stripe customer yet → redirect to pricing to choose a plan
+    window.location.href = '/#pricing';
+  }, [merchant?.stripe_customer_id]);
+
   /* ── Derived values ── */
-  const fastLimit   = merchant?.fast_credits_monthly   ?? 5000;
-  const premLimit   = merchant?.premium_credits_monthly ?? 2000;
-  const fastRem     = merchant?.fast_credits_remaining   ?? fastLimit;
-  const premRem     = merchant?.premium_credits_remaining ?? premLimit;
-  const fastRemPct  = (fastRem / fastLimit) * 100;
-  const premRemPct  = (premRem / premLimit) * 100;
+  const currentPlanSlug = merchant?.plan_slug ?? 'free';
+  const PLAN_ORDER = ['free', 'starter', 'growth', 'pro', 'enterprise'];
+  const nextPlan = PLAN_ORDER[Math.min(PLAN_ORDER.indexOf(currentPlanSlug) + 1, PLAN_ORDER.length - 2)] ?? 'starter';
+
+  const creditsLimit = merchant?.credits_monthly   ?? 10;
+  const creditsRem   = merchant?.credits_remaining ?? creditsLimit;
+  const creditsRemPct = creditsLimit > 0 ? (creditsRem / creditsLimit) * 100 : 100;
 
   /* Average for reference line */
   const avgVal = usageData.length
@@ -334,9 +439,20 @@ export default function DashboardPage() {
       <div style={{ textAlign: 'center', padding: 32 }}>
         <AlertCircle size={36} color="#FF5A5A" style={{ marginBottom: 16 }} />
         <p style={{ color: '#EDEBF5', marginBottom: 8 }}>{error}</p>
-        <button onClick={fetchData} style={{ background: '#2B1250', border: 'none', color: '#EDEBF5', padding: '10px 20px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}>
-          Tentar novamente
-        </button>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          {error?.toLowerCase().includes('autenticad') ? (
+            <button
+              onClick={() => window.location.href = '/login'}
+              style={{ background: 'linear-gradient(135deg,#2B1250 0%,#7050A0 100%)', border: 'none', color: '#EDEBF5', padding: '10px 24px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}
+            >
+              Fazer login
+            </button>
+          ) : (
+            <button onClick={fetchData} style={{ background: '#2B1250', border: 'none', color: '#EDEBF5', padding: '10px 20px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}>
+              Tentar novamente
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -374,6 +490,31 @@ export default function DashboardPage() {
 
       <div style={{ minHeight: '100vh', background: '#06050F' }}>
 
+        {/* ── Payment success toast ── */}
+        {paymentSuccess && (
+          <div style={{
+            position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 9999, background: 'rgba(43,18,80,0.95)', border: '1px solid rgba(112,80,160,0.6)',
+            borderRadius: 8, padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 12,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)',
+            animation: 'ent-modal-in 0.25s ease',
+          }}>
+            <span style={{ fontSize: 20 }}>🎉</span>
+            <div>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#EDEBF5', fontFamily: "'DM Sans',sans-serif" }}>
+                Plano ativado com sucesso!
+              </p>
+              <p style={{ margin: 0, fontSize: 12, color: '#A09CC0', fontFamily: "'DM Sans',sans-serif", marginTop: 2 }}>
+                Seus créditos já estão disponíveis.
+              </p>
+            </div>
+            <button
+              onClick={() => setPaymentSuccess(false)}
+              style={{ background: 'none', border: 'none', color: '#6B6890', cursor: 'pointer', marginLeft: 8, fontSize: 18, lineHeight: 1 }}
+            >×</button>
+          </div>
+        )}
+
         {/* ── Topbar ── */}
         <div style={{ borderBottom: '1px solid rgba(184,174,221,0.14)', padding: '18px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -393,6 +534,30 @@ export default function DashboardPage() {
                   {merchant.plan_slug}
                 </span>
               )}
+              {/* Manage / Upgrade button — always visible */}
+              <button
+                onClick={() => handleUpgrade()}
+                disabled={!!upgradingPlan}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '4px 12px', fontSize: 11, cursor: upgradingPlan ? 'not-allowed' : 'pointer',
+                  fontFamily: "'DM Sans',sans-serif", letterSpacing: '0.02em',
+                  background: merchant?.stripe_customer_id
+                    ? 'rgba(43,18,80,0.4)'
+                    : 'linear-gradient(135deg,#2B1250 0%,#7050A0 100%)',
+                  border: '1px solid rgba(112,80,160,0.5)',
+                  color: '#B8AEDD', borderRadius: 4,
+                  opacity: upgradingPlan ? 0.6 : 1,
+                  transition: 'all .15s',
+                }}
+              >
+                {upgradingPlan === 'portal' ? (
+                  <Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} />
+                ) : (
+                  <ArrowUpRight size={10} />
+                )}
+                {merchant?.stripe_customer_id ? 'Gerenciar plano' : 'Fazer upgrade'}
+              </button>
             </div>
             <p style={{ color: '#A09CC0', fontSize: 13, marginTop: 2 }}>Aqui está o resumo da sua loja hoje.</p>
           </div>
@@ -419,26 +584,15 @@ export default function DashboardPage() {
             {/* Fast Credits — health-based color */}
             <StatCard
               icon={<Zap size={15} />}
-              label="Créditos Fast"
-              value={fastRem.toLocaleString('pt-BR')}
-              sub={`de ${fastLimit.toLocaleString('pt-BR')} disponíveis`}
-              accentColor={creditColor(fastRem, fastLimit)}
-              remainingPct={fastRemPct}
+              label="Créditos"
+              value={creditsRem.toLocaleString('pt-BR')}
+              sub={`de ${creditsLimit.toLocaleString('pt-BR')} disponíveis · fast=1cr · Studio Pro=4cr`}
+              accentColor={creditColor(creditsRem, creditsLimit)}
+              remainingPct={creditsRemPct}
               loading={loading}
-              emptyAction={fastRem === 0 ? () => window.location.href = '/planos' : undefined}
+              emptyAction={creditsRem === 0 ? () => handleUpgrade() : undefined}
             />
 
-            {/* Premium Credits — health-based color */}
-            <StatCard
-              icon={<Star size={15} />}
-              label="Créditos Premium"
-              value={premRem.toLocaleString('pt-BR')}
-              sub={`de ${premLimit.toLocaleString('pt-BR')} disponíveis`}
-              accentColor={creditColor(premRem, premLimit)}
-              remainingPct={premRemPct}
-              loading={loading}
-              emptyAction={premRem === 0 ? () => window.location.href = '/planos' : undefined}
-            />
 
             {/* Try-ons — cobalt: dado neutro de volume */}
             <StatCard
@@ -641,8 +795,9 @@ export default function DashboardPage() {
                   Veja e exporte os emails capturados pelo provador virtual.
                 </p>
                 <button
-                  onClick={() => window.location.href = '/planos'}
-                  style={{ background: 'linear-gradient(135deg,#2B1250 0%,#7050A0 100%)', border: 'none', color: '#EDEBF5', padding: '10px 24px', fontSize: 13, fontFamily: "'DM Sans',sans-serif", cursor: 'pointer' }}
+                  onClick={() => handleUpgrade()}
+                  disabled={!!upgradingPlan}
+                  style={{ background: 'linear-gradient(135deg,#2B1250 0%,#7050A0 100%)', border: 'none', color: '#EDEBF5', padding: '10px 24px', fontSize: 13, fontFamily: "'DM Sans',sans-serif", cursor: upgradingPlan ? 'not-allowed' : 'pointer', opacity: upgradingPlan ? 0.6 : 1 }}
                 >
                   Ver planos
                 </button>

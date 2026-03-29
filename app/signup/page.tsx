@@ -6,7 +6,7 @@
  *
  * Fluxo Supabase:
  *  1. supabase.auth.signUp()  → cria usuário
- *  2. supabase.from('merchants').insert({ plan_id: 'preview' })
+ *  2. supabase.from('merchants').insert({ plan_id: 'free' })
  *  3. Se session ativa → redirect /dashboard
  *     Se confirmação pendente → estado de sucesso inline
  */
@@ -46,14 +46,7 @@ import ReflexGem from '@/components/ui/ReflexGem'
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 /** Ajuste para corresponder ao valor real na tabela plans do Supabase */
-const PREVIEW_PLAN_ID = 'preview'
-
-const PLAN_LABELS: Record<string, string> = {
-  starter:    'Starter',
-  growth:     'Growth',
-  pro:        'Pro',
-  enterprise: 'Enterprise',
-}
+const FREE_PLAN_SLUG = 'free'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -95,10 +88,7 @@ function SignupPageInner() {
   const supabase    = createClient()
   const [mounted, setMounted] = useState(false)
 
-  const paymentSuccess = searchParams.get('payment') === 'success'
-  const planSlug       = searchParams.get('plan') ?? ''
-  const planLabel      = PLAN_LABELS[planSlug] ?? planSlug
-  const sessionId      = searchParams.get('session_id') ?? ''
+  const planSlug        = searchParams.get('plan') ?? ''
 
   useEffect(() => {
     setMounted(true)
@@ -152,10 +142,20 @@ function SignupPageInner() {
 
       if (authError) {
         const msg = authError.message.toLowerCase()
-        if (msg.includes('already registered') || msg.includes('already been registered')) {
-          setError(
-            'Já existe uma conta com esse e-mail. Faça login ou recupere sua senha.',
-          )
+        const paidPlans = ['starter', 'growth', 'pro']
+        const isExisting =
+          msg.includes('already registered') ||
+          msg.includes('already been registered') ||
+          msg.includes('user already') ||
+          msg.includes('email already')
+        if (isExisting) {
+          const loginParams = new URLSearchParams()
+          if (planSlug && paidPlans.includes(planSlug)) {
+            loginParams.set('plan', planSlug)
+          }
+          const query = loginParams.toString()
+          router.push(query ? `/login?${query}` : '/login')
+          return
         } else {
           setError(authError.message)
         }
@@ -168,7 +168,6 @@ function SignupPageInner() {
       }
 
       // ── Step 2: Criar merchant com plano free ───────────────────────────
-      // Primeiro, buscar o ID do plano 'free'
       const { data: planData } = await supabase
         .from('plans')
         .select('id')
@@ -185,8 +184,26 @@ function SignupPageInner() {
       })
 
       if (merchantError) {
-        // Não bloqueia o fluxo — usuário já foi criado no Auth
-        // O registro pode ser criado via trigger no banco ou tentado novamente
+        const isDuplicate =
+          merchantError.code === '23505' ||
+          merchantError.message?.toLowerCase().includes('duplicate') ||
+          merchantError.message?.toLowerCase().includes('already exists')
+
+        if (isDuplicate) {
+          // Supabase returned a "new" user for an existing confirmed email
+          // (email enumeration protection). Redirect to login.
+          console.warn('[Reflexy] merchant duplicate — redirecting to login')
+          const paidPlans = ['starter', 'growth', 'pro']
+          const loginParams = new URLSearchParams()
+          if (planSlug && paidPlans.includes(planSlug)) {
+            loginParams.set('plan', planSlug)
+          }
+          const query = loginParams.toString()
+          router.push(query ? `/login?${query}` : '/login')
+          return
+        }
+        // Non-blocking for other errors — user Auth record exists, merchant may be
+        // created via DB trigger or will be retried on next login.
         console.error('[Reflexy] merchants insert error:', merchantError.message)
       }
 
@@ -205,27 +222,36 @@ function SignupPageInner() {
         console.warn('welcome email failed:', e)
       }
 
-      // ── Step 4: Link Stripe session to new merchant (if came from payment) ──
-      if (sessionId) {
+      // ── Step 4: Handle post-signup destination ────────────────────────────
+
+      // If a paid plan was selected, redirect to Stripe checkout
+      const paidPlans = ['starter', 'growth', 'pro']
+      if (planSlug && paidPlans.includes(planSlug) && data.user) {
         try {
-          await fetch('/api/payments/link-session', {
+          const res = await fetch('/api/payments/create-checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId }),
+            body: JSON.stringify({
+              planSlug,
+              userId: data.user.id,
+              userEmail: data.user.email,
+            }),
           })
+          const { url } = await res.json()
+          if (url) {
+            window.location.href = url
+            return
+          }
         } catch (e) {
-          // non-fatal — webhook will eventually sync
-          console.warn('link-session failed:', e)
+          console.warn('[signup] create-checkout failed:', e)
         }
       }
 
-      // ── Step 5: Redirect ou estado de sucesso ─────────────────────────────
+      // Default: go to dashboard
       if (data.session) {
-        // Confirmação de e-mail desabilitada → session imediata
         router.push('/dashboard')
         router.refresh()
       } else {
-        // Confirmação de e-mail habilitada → mostrar instrução
         setSuccess(true)
       }
     } catch {
@@ -250,38 +276,6 @@ function SignupPageInner() {
       <AmbientGlow />
 
       <div className="relative z-10 w-full" style={{ maxWidth: 440 }}>
-
-        {/* ── Payment success banner ── */}
-        {paymentSuccess && (
-          <div
-            role="status"
-            className="flex items-start gap-3 p-4 mb-6"
-            style={{
-              background: 'rgba(12,200,158,.09)',
-              border:     '1px solid rgba(12,200,158,.30)',
-            }}
-          >
-            <CheckCircle2
-              size={16}
-              className="mt-0.5 shrink-0"
-              style={{ color: '#0CC89E' }}
-            />
-            <p
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize:   14,
-                color:      '#0CC89E',
-                lineHeight: 1.65,
-              }}
-            >
-              Pagamento confirmado! Crie sua conta abaixo para ativar o plano{' '}
-              <span style={{ fontWeight: 600 }}>
-                {planLabel || 'selecionado'}
-              </span>
-              .
-            </p>
-          </div>
-        )}
 
         {/* ── Brand header ── */}
         <header className="flex flex-col items-center mb-10">
@@ -517,7 +511,7 @@ function PlanBadge({ planSlug }: { planSlug: string }) {
   const isPaid = planSlug && PAID_PLANS.has(planSlug)
   const label  = isPaid
     ? `Plano ${planSlug.charAt(0).toUpperCase() + planSlug.slice(1)} — Ativado ✓`
-    : 'Plano Preview — grátis'
+    : 'Plano Free — grátis'
 
   return (
     <div

@@ -283,7 +283,7 @@ export default function AnalyticsPage() {
           Acesse funil de conversão, produtos mais provados, análise de tamanhos e KPIs detalhados.
         </p>
         <button
-          onClick={() => router.push('/planos')}
+          onClick={() => window.location.href = '/#pricing'}
           style={{
             background: 'linear-gradient(135deg, #2B1250 0%, #7050A0 100%)',
             border: 'none', color: '#EDEBF5',
