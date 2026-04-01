@@ -873,7 +873,7 @@ export function Footer() {
             <div className="footer__col-title">{t('footer.colCompany')}</div>
             <ul className="footer__links-v2">
               <li><a href="#" className="footer__link-v2">{t('footer.linkAbout')}</a></li>
-              <li><a href="#" className="footer__link-v2">{t('footer.linkBlog')}</a></li>
+              <li><a href="https://blog.reflexy.co/" className="footer__link-v2" target="_blank" rel="noopener noreferrer">{t('footer.linkBlog')}</a></li>
               <li><a href="#" className="footer__link-v2">{t('footer.linkCareers')}</a></li>
               <li><a href="mailto:oi@reflexy.co" className="footer__link-v2">{t('footer.linkContact')}</a></li>
             </ul>

@@ -131,7 +131,9 @@ export default function AnalyticsPage() {
   const [chartTab,     setChartTab]    = useState<ChartTab>('both');
   const [loading,      setLoading]     = useState(true);
   const [error,        setError]       = useState<string | null>(null);
-  const [planLocked,   setPlanLocked]  = useState(false);
+  const [planLocked,       setPlanLocked]       = useState(false);
+  const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null);
+  const [upgradingPlan,    setUpgradingPlan]    = useState(false);
   const [kpi,          setKpi]         = useState<KpiData | null>(null);
   const [dailyData,    setDailyData]   = useState<DayUsage[]>([]);
   const [funnel,       setFunnel]      = useState<FunnelStep[]>([]);
@@ -147,7 +149,7 @@ export default function AnalyticsPage() {
 
       const { data: m, error: mErr } = await supabase
         .from('merchants')
-        .select('id, plans!plan_id(slug)')
+        .select('id, stripe_customer_id, plans!plan_id(slug)')
         .eq('id', user.id)
         .single();
       if (mErr) throw mErr;
@@ -155,6 +157,7 @@ export default function AnalyticsPage() {
       // Plan gate: analytics avançado requer Growth ou superior
       const planSlug = (m as any).plans?.slug ?? 'free';
       if (!getPlanFeatures(planSlug).analyticsAdvanced) {
+        setStripeCustomerId((m as any).stripe_customer_id ?? null);
         setPlanLocked(true);
         setLoading(false);
         return;
@@ -267,6 +270,21 @@ export default function AnalyticsPage() {
 
   const maxSizeCount = sizeData[0]?.count ?? 1;
 
+  async function handleUpgrade() {
+    if (stripeCustomerId) {
+      setUpgradingPlan(true)
+      try {
+        const res  = await fetch('/api/payments/create-portal-session', { method: 'POST' })
+        const data = await res.json()
+        if (data.url) { window.location.href = data.url; return }
+        alert(data.error || 'Não foi possível abrir o portal.')
+      } catch { alert('Erro ao conectar com o portal.') }
+      finally { setUpgradingPlan(false) }
+    } else {
+      window.location.href = '/#pricing'
+    }
+  }
+
   if (planLocked) return (
     <div style={{ minHeight: '100vh', background: '#06050F', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ textAlign: 'center', padding: '40px 24px', maxWidth: 460 }}>
@@ -283,16 +301,19 @@ export default function AnalyticsPage() {
           Acesse funil de conversão, produtos mais provados, análise de tamanhos e KPIs detalhados.
         </p>
         <button
-          onClick={() => window.location.href = '/#pricing'}
+          onClick={handleUpgrade}
+          disabled={upgradingPlan}
           style={{
             background: 'linear-gradient(135deg, #2B1250 0%, #7050A0 100%)',
             border: 'none', color: '#EDEBF5',
             padding: '13px 32px', fontSize: 14, fontWeight: 600,
             fontFamily: "'DM Sans', sans-serif",
-            cursor: 'pointer', letterSpacing: '0.02em',
+            cursor: upgradingPlan ? 'not-allowed' : 'pointer',
+            opacity: upgradingPlan ? 0.7 : 1,
+            letterSpacing: '0.02em',
           }}
         >
-          Ver planos
+          {upgradingPlan ? 'Abrindo…' : stripeCustomerId ? 'Gerenciar plano ↗' : 'Ver planos'}
         </button>
         <div style={{ marginTop: 16 }}>
           <button
