@@ -19,17 +19,160 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Force light mode - prevent dark mode from affecting styles */
-* {
-  color-scheme: light;
+/* ─── Deep Amethyst Brand System Tokens ──────────────────────────────────── */
+/* These CSS custom properties define the shared brand system.                */
+/* Internal pages (dashboard, settings, studio, analytics) consume these.    */
+/* Login/signup already use inline styles matching these values.              */
+
+:root {
+  /* Surfaces */
+  --da-abyss:     #06050F;
+  --da-onyx:      #0F0D1E;
+  --da-s2-bg:     rgba(15, 13, 30, 0.65);
+  --da-card-solid: #110E22;
+
+  /* Borders & rules */
+  --da-rule:      rgba(184, 174, 221, 0.14);
+  --da-rule-hover: rgba(184, 174, 221, 0.40);
+
+  /* Text */
+  --da-chalk:     #EDEBF5;
+  --da-mist:      #A09CC0;
+  --da-lavender:  #B8AEDD;
+
+  /* Accent */
+  --da-plum:      #2B1250;
+  --da-mauve:     #7050A0;
+  --da-jade:      #0CC89E;
+  --da-error:     #FF5A5A;
+  --da-warn:      #FFB432;
+
+  /* Gradients */
+  --da-glow-cta:  linear-gradient(135deg, #2B1250, #7050A0);
+  --da-glow-text: linear-gradient(160deg, #EDEBF5 0%, rgba(237,235,245,.75) 60%, #B8AEDD 100%);
+
+  /* Radii */
+  --da-r-card:    0px;
+  --da-r-input:   2px;
+  --da-r-badge:   2px;
+
+  /* Typography stacks */
+  --da-f-mark:    'Bricolage Grotesque', sans-serif;
+  --da-f-body:    'DM Sans', sans-serif;
+  --da-f-data:    'IBM Plex Mono', monospace;
+  --da-f-serif:   'Instrument Serif', serif;
+
+  /* Glassmorphism */
+  --da-blur:      blur(24px);
+  --da-grain-opacity: 0.022;
 }
 
-/* Ensure all inputs have proper styling */
-input, textarea, select {
-  background-color: #ffffff !important;
-  color: #333333 !important;
+/* ─── Responsive Layout Utilities ────────────────────────────────────────── */
+/* Used by internal pages (dashboard, settings, studio, analytics)           */
+
+/* Stat / KPI card rows — horizontal on desktop, stack on mobile */
+.da-stat-row {
+  display: flex;
+  gap: 1px;
+  background: var(--da-rule);
 }
 
-input::placeholder, textarea::placeholder {
-  color: #999999 !important;
+/* Two-column layout: main + sidebar */
+.da-grid-main {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+}
+
+/* Three-column shortcut grid */
+.da-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* Two-column grid */
+.da-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Topbar: flex between left and right */
+.da-topbar {
+  border-bottom: 1px solid var(--da-rule);
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Page content container */
+.da-content {
+  padding: 28px 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Settings sidebar layout */
+.da-settings-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 0;
+}
+
+/* Studio upload pair */
+.da-upload-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Leads / data table — scrollable on mobile */
+.da-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Tablet breakpoint (≤ 1024px) ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .da-grid-main {
+    grid-template-columns: 1fr;
+  }
+  .da-settings-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Mobile breakpoint (≤ 768px) ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .da-stat-row {
+    flex-direction: column;
+  }
+  .da-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .da-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .da-upload-pair {
+    grid-template-columns: 1fr;
+  }
+  .da-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 20px;
+  }
+  .da-content {
+    padding: 20px 16px;
+  }
+  .da-settings-nav {
+    flex-direction: row !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .da-settings-nav button {
+    white-space: nowrap;
+  }
 }

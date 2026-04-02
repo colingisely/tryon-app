@@ -3,9 +3,11 @@
   "configurations": [
     {
       "name": "Reflexy Dev Server",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
-      "port": 3000
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["/Users/giselycolin/tryon-app/.claude/start-dev.sh"],
+      "port": 3000,
+      "autoPort": true,
+      "cwd": "/Users/giselycolin/tryon-app"
     }
   ]
 }

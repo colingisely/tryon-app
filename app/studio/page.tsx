@@ -52,7 +52,6 @@ import {
 } from 'lucide-react'
 import ReflexGem from '@/components/ui/ReflexGem'
 import {
-  Eyebrow,
   GrainOverlay,
   AmbientGlow,
   GlobalKeyframes,
@@ -406,10 +405,10 @@ export default function StudioPage() {
         <GrainOverlay />
         <AmbientGlow />
         <div style={{ textAlign: 'center', padding: '40px 24px', maxWidth: 480, position: 'relative', zIndex: 1 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 4, background: 'rgba(43,18,80,0.6)', border: '1px solid rgba(112,80,160,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 10, background: 'rgba(43,18,80,0.6)', border: '1px solid rgba(112,80,160,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
             <Crown size={24} color="#B8AEDD" />
           </div>
-          <h1 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 26, fontWeight: 700, color: '#EDEBF5', marginBottom: 12 }}>
+          <h1 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 24, fontWeight: 600, color: '#EDEBF5', marginBottom: 12 }}>
             Studio Pro
           </h1>
           <p style={{ color: '#A09CC0', fontSize: 15, lineHeight: 1.6, marginBottom: 8 }}>
@@ -422,8 +421,8 @@ export default function StudioPage() {
             onClick={handleUpgrade}
             disabled={upgradingPlan}
             style={{
-              background: 'linear-gradient(135deg, #2B1250 0%, #7050A0 100%)',
-              border: 'none', color: '#EDEBF5',
+              background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+              border: 'none', borderRadius: 100, color: '#EDEBF5',
               padding: '13px 32px', fontSize: 14, fontWeight: 600,
               fontFamily: "'DM Sans', sans-serif",
               cursor: upgradingPlan ? 'not-allowed' : 'pointer',
@@ -487,21 +486,21 @@ export default function StudioPage() {
         </div>
 
         {/* Right */}
-        <div className="flex items-center gap-2.5">
+        <div className="studio-nav-right flex items-center gap-2.5">
 
           {/* Premium badge */}
           {(merchant.plan === 'pro' || merchant.plan === 'enterprise') && (
             <div
               className="flex items-center gap-2 px-3 py-1.5"
-              style={{ background: 'rgba(43,18,80,.60)', border: '1px solid rgba(112,80,160,.35)' }}
+              style={{ background: 'rgba(43,18,80,.60)', border: '1px solid rgba(112,80,160,.35)', borderRadius: 100 }}
             >
               <span style={{
                 width: 6, height: 6, borderRadius: '50%',
                 background: '#0CC89E', boxShadow: '0 0 6px #0CC89E',
                 display: 'inline-block', animation: 'dotPulse 3s ease-in-out infinite',
               }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.20em', textTransform: 'uppercase', color: '#B8AEDD' }}>
-                Premium Mode
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#B8AEDD' }}>
+                Premium
               </span>
             </div>
           )}
@@ -510,7 +509,7 @@ export default function StudioPage() {
           {merchant.credits_remaining > 0 ? (
             <div className="flex items-center gap-1.5">
               <Zap size={11} style={{ color: '#A09CC0' }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '.16em', color: '#A09CC0' }}>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#A09CC0' }}>
                 {merchant.credits_remaining} crédito{merchant.credits_remaining !== 1 ? 's' : ''}
               </span>
             </div>
@@ -519,14 +518,13 @@ export default function StudioPage() {
               type="button"
               className="flex items-center gap-2 px-3 py-1.5 transition-all"
               style={{
-                background:    'linear-gradient(135deg,#2B1250,#7050A0)',
+                background:    'linear-gradient(135deg,#7C3AED,#5B21B6)',
                 border:        '1px solid rgba(112,80,160,.45)',
+                borderRadius:   100,
                 color:          '#EDEBF5',
-                fontFamily:    "'Bricolage Grotesque', sans-serif",
+                fontFamily:    "'DM Sans', sans-serif",
                 fontWeight:     500,
-                fontSize:       10,
-                letterSpacing: '.14em',
-                textTransform: 'uppercase',
+                fontSize:       12,
                 cursor:         'pointer',
               }}
               onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.12)')}
@@ -551,6 +549,7 @@ export default function StudioPage() {
             style={{
               background:  'transparent',
               border:      '1px solid rgba(184,174,221,.14)',
+              borderRadius: 8,
               color:        '#A09CC0',
               fontFamily:  "'DM Sans', sans-serif",
               fontSize:     12,
@@ -566,7 +565,7 @@ export default function StudioPage() {
 
       {/* ── Page content ── */}
       <div
-        className="relative z-10 px-7"
+        className="studio-content relative z-10 px-7"
         style={{ width: '100%', paddingTop: 48, paddingBottom: 100, flex: 1 }}
       >
 
@@ -574,10 +573,10 @@ export default function StudioPage() {
         <div style={{ marginBottom: 44 }}>
           <div
             className="inline-flex items-center gap-2 mb-4"
-            style={{ background: 'rgba(43,18,80,.55)', border: '1px solid rgba(112,80,160,.30)', padding: '5px 14px' }}
+            style={{ background: 'rgba(43,18,80,.55)', border: '1px solid rgba(112,80,160,.30)', borderRadius: 100, padding: '5px 14px' }}
           >
             <Sparkles size={12} style={{ color: '#B8AEDD' }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.24em', textTransform: 'uppercase', color: '#B8AEDD' }}>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#B8AEDD' }}>
               Try-On Max — Qualidade Máxima
             </span>
           </div>
@@ -589,12 +588,12 @@ export default function StudioPage() {
 
         {/* ── Upload grid ── */}
         <div
-          className="grid gap-4 mb-4"
+          className="studio-upload-grid grid gap-4 mb-4"
           style={{ gridTemplateColumns: '1fr 1fr' }}
         >
 
           {/* Modelo card */}
-          <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,.14)', overflow: 'hidden' }}>
+          <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,.14)', borderRadius: 16, overflow: 'hidden' }}>
             <UploadCardHeader
               icon={<User size={15} style={{ color: '#A09CC0' }} />}
               title="Foto do Modelo"
@@ -636,18 +635,18 @@ export default function StudioPage() {
             >
               <div className="flex items-center gap-2">
                 <LayoutGrid size={11} style={{ color: '#A09CC0' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.22em', textTransform: 'uppercase', color: '#A09CC0' }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#A09CC0' }}>
                   Modelos Recomendados
                 </span>
                 <span
                   style={{
-                    fontFamily:    "'IBM Plex Mono', monospace",
-                    fontSize:       8,
-                    letterSpacing: '.16em',
-                    textTransform: 'uppercase',
+                    fontFamily:    "'DM Sans', sans-serif",
+                    fontSize:       10,
+                    fontWeight:     500,
                     color:          '#0CC89E',
                     background:    'rgba(12,200,158,.08)',
                     border:        '1px solid rgba(12,200,158,.20)',
+                    borderRadius:   100,
                     padding:       '2px 7px',
                   }}
                 >
@@ -675,7 +674,7 @@ export default function StudioPage() {
                 }}
               >
                 <div
-                  className="grid gap-2"
+                  className="studio-preset-grid grid gap-2"
                   style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}
                 >
                   {PRESET_MODELS.map(preset => (
@@ -692,7 +691,7 @@ export default function StudioPage() {
           </div>
 
           {/* Produto card */}
-          <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,.14)', overflow: 'hidden' }}>
+          <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,.14)', borderRadius: 16, overflow: 'hidden' }}>
             <UploadCardHeader
               icon={<ShoppingBag size={15} style={{ color: '#A09CC0' }} />}
               title="Foto do Produto"
@@ -719,7 +718,7 @@ export default function StudioPage() {
         {/* Tip bar */}
         <div
           className="flex items-start gap-3 mb-8"
-          style={{ padding: '12px 18px', background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)' }}
+          style={{ padding: '12px 18px', background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12 }}
         >
           <span style={{ color: '#A09CC0', marginTop: 1, flexShrink: 0 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -744,17 +743,16 @@ export default function StudioPage() {
               maxWidth:       480,
               padding:       '16px 48px',
               background:    canGenerate
-                ? 'linear-gradient(135deg, #2B1250 0%, #7050A0 100%)'
+                ? 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)'
                 : 'rgba(15,13,30,.80)',
               border:        canGenerate
                 ? '1px solid rgba(112,80,160,.40)'
                 : '1px solid rgba(184,174,221,.12)',
+              borderRadius:   100,
               color:          canGenerate ? '#EDEBF5' : 'rgba(160,156,192,.45)',
-              fontFamily:    "'Bricolage Grotesque', sans-serif",
+              fontFamily:    "'DM Sans', sans-serif",
               fontWeight:     500,
-              fontSize:       12,
-              letterSpacing: '.16em',
-              textTransform: 'uppercase',
+              fontSize:       14,
               cursor:        canGenerate ? 'pointer' : 'not-allowed',
               filter:        canGenerate ? 'drop-shadow(0 0 24px rgba(43,18,80,.45))' : 'none',
             }}
@@ -793,10 +791,10 @@ export default function StudioPage() {
                 />
               </div>
               <div className="flex items-center justify-between w-full">
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '.22em', textTransform: 'uppercase', color: '#0CC89E' }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#0CC89E' }}>
                   {progMsg}
                 </span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: 'rgba(160,156,192,.45)' }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: 'rgba(160,156,192,.45)' }}>
                   {progress}%
                 </span>
               </div>
@@ -807,7 +805,7 @@ export default function StudioPage() {
           {status === 'error' && error && (
             <div
               className="flex items-start gap-3 w-full"
-              style={{ maxWidth: 480, padding: '12px 14px', background: 'rgba(255,90,90,.07)', border: '1px solid rgba(255,90,90,.22)' }}
+              style={{ maxWidth: 480, padding: '12px 14px', background: 'rgba(255,90,90,.07)', border: '1px solid rgba(255,90,90,.22)', borderRadius: 12 }}
             >
               <AlertCircle size={14} className="mt-0.5 shrink-0" style={{ color: '#FF5A5A' }} />
               <div className="flex flex-col gap-2 flex-1">
@@ -818,7 +816,7 @@ export default function StudioPage() {
                   type="button"
                   onClick={handleReset}
                   className="flex items-center gap-1.5 self-start"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.18em', textTransform: 'uppercase', color: '#A09CC0', padding: 0 }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#A09CC0', padding: 0 }}
                 >
                   <RefreshCw size={10} /> Tentar novamente
                 </button>
@@ -831,20 +829,20 @@ export default function StudioPage() {
         {status === 'done' && result && (
           <div style={{ marginTop: 48, animation: 'resultReveal .6s cubic-bezier(0.16,1,0.3,1) both' }}>
             <div className="flex items-center justify-between mb-4">
-              <Eyebrow text="Resultado" />
+              <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>Resultado</h2>
               <div className="flex items-center gap-2">
                 <span
                   className="inline-flex items-center gap-1.5"
-                  style={{ padding: '3px 9px', background: 'rgba(12,200,158,.07)', border: '1px solid rgba(12,200,158,.24)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.18em', textTransform: 'uppercase', color: '#0CC89E' }}
+                  style={{ padding: '3px 9px', background: 'rgba(12,200,158,.07)', border: '1px solid rgba(12,200,158,.24)', borderRadius: 100, fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#0CC89E' }}
                 >
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#0CC89E', boxShadow: '0 0 5px #0CC89E', display: 'inline-block', animation: 'dotPulse 2s infinite' }} />
-                  Nova geração
+                  Nova
                 </span>
                 <button
                   type="button"
                   onClick={handleReset}
                   className="flex items-center gap-1.5 transition-colors"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.18em', textTransform: 'uppercase', color: '#A09CC0', padding: 0 }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#A09CC0', padding: 0 }}
                   onMouseEnter={e => (e.currentTarget.style.color = '#B8AEDD')}
                   onMouseLeave={e => (e.currentTarget.style.color = '#A09CC0')}
                 >
@@ -856,12 +854,14 @@ export default function StudioPage() {
             {/* Centered result card */}
             <div className="flex flex-col items-center">
               <div
+                className="studio-result-card"
                 style={{
                   background:  '#0F0D1E',
                   border:      '1px solid rgba(12,200,158,.20)',
                   width:        400,
                   maxWidth:    '100%',
                   overflow:    'hidden',
+                  borderRadius: 16,
                   boxShadow:   '0 0 40px rgba(112,80,160,.35), 0 0 80px rgba(43,18,80,.25)',
                 }}
               >
@@ -878,7 +878,7 @@ export default function StudioPage() {
                   }}
                 />
                 <div className="flex items-center justify-between" style={{ padding: '12px 16px', borderTop: '1px solid rgba(184,174,221,.10)' }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.16em', textTransform: 'uppercase', color: '#0CC89E' }}>
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#0CC89E' }}>
                     Try-On Max · Qualidade Máxima
                   </span>
                   <button
@@ -890,7 +890,7 @@ export default function StudioPage() {
                       triggerDownload(result, filename)
                     }}
                     className="flex items-center gap-1.5 px-4 py-2 transition-all"
-                    style={{ background: 'linear-gradient(135deg,#2B1250,#7050A0)', border: '1px solid rgba(112,80,160,.35)', color: '#EDEBF5', fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer' }}
+                    style={{ background: 'linear-gradient(135deg,#7C3AED,#5B21B6)', border: '1px solid rgba(112,80,160,.35)', borderRadius: 8, color: '#EDEBF5', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
                     onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.12)')}
                     onMouseLeave={e => (e.currentTarget.style.filter = 'none')}
                   >
@@ -927,6 +927,7 @@ export default function StudioPage() {
                 right:       20,
                 background: 'rgba(184,174,221,.10)',
                 border:     '1px solid rgba(184,174,221,.22)',
+                borderRadius: 10,
                 color:       '#B8AEDD',
                 width:       36,
                 height:      36,
@@ -969,6 +970,18 @@ export default function StudioPage() {
         @keyframes recPanelReveal { from{opacity:0;transform:translateY(-6px);} to{opacity:1;transform:translateY(0);} }
         @keyframes lightboxFadeIn { from{opacity:0;} to{opacity:1;} }
         @keyframes lightboxScaleIn { from{opacity:0;transform:scale(.94);} to{opacity:1;transform:scale(1);} }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+          .studio-content { padding-left:16px !important; padding-right:16px !important; padding-top:28px !important; }
+          .studio-upload-grid { grid-template-columns:1fr !important; }
+          .studio-result-card { width:100% !important; }
+          .studio-nav-right { flex-wrap:wrap !important; }
+          .studio-preset-grid { grid-template-columns:repeat(2,1fr) !important; }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .studio-content { padding-left:20px !important; padding-right:20px !important; }
+        }
       `}</style>
     </main>
   )
@@ -982,11 +995,11 @@ function UploadCardHeader({ icon, title, desc }: { icon: React.ReactNode; title:
       className="flex items-center gap-3"
       style={{ padding: '16px 20px', borderBottom: '1px solid rgba(184,174,221,.14)' }}
     >
-      <div style={{ width: 32, height: 32, background: 'rgba(184,174,221,.06)', border: '1px solid rgba(184,174,221,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(184,174,221,.06)', border: '1px solid rgba(184,174,221,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         {icon}
       </div>
       <div>
-        <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 600, fontSize: 14, color: '#EDEBF5', letterSpacing: '-.01em' }}>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 14, color: '#EDEBF5' }}>
           {title}
         </div>
         <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', marginTop: 1 }}>
@@ -1045,7 +1058,7 @@ function UploadDropZone({
               type="button"
               onClick={e => { e.stopPropagation(); onClear() }}
               className="flex items-center gap-1.5 px-3 py-1.5 transition-colors"
-              style={{ background: 'rgba(255,90,90,.12)', border: '1px solid rgba(255,90,90,.28)', color: '#FF5A5A', fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer' }}
+              style={{ background: 'rgba(255,90,90,.12)', border: '1px solid rgba(255,90,90,.28)', borderRadius: 8, color: '#FF5A5A', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
             >
               <X size={10} /> Remover
             </button>
@@ -1053,14 +1066,14 @@ function UploadDropZone({
               type="button"
               onClick={e => { e.stopPropagation(); onSwap() }}
               className="flex items-center gap-1.5 px-3 py-1.5 transition-colors"
-              style={{ background: 'rgba(184,174,221,.08)', border: '1px solid rgba(184,174,221,.22)', color: '#B8AEDD', fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer' }}
+              style={{ background: 'rgba(184,174,221,.08)', border: '1px solid rgba(184,174,221,.22)', borderRadius: 8, color: '#B8AEDD', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
             >
               <RefreshCw size={10} /> Trocar
             </button>
           </div>
           {/* File name */}
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '8px 14px', background: 'linear-gradient(to top, rgba(6,5,15,.80), transparent)' }}>
-            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.14em', textTransform: 'uppercase', color: '#A09CC0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: '#A09CC0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {image.name}
             </p>
           </div>
@@ -1088,13 +1101,13 @@ function UploadDropZone({
             <Upload size={18} style={{ color: isDragging ? '#B8AEDD' : '#A09CC0' }} />
           </div>
           <div className="text-center">
-            <p style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 500, fontSize: 14, color: isDragging ? '#B8AEDD' : '#EDEBF5', textAlign: 'center' }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14, color: isDragging ? '#B8AEDD' : '#EDEBF5', textAlign: 'center' }}>
               {primaryText}
             </p>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', textAlign: 'center', marginTop: 2 }}>
               {secondaryText}
             </p>
-            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.16em', color: 'rgba(160,156,192,.45)', textAlign: 'center', marginTop: 4 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: 'rgba(160,156,192,.45)', textAlign: 'center', marginTop: 4 }}>
               PNG, JPG — max. 10MB
             </p>
           </div>
@@ -1160,7 +1173,7 @@ function PresetModelThumb({
         className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
         style={{ background: 'rgba(6,5,15,.50)' }}
       >
-        <span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 500, fontSize: 9, letterSpacing: '.14em', textTransform: 'uppercase', color: '#EDEBF5', background: 'rgba(15,13,30,.85)', border: '1px solid rgba(184,174,221,.22)', padding: '5px 10px' }}>
+        <span style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 11, color: '#EDEBF5', background: 'rgba(15,13,30,.85)', border: '1px solid rgba(184,174,221,.22)', borderRadius: 8, padding: '5px 10px' }}>
           Usar
         </span>
       </div>
@@ -1177,16 +1190,16 @@ function RecentGallery({ items }: { items: GenerationResult[] }) {
     <section style={{ marginTop: 64 }}>
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <Eyebrow text="Gerações Recentes" />
+          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', margin: 0 }}>Gerações Recentes</h2>
           <span
             style={{
-              fontFamily:    "'IBM Plex Mono', monospace",
-              fontSize:       9,
-              letterSpacing: '.18em',
-              textTransform: 'uppercase',
+              fontFamily:    "'DM Sans', sans-serif",
+              fontSize:       10,
+              fontWeight:     500,
               color:         'rgba(160,156,192,.45)',
               padding:       '3px 8px',
               border:        '1px solid rgba(184,174,221,.10)',
+              borderRadius:   100,
             }}
           >
             {items.length} imagens
@@ -1195,7 +1208,7 @@ function RecentGallery({ items }: { items: GenerationResult[] }) {
         <button
           type="button"
           className="flex items-center gap-1 transition-colors"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.18em', textTransform: 'uppercase', color: '#A09CC0', padding: 0 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#A09CC0', padding: 0 }}
           onMouseEnter={e => (e.currentTarget.style.color = '#B8AEDD')}
           onMouseLeave={e => (e.currentTarget.style.color = '#A09CC0')}
         >
@@ -1206,7 +1219,7 @@ function RecentGallery({ items }: { items: GenerationResult[] }) {
 
       <div
         className="grid"
-        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 1, background: 'rgba(184,174,221,.14)' }}
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 1, background: 'rgba(184,174,221,.14)', borderRadius: 16, overflow: 'hidden' }}
       >
         {items.map(item => (
           <div key={item.id} className="group relative" style={{ background: '#0F0D1E', overflow: 'hidden' }}>
@@ -1229,7 +1242,7 @@ function RecentGallery({ items }: { items: GenerationResult[] }) {
                 type="button"
                 onClick={() => triggerDownload(item.url, `reflexy-${item.id}.jpg`)}
                 className="flex items-center gap-1.5 px-3 py-2"
-                style={{ background: 'rgba(15,13,30,.90)', border: '1px solid rgba(184,174,221,.22)', color: '#B8AEDD', fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer' }}
+                style={{ background: 'rgba(15,13,30,.90)', border: '1px solid rgba(184,174,221,.22)', borderRadius: 8, color: '#B8AEDD', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
               >
                 <Download size={11} /> Baixar
               </button>
@@ -1245,7 +1258,7 @@ function RecentGallery({ items }: { items: GenerationResult[] }) {
               </span>
               <div className="flex items-center gap-1 shrink-0 ml-2">
                 <Clock size={9} style={{ color: 'rgba(160,156,192,.40)' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.10em', color: 'rgba(160,156,192,.40)' }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: 'rgba(160,156,192,.40)' }}>
                   {formatRelative(item.createdAt)}
                 </span>
               </div>

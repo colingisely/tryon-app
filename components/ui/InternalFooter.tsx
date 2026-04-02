@@ -13,9 +13,9 @@ export function InternalFooter() {
   return (
     <footer
       style={{
-        borderTop: '1px solid rgba(184,174,221,.08)',
-        marginTop: 48,
-        padding: '20px 32px',
+        borderTop: '1px solid rgba(184,174,221,.06)',
+        marginTop: 64,
+        padding: '16px 32px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -26,8 +26,8 @@ export function InternalFooter() {
       <span
         style={{
           fontFamily: "'DM Sans', sans-serif",
-          fontSize: 12,
-          color: 'rgba(160,156,192,.50)',
+          fontSize: 11,
+          color: 'rgba(160,156,192,.35)',
           letterSpacing: '.01em',
         }}
       >
@@ -39,8 +39,8 @@ export function InternalFooter() {
           href="/privacy"
           style={{
             fontFamily: "'DM Sans', sans-serif",
-            fontSize: 12,
-            color: 'rgba(160,156,192,.50)',
+            fontSize: 11,
+            color: 'rgba(160,156,192,.35)',
             textDecoration: 'none',
             transition: 'color 0.2s',
           }}
@@ -49,13 +49,13 @@ export function InternalFooter() {
         >
           Política de Privacidade
         </Link>
-        <span style={{ color: 'rgba(160,156,192,.20)', fontSize: 12 }}>·</span>
+        <span style={{ color: 'rgba(160,156,192,.15)', fontSize: 12 }}>·</span>
         <Link
           href="/terms"
           style={{
             fontFamily: "'DM Sans', sans-serif",
-            fontSize: 12,
-            color: 'rgba(160,156,192,.50)',
+            fontSize: 11,
+            color: 'rgba(160,156,192,.35)',
             textDecoration: 'none',
             transition: 'color 0.2s',
           }}

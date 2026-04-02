@@ -3,18 +3,17 @@
 
 /**
  * Reflexy — app/login/page.tsx
- * Brand System V5 · Deep Amethyst
+ * Brand System V6 · Aligned with Landing Page
  *
- * Tokens aplicados:
+ * Tokens:
  *  Background  → --abyss   #06050F
- *  Card bg     → --s2-bg   rgba(15,13,30,.65) + blur(24px)
- *  Card border → --rule    rgba(184,174,221,.14)
- *  CTA Primary → gradient linear-gradient(135deg, --plum, --mauve)
- *  Inputs      → rgba(255,255,255,.05) + --rule border
- *  Títulos     → --f-mark  Bricolage Grotesque
- *  Corpo       → --f-body  DM Sans
- *  Labels      → --f-data  IBM Plex Mono
- *  Serif       → --f-serif Instrument Serif (descritores emotivos)
+ *  Card        → glass: rgba(255,255,255,.03) + blur(24px), border-radius 22px
+ *  CTA         → gradient #7C3AED → #5B21B6, pill (border-radius 100px)
+ *  Inputs      → glass bg, border-radius 14px, violet focus ring
+ *  Títulos     → Bricolage Grotesque
+ *  Corpo       → DM Sans
+ *  Labels      → IBM Plex Mono
+ *  Serif       → Instrument Serif
  */
 
 import { useState, useEffect } from 'react'
@@ -153,22 +152,22 @@ export default function LoginPage() {
 
   return (
     <main
-      className="relative min-h-screen flex items-center justify-center px-4 py-16 overflow-hidden"
+      className="relative min-h-screen flex items-center justify-center px-5 sm:px-8 py-16 overflow-hidden"
       style={{ background: '#06050F' /* --abyss */ }}
     >
       <GrainOverlay />
       <AmbientGlow />
 
-      <div className="relative z-10 w-full" style={{ maxWidth: 420 }}>
+      <div className="relative z-10 w-full" style={{ maxWidth: 400 }}>
 
         {/* ── Payment success banner ── */}
         {fromPayment && (
           <div style={{
             marginBottom: 20,
             padding: '14px 20px',
-            background: 'rgba(112,80,160,0.18)',
-            border: '1px solid rgba(112,80,160,0.45)',
-            borderRadius: 6,
+            background: 'rgba(124,58,237,.12)',
+            border: '1px solid rgba(124,58,237,.35)',
+            borderRadius: 14,
             display: 'flex',
             alignItems: 'center',
             gap: 10,
@@ -205,46 +204,32 @@ export default function LoginPage() {
             Reflexy
           </p>
 
-          {/* --f-serif para momentos emotivos */}
-          <p
-            style={{
-              fontFamily: "'Instrument Serif', serif",
-              fontStyle:  'italic',
-              fontSize:    14,
-              color:       '#A09CC0',
-              marginTop:   4,
-            }}
-          >
-            Bem-vindo de volta
-          </p>
         </header>
 
         {/* ── Glass card ── */}
         <div
           style={{
-            background:           'rgba(15,13,30,.65)', /* --s2-bg */
-            backdropFilter:       'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border:               '1px solid rgba(184,174,221,.14)', /* --rule */
-            borderRadius:          0, /* --r-card */
+            background:           'rgba(255,255,255,.03)',
+            backdropFilter:       'blur(24px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+            border:               '1px solid rgba(255,255,255,.07)',
+            borderRadius:          22,
           }}
         >
           <form onSubmit={handleSubmit} noValidate>
-            <div className="p-8 flex flex-col gap-5">
-
-              <Eyebrow text="Autenticação" />
+            <div className="px-5 py-6 sm:p-8 flex flex-col gap-5">
 
               <h1
                 style={{
-                  fontFamily:    "'Bricolage Grotesque', sans-serif",
+                  fontFamily:    "'DM Sans', sans-serif",
                   fontWeight:     600,
-                  fontSize:       22,
+                  fontSize:       20,
                   color:          '#EDEBF5',
                   letterSpacing: '-.01em',
-                  lineHeight:     1.15,
+                  lineHeight:     1.2,
                 }}
               >
-                Entrar na sua conta
+                Entrar
               </h1>
 
               {/* Error banner */}
@@ -255,6 +240,7 @@ export default function LoginPage() {
                   style={{
                     background: 'rgba(255,90,90,.07)',
                     border:     '1px solid rgba(255,90,90,.22)',
+                    borderRadius: 12,
                   }}
                 >
                   <AlertCircle
@@ -281,7 +267,7 @@ export default function LoginPage() {
               )}
 
               {/* E-mail field */}
-              <InputField
+              <AuthInputField
                 id="email"
                 label="E-mail"
                 type="email"
@@ -295,7 +281,7 @@ export default function LoginPage() {
 
               {/* Senha field */}
               <div className="flex flex-col gap-2">
-                <FieldLabel htmlFor="password">Senha</FieldLabel>
+                <AuthLabel htmlFor="password">Senha</AuthLabel>
                 <div className="relative">
                   <FieldIcon><Lock size={14} /></FieldIcon>
                   <input
@@ -309,8 +295,8 @@ export default function LoginPage() {
                     disabled={loading}
                     className="w-full outline-none transition-[border-color] duration-200"
                     style={INPUT_STYLE}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.40)')}
-                    onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)')}
+                    onFocus={e => (e.currentTarget.style.borderColor = 'rgba(124,58,237,.45)')}
+                    onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(255,255,255,.07)')}
                   />
                   <button
                     type="button"
@@ -421,16 +407,67 @@ function ResendLink({
   )
 }
 
-// ─── Design-system primitives (exportados para reutilização) ──────────────────
+// ─── Auth-specific primitives (DM Sans only, no monospace) ──────────────────
+
+export function AuthLabel({
+  htmlFor,
+  children,
+}: {
+  htmlFor?: string
+  children: React.ReactNode
+}) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      style={{
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize:    13,
+        fontWeight:  500,
+        color:       '#A09CC0',
+      }}
+    >
+      {children}
+    </label>
+  )
+}
+
+export function AuthInputField({
+  id, label, type, value, onChange, placeholder, autoComplete, icon, disabled,
+}: {
+  id: string; label: string; type: string; value: string;
+  onChange: (v: string) => void; placeholder: string;
+  autoComplete?: string; icon: React.ReactNode; disabled?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <AuthLabel htmlFor={id}>{label}</AuthLabel>
+      <div className="relative">
+        <FieldIcon>{icon}</FieldIcon>
+        <input
+          id={id} type={type} value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder} autoComplete={autoComplete}
+          required disabled={disabled}
+          className="w-full outline-none transition-[border-color] duration-200"
+          style={INPUT_STYLE}
+          onFocus={e => (e.currentTarget.style.borderColor = 'rgba(124,58,237,.45)')}
+          onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(255,255,255,.07)')}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ─── Design-system primitives (exportados para reutilização — settings/studio) ─
 
 export const INPUT_STYLE: React.CSSProperties = {
   fontFamily:   "'DM Sans', sans-serif",
   fontSize:      14,
   color:         '#EDEBF5',
-  background:   'rgba(15,13,30,0.8)', /* --onyx: #0F0D1E dark bg per brand spec */
-  border:       '1px solid rgba(184,174,221,.14)', /* --rule */
-  borderRadius:  2, /* --r-input */
-  padding:      '10px 12px 10px 36px',
+  background:   'rgba(255,255,255,.05)',
+  border:       '1px solid rgba(255,255,255,.07)', /* --glass-border */
+  borderRadius:  14,
+  padding:      '12px 14px 12px 38px',
   width:        '100%',
 }
 
@@ -542,8 +579,8 @@ export function InputField({
           disabled={disabled}
           className="w-full outline-none transition-[border-color] duration-200"
           style={INPUT_STYLE}
-          onFocus={e => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.40)')}
-          onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)')}
+          onFocus={e => (e.currentTarget.style.borderColor = 'rgba(124,58,237,.45)')}
+          onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(255,255,255,.07)')}
         />
       </div>
     </div>
@@ -563,22 +600,20 @@ export function CTAPrimary({
       disabled={loading}
       className="w-full flex items-center justify-center gap-2.5"
       style={{
-        fontFamily:    "'Bricolage Grotesque', sans-serif",
-        fontWeight:     600,
-        fontSize:       12,
-        letterSpacing: '0.14em',
-        textTransform: 'uppercase',
-        color:          '#EDEBF5',
-        /* CTA Primary: solid --plum per brand system v5 */
+        fontFamily:    "'DM Sans', sans-serif",
+        fontWeight:     500,
+        fontSize:       14,
+        letterSpacing: '-.01em',
+        color:          '#fff',
         background:    loading
-          ? 'rgba(43,18,80,.45)'
-          : '#2B1250',
-        border:        '1px solid rgba(112,80,160,.35)',
-        borderRadius:   0,
-        padding:       '14px 28px',
+          ? 'rgba(124,58,237,.35)'
+          : 'linear-gradient(135deg, #7C3AED, #5B21B6)',
+        border:        'none',
+        borderRadius:   100,
+        padding:       '15px 28px',
         cursor:        loading ? 'not-allowed' : 'pointer',
-        opacity:       loading ? 0.65 : 1,
-        transition:    'opacity .2s',
+        boxShadow:     loading ? 'none' : '0 8px 24px rgba(124,58,237,.4)',
+        transition:    'all .25s',
       }}
     >
       {loading ? (
@@ -589,7 +624,7 @@ export function CTAPrimary({
       ) : (
         <>
           {children}
-          <ArrowRight size={13} />
+          <ArrowRight size={14} />
         </>
       )}
     </button>
@@ -601,8 +636,8 @@ export function CardFooter({ children }: { children: React.ReactNode }) {
     <div
       className="flex items-center justify-center gap-2"
       style={{
-        borderTop: '1px solid rgba(184,174,221,.14)',
-        padding:   '16px 32px',
+        borderTop: '1px solid rgba(255,255,255,.07)',
+        padding:   '16px 20px',
       }}
     >
       {children}
@@ -620,13 +655,11 @@ export function FooterNavLink({
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1"
+      className="inline-flex items-center gap-1.5"
       style={{
-        fontFamily:    "'Bricolage Grotesque', sans-serif",
+        fontFamily:    "'DM Sans', sans-serif",
         fontWeight:     500,
-        fontSize:       11,
-        letterSpacing: '0.10em',
-        textTransform: 'uppercase',
+        fontSize:       13,
         color:          '#B8AEDD',
         textDecoration: 'none',
         transition:    'color .15s',
@@ -635,7 +668,7 @@ export function FooterNavLink({
       onMouseLeave={e => (e.currentTarget.style.color = '#B8AEDD')}
     >
       {children}
-      <ArrowRight size={11} />
+      <ArrowRight size={12} />
     </Link>
   )
 }

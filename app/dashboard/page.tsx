@@ -86,7 +86,7 @@ const UsageTooltip = ({ active, payload, label }: any) => {
         {label}
       </p>
       {payload.map((p: any) => (
-        <p key={p.dataKey} style={{ color: p.color, fontSize: 13, margin: '3px 0', fontFamily: "'IBM Plex Mono', monospace" }}>
+        <p key={p.dataKey} style={{ color: p.color, fontSize: 13, margin: '3px 0', fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }}>
           {p.dataKey === 'fast' ? 'Fast' : 'Premium'}: <strong>{p.value}</strong>
         </p>
       ))}
@@ -114,6 +114,7 @@ const StatCard = ({
     <div style={{
       flex: 1, background: '#0F0D1E',
       border: '1px solid rgba(184,174,221,0.14)',
+      borderRadius: 12,
       padding: '20px 22px', position: 'relative', overflow: 'hidden', minWidth: 0,
     }}>
       {/* Accent top line — inherits semantic color */}
@@ -121,7 +122,7 @@ const StatCard = ({
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div style={{
-          width: 34, height: 34, borderRadius: 2,
+          width: 34, height: 34, borderRadius: 10,
           background: 'rgba(43,18,80,0.45)',
           border: '1px solid rgba(184,174,221,0.12)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -133,7 +134,7 @@ const StatCard = ({
         {trend !== undefined && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 3,
-            fontSize: 11, fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 11, fontWeight: 500, fontFamily: "'DM Sans', sans-serif",
             /* trend up = verdigris (positivo), down = error (negativo) */
             color: trend >= 0 ? '#0CC89E' : '#FF5A5A',
           }}>
@@ -147,11 +148,11 @@ const StatCard = ({
         <div style={{ height: 28, background: 'rgba(184,174,221,0.07)', borderRadius: 2, marginBottom: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />
       ) : isEmpty ? (
         <div>
-          <div style={{ fontSize: 28, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: '#FF5A5A', lineHeight: 1, marginBottom: 6 }}>0</div>
+          <div style={{ fontSize: 28, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, color: '#FF5A5A', lineHeight: 1, marginBottom: 6 }}>0</div>
           <button onClick={emptyAction} style={{
             background: 'rgba(43,18,80,0.5)', border: '1px solid rgba(112,80,160,0.5)',
             color: '#B8AEDD', fontSize: 11, fontFamily: "'DM Sans', sans-serif",
-            padding: '4px 10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+            padding: '4px 10px', borderRadius: 100, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
           }}>
             Fazer upgrade <ArrowUpRight size={10} />
           </button>
@@ -159,7 +160,7 @@ const StatCard = ({
       ) : (
         <div style={{
           fontSize: 'clamp(20px,2.5vw,32px)',
-          fontFamily: "'IBM Plex Mono', monospace",
+          fontFamily: "'DM Sans', sans-serif",
           fontWeight: 600, color: accentColor, lineHeight: 1, marginBottom: 6,
         }}>
           {value}
@@ -178,7 +179,7 @@ const StatCard = ({
               background: accentColor, borderRadius: 2, transition: 'width 0.6s ease',
             }} />
           </div>
-          <div style={{ fontSize: 10, color: '#A09CC0', marginTop: 4, fontFamily: "'IBM Plex Mono', monospace" }}>
+          <div style={{ fontSize: 10, color: '#A09CC0', marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>
             {Math.round(remainingPct)}% restante
           </div>
         </div>
@@ -443,12 +444,12 @@ export default function DashboardPage() {
           {error?.toLowerCase().includes('autenticad') ? (
             <button
               onClick={() => window.location.href = '/login'}
-              style={{ background: 'linear-gradient(135deg,#2B1250 0%,#7050A0 100%)', border: 'none', color: '#EDEBF5', padding: '10px 24px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}
+              style={{ background: 'linear-gradient(135deg,#7C3AED 0%,#5B21B6 100%)', border: 'none', borderRadius: 100, color: '#EDEBF5', padding: '10px 24px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}
             >
               Fazer login
             </button>
           ) : (
-            <button onClick={fetchData} style={{ background: '#2B1250', border: 'none', color: '#EDEBF5', padding: '10px 20px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}>
+            <button onClick={fetchData} style={{ background: '#2B1250', border: 'none', borderRadius: 100, color: '#EDEBF5', padding: '10px 20px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}>
               Tentar novamente
             </button>
           )}
@@ -460,7 +461,7 @@ export default function DashboardPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=DM+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=DM+Sans:wght@400;500;600&display=swap');
         :root {
           --abyss:#06050F; --onyx:#0F0D1E; --plum:#2B1250; --mauve:#7050A0;
           --lavender:#B8AEDD; --mist:#EDEBF5; --verdigris:#0CC89E; --dusk:#A09CC0;
@@ -472,20 +473,37 @@ export default function DashboardPage() {
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes spin  { to{transform:rotate(360deg)} }
 
-        .period-btn { background:transparent; border:none; border-left:1px solid var(--rule); color:var(--dusk); padding:7px 16px; cursor:pointer; font-size:12px; font-family:'IBM Plex Mono',monospace; transition:all .15s; }
+        .period-btn { background:transparent; border:none; border-left:1px solid var(--rule); color:var(--dusk); padding:7px 16px; cursor:pointer; font-size:12px; font-weight:500; font-family:'DM Sans',sans-serif; transition:all .15s; }
         .period-btn:first-child { border-left:none; }
         .period-btn:hover  { color:var(--lavender); }
         .period-btn.active { background:var(--plum); color:var(--mist); }
 
-        .legend-toggle { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--dusk); font-family:'IBM Plex Mono',monospace; cursor:pointer; padding:4px 7px; border:1px solid transparent; transition:all .15s; user-select:none; }
+        .legend-toggle { display:flex; align-items:center; gap:5px; font-size:11px; font-weight:500; color:var(--dusk); font-family:'DM Sans',sans-serif; cursor:pointer; padding:4px 7px; border:1px solid transparent; transition:all .15s; user-select:none; }
         .legend-toggle:hover { border-color:var(--rule); color:var(--lavender); }
         .legend-toggle.off  { opacity:.3; }
 
-        .shortcut-btn { background:var(--onyx); border:1px solid var(--rule-v); color:var(--lavender); padding:11px 16px; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-family:'DM Sans',sans-serif; transition:all .18s; width:100%; }
+        .shortcut-btn { background:var(--onyx); border:1px solid var(--rule-v); border-radius:12px; color:var(--lavender); padding:11px 16px; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-family:'DM Sans',sans-serif; transition:all .18s; width:100%; }
         .shortcut-btn:hover { background:rgba(43,18,80,0.4); border-color:var(--mauve); color:var(--mist); }
 
         .prod-bar-track { height:5px; background:rgba(184,174,221,0.08); border-radius:1px; overflow:hidden; margin-top:5px; }
         .skeleton { background:rgba(184,174,221,0.07); border-radius:2px; animation:pulse 1.5s ease-in-out infinite; }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+          .dash-topbar { flex-direction:column !important; align-items:flex-start !important; gap:12px !important; padding:16px 20px !important; }
+          .dash-content { padding:20px 16px !important; }
+          .dash-stats { flex-direction:column !important; }
+          .dash-grid-main { grid-template-columns:1fr !important; }
+          .dash-grid-credits { grid-template-columns:1fr !important; }
+          .dash-leads-row { grid-template-columns:1fr !important; gap:4px !important; }
+          .dash-leads-header { display:none !important; }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .dash-topbar { padding:18px 24px !important; }
+          .dash-content { padding:24px 24px !important; }
+          .dash-grid-main { grid-template-columns:1fr !important; }
+          .dash-grid-credits { grid-template-columns:repeat(2,1fr) !important; }
+        }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#06050F' }}>
@@ -495,7 +513,7 @@ export default function DashboardPage() {
           <div style={{
             position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
             zIndex: 9999, background: 'rgba(43,18,80,0.95)', border: '1px solid rgba(112,80,160,0.6)',
-            borderRadius: 8, padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 12,
+            borderRadius: 16, padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 12,
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)',
             animation: 'ent-modal-in 0.25s ease',
           }}>
@@ -516,16 +534,16 @@ export default function DashboardPage() {
         )}
 
         {/* ── Topbar ── */}
-        <div style={{ borderBottom: '1px solid rgba(184,174,221,0.14)', padding: '18px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="dash-topbar" style={{ borderBottom: '1px solid rgba(184,174,221,0.14)', padding: '18px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 20, fontWeight: 700, color: '#EDEBF5' }}>
+              <h1 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 20, fontWeight: 600, color: '#EDEBF5' }}>
                 {loading ? 'Dashboard' : `Olá, ${merchant?.store_name ?? 'lojista'}`}
               </h1>
               {merchant?.plan_slug && (
                 <span style={{
-                  padding: '3px 10px', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace",
-                  textTransform: 'uppercase', letterSpacing: '0.1em', borderRadius: 100,
+                  padding: '3px 10px', fontSize: 11, fontWeight: 500, fontFamily: "'DM Sans',sans-serif",
+                  borderRadius: 100,
                   /* Plan badge uses brand colors, not semantic */
                   background: merchant.plan_slug === 'premium' ? 'rgba(43,18,80,0.6)' : 'rgba(43,18,80,0.4)',
                   border: '1px solid rgba(112,80,160,0.4)',
@@ -546,7 +564,7 @@ export default function DashboardPage() {
                     ? 'rgba(43,18,80,0.4)'
                     : 'linear-gradient(135deg,#2B1250 0%,#7050A0 100%)',
                   border: '1px solid rgba(112,80,160,0.5)',
-                  color: '#B8AEDD', borderRadius: 4,
+                  color: '#B8AEDD', borderRadius: 100,
                   opacity: upgradingPlan ? 0.6 : 1,
                   transition: 'all .15s',
                 }}
@@ -563,23 +581,23 @@ export default function DashboardPage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ display: 'flex', border: '1px solid rgba(184,174,221,0.14)' }}>
+            <div style={{ display: 'flex', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 8, overflow: 'hidden' }}>
               {([7, 15, 30] as Period[]).map(p => (
                 <button key={p} className={`period-btn${period === p ? ' active' : ''}`} onClick={() => setPeriod(p)}>
                   {p}d
                 </button>
               ))}
             </div>
-            <button onClick={fetchData} style={{ background: 'transparent', border: '1px solid rgba(184,174,221,0.14)', color: '#A09CC0', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <button onClick={fetchData} style={{ background: 'transparent', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 8, color: '#A09CC0', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <RefreshCw size={14} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
             </button>
           </div>
         </div>
 
-        <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
+        <div className="dash-content" style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
 
           {/* ── Stat Cards ── */}
-          <div style={{ display: 'flex', gap: '1px', background: 'rgba(184,174,221,0.14)', marginBottom: 28 }}>
+          <div className="dash-stats" style={{ display: 'flex', gap: '1px', background: 'rgba(184,174,221,0.14)', borderRadius: 16, overflow: 'hidden', marginBottom: 28 }}>
 
             {/* Fast Credits — health-based color */}
             <StatCard
@@ -618,13 +636,13 @@ export default function DashboardPage() {
           </div>
 
           {/* ── Chart + Products ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, marginBottom: 20 }}>
+          <div className="dash-grid-main" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, marginBottom: 20 }}>
 
             {/* Usage Chart */}
-            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: 24 }}>
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 16, padding: 24 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
                 <div>
-                  <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>Uso de Créditos</h2>
+                  <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>Uso de Créditos</h2>
                   <p style={{ color: '#A09CC0', fontSize: 12, marginTop: 2 }}>Últimos {period} dias</p>
                 </div>
                 {/* Legend — brand colors (mauve/lavender), não semântico */}
@@ -659,15 +677,15 @@ export default function DashboardPage() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="2 4" stroke="rgba(184,174,221,0.06)" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey="label" tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'DM Sans',sans-serif" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'DM Sans',sans-serif" }} axisLine={false} tickLine={false} />
                     <Tooltip content={<UsageTooltip />} />
                     {avgVal > 0 && (
                       <ReferenceLine
                         y={Math.round(avgVal)}
                         stroke="rgba(184,174,221,0.25)"
                         strokeDasharray="4 4"
-                        label={{ value: 'média', position: 'insideTopRight', fill: '#A09CC0', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }}
+                        label={{ value: 'média', position: 'insideTopRight', fill: '#A09CC0', fontSize: 10, fontFamily: "'DM Sans',sans-serif" }}
                       />
                     )}
                     {showFast && (
@@ -684,8 +702,8 @@ export default function DashboardPage() {
             </div>
 
             {/* Top Products — mauve como cor padrão, sem semântica de performance */}
-            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: 24 }}>
-              <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', marginBottom: 4 }}>
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 16, padding: 24 }}>
+              <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', marginBottom: 4 }}>
                 Produtos Mais Provados
               </h2>
               <p style={{ color: '#A09CC0', fontSize: 12, marginBottom: 20 }}>Top 5 no período</p>
@@ -712,7 +730,7 @@ export default function DashboardPage() {
                     <div key={prod.sku} style={{ marginBottom: 14 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                         <span style={{ fontSize: 12, color: '#EDEBF5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '72%' }}>{prod.name}</span>
-                        <span style={{ fontSize: 11, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace", flexShrink: 0 }}>{prod.count}</span>
+                        <span style={{ fontSize: 11, color: '#A09CC0', fontWeight: 500, fontFamily: "'DM Sans',sans-serif", flexShrink: 0 }}>{prod.count}</span>
                       </div>
                       <div className="prod-bar-track">
                         {/* mauve com opacidade variando por posição — ênfase por intensidade, não por semântica */}
@@ -726,7 +744,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ── Shortcuts ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          <div className="dash-grid-credits" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
             <button className="shortcut-btn" onClick={() => window.location.href = '/studio'}>
               <Layers  size={14} style={{ color: '#7050A0' }} />
               <span>Estúdio Pro</span>
@@ -746,17 +764,17 @@ export default function DashboardPage() {
           </div>
 
           {/* ── Leads ── */}
-          <div style={{ marginTop: 20, background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)' }}>
+          <div style={{ marginTop: 20, background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 16, overflow: 'hidden' }}>
 
             {/* Header */}
             <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(184,174,221,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Mail size={14} color="#7050A0" />
-                <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', margin: 0 }}>
+                <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', margin: 0 }}>
                   Leads Coletados
                 </h2>
                 {!leadsLocked && leads.length > 0 && (
-                  <span style={{ padding: '2px 8px', background: 'rgba(43,18,80,0.6)', border: '1px solid rgba(112,80,160,0.3)', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: '#B8AEDD' }}>
+                  <span style={{ padding: '2px 8px', background: 'rgba(43,18,80,0.6)', border: '1px solid rgba(112,80,160,0.3)', borderRadius: 100, fontSize: 10, fontWeight: 500, fontFamily: "'DM Sans',sans-serif", color: '#B8AEDD' }}>
                     {leads.length}
                   </span>
                 )}
@@ -773,7 +791,7 @@ export default function DashboardPage() {
                     document.body.appendChild(a); a.click(); document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                   }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(43,18,80,0.4)', border: '1px solid rgba(112,80,160,0.3)', color: '#B8AEDD', fontSize: 12, fontFamily: "'DM Sans',sans-serif", padding: '6px 12px', cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(43,18,80,0.4)', border: '1px solid rgba(112,80,160,0.3)', borderRadius: 8, color: '#B8AEDD', fontSize: 12, fontFamily: "'DM Sans',sans-serif", padding: '6px 12px', cursor: 'pointer' }}
                 >
                   <Download size={11} />
                   Exportar CSV
@@ -785,7 +803,7 @@ export default function DashboardPage() {
             {leadsLocked ? (
               /* Plano Free — lock */
               <div style={{ padding: '36px 24px', textAlign: 'center' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 4, background: 'rgba(43,18,80,0.5)', border: '1px solid rgba(112,80,160,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(43,18,80,0.5)', border: '1px solid rgba(112,80,160,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                   <Lock size={18} color="#B8AEDD" />
                 </div>
                 <p style={{ color: '#EDEBF5', fontSize: 14, fontFamily: "'DM Sans',sans-serif", marginBottom: 6 }}>
@@ -797,7 +815,7 @@ export default function DashboardPage() {
                 <button
                   onClick={() => handleUpgrade()}
                   disabled={!!upgradingPlan}
-                  style={{ background: 'linear-gradient(135deg,#2B1250 0%,#7050A0 100%)', border: 'none', color: '#EDEBF5', padding: '10px 24px', fontSize: 13, fontFamily: "'DM Sans',sans-serif", cursor: upgradingPlan ? 'not-allowed' : 'pointer', opacity: upgradingPlan ? 0.6 : 1 }}
+                  style={{ background: 'linear-gradient(135deg,#7C3AED 0%,#5B21B6 100%)', border: 'none', borderRadius: 100, color: '#EDEBF5', padding: '10px 24px', fontSize: 13, fontFamily: "'DM Sans',sans-serif", cursor: upgradingPlan ? 'not-allowed' : 'pointer', opacity: upgradingPlan ? 0.6 : 1 }}
                 >
                   Ver planos
                 </button>
@@ -824,9 +842,9 @@ export default function DashboardPage() {
             ) : (
               <div>
                 {/* Table header */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 36px', gap: 0, padding: '8px 24px', borderBottom: '1px solid rgba(184,174,221,0.06)' }}>
-                  <span style={{ fontSize: 10, color: '#A09CC0', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'IBM Plex Mono',monospace" }}>Email</span>
-                  <span style={{ fontSize: 10, color: '#A09CC0', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'IBM Plex Mono',monospace" }}>Data</span>
+                <div className="dash-leads-header" style={{ display: 'grid', gridTemplateColumns: '1fr 140px 36px', gap: 0, padding: '8px 24px', borderBottom: '1px solid rgba(184,174,221,0.06)' }}>
+                  <span style={{ fontSize: 10, color: '#A09CC0', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'DM Sans',sans-serif" }}>Email</span>
+                  <span style={{ fontSize: 10, color: '#A09CC0', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'DM Sans',sans-serif" }}>Data</span>
                   <span />
                 </div>
                 {/* Rows */}
@@ -834,6 +852,7 @@ export default function DashboardPage() {
                   {leads.map((lead) => (
                     <div
                       key={lead.id}
+                      className="dash-leads-row"
                       style={{ display: 'grid', gridTemplateColumns: '1fr 140px 36px', gap: 0, padding: '11px 24px', borderBottom: '1px solid rgba(184,174,221,0.05)', alignItems: 'center' }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(43,18,80,0.2)'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
@@ -841,7 +860,7 @@ export default function DashboardPage() {
                       <span style={{ fontSize: 13, color: '#EDEBF5', fontFamily: "'DM Sans',sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {lead.email}
                       </span>
-                      <span style={{ fontSize: 11, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace" }}>
+                      <span style={{ fontSize: 11, color: '#A09CC0', fontFamily: "'DM Sans',sans-serif" }}>
                         {new Date(lead.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                       </span>
                       <button
@@ -863,7 +882,7 @@ export default function DashboardPage() {
           </div>
 
           {/* API Key warning banner */}
-          <div style={{ marginTop: 12, padding: '10px 16px', background: 'rgba(255,180,50,0.05)', border: '1px solid rgba(255,180,50,0.18)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ marginTop: 12, padding: '10px 16px', background: 'rgba(255,180,50,0.05)', border: '1px solid rgba(255,180,50,0.18)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
             <AlertTriangle size={13} color="#FFB432" style={{ flexShrink: 0 }} />
             <p style={{ fontSize: 12, color: '#A09CC0', fontFamily: "'DM Sans',sans-serif" }}>
               Sua API Key está disponível em{' '}
