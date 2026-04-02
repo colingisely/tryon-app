@@ -79,7 +79,7 @@ const ChartTooltip = ({ active, payload, label }: any) => {
     <div style={{ background: 'rgba(15,13,30,0.97)', border: '1px solid rgba(184,174,221,0.26)', padding: '10px 14px', fontFamily: "'DM Sans',sans-serif" }}>
       <p style={{ color: '#B8AEDD', fontSize: 10, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</p>
       {payload.map((p: any) => (
-        <p key={p.dataKey} style={{ color: p.color, fontSize: 12, margin: '2px 0', fontFamily: "'IBM Plex Mono',monospace" }}>
+        <p key={p.dataKey} style={{ color: p.color, fontSize: 12, margin: '2px 0', fontFamily: "'DM Sans',sans-serif", fontWeight: 500 }}>
           {p.dataKey === 'initiated' ? 'Iniciados' : 'Completos'}: <strong>{p.value}</strong>
         </p>
       ))}
@@ -92,7 +92,7 @@ const KpiCard = ({ icon, label, value, sub, trend, accentColor, tooltip, loading
   icon: React.ReactNode; label: string; value: string; sub: string;
   trend?: number; accentColor: string; tooltip?: string; loading?: boolean;
 }) => (
-  <div style={{ flex: 1, background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: '18px 20px', minWidth: 0, position: 'relative', overflow: 'hidden' }}>
+  <div style={{ flex: 1, background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 12, padding: '18px 20px', minWidth: 0, position: 'relative', overflow: 'hidden' }}>
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: accentColor, opacity: 0.6 }} />
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -103,7 +103,7 @@ const KpiCard = ({ icon, label, value, sub, trend, accentColor, tooltip, loading
         {trend !== undefined && (
           <span style={{
             display: 'flex', alignItems: 'center', gap: 3,
-            fontSize: 11, fontFamily: "'IBM Plex Mono',monospace",
+            fontSize: 11, fontFamily: "'DM Sans',sans-serif", fontWeight: 500,
             /* up = verdigris, down = error */
             color: trend >= 0 ? '#0CC89E' : '#FF5A5A',
           }}>
@@ -116,7 +116,7 @@ const KpiCard = ({ icon, label, value, sub, trend, accentColor, tooltip, loading
     </div>
     {loading
       ? <div style={{ height: 26, background: 'rgba(184,174,221,0.07)', borderRadius: 2, animation: 'pulse 1.5s ease-in-out infinite' }} />
-      : <div style={{ fontSize: 'clamp(18px,2.2vw,28px)', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, color: accentColor, lineHeight: 1 }}>{value}</div>
+      : <div style={{ fontSize: 'clamp(18px,2.2vw,28px)', fontFamily: "'DM Sans',sans-serif", fontWeight: 600, color: accentColor, lineHeight: 1 }}>{value}</div>
     }
     <div style={{ fontSize: 11, color: 'rgba(160,156,192,0.55)', marginTop: 5 }}>{sub}</div>
   </div>
@@ -288,10 +288,10 @@ export default function AnalyticsPage() {
   if (planLocked) return (
     <div style={{ minHeight: '100vh', background: '#06050F', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ textAlign: 'center', padding: '40px 24px', maxWidth: 460 }}>
-        <div style={{ width: 56, height: 56, borderRadius: 4, background: 'rgba(43,18,80,0.6)', border: '1px solid rgba(112,80,160,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+        <div style={{ width: 56, height: 56, borderRadius: 10, background: 'rgba(43,18,80,0.6)', border: '1px solid rgba(112,80,160,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
           <Lock size={24} color="#B8AEDD" />
         </div>
-        <h1 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 24, fontWeight: 700, color: '#EDEBF5', marginBottom: 12 }}>
+        <h1 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 24, fontWeight: 600, color: '#EDEBF5', marginBottom: 12 }}>
           Analytics Avançado
         </h1>
         <p style={{ color: '#A09CC0', fontSize: 15, lineHeight: 1.6, marginBottom: 8 }}>
@@ -304,8 +304,8 @@ export default function AnalyticsPage() {
           onClick={handleUpgrade}
           disabled={upgradingPlan}
           style={{
-            background: 'linear-gradient(135deg, #2B1250 0%, #7050A0 100%)',
-            border: 'none', color: '#EDEBF5',
+            background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+            border: 'none', borderRadius: 100, color: '#EDEBF5',
             padding: '13px 32px', fontSize: 14, fontWeight: 600,
             fontFamily: "'DM Sans', sans-serif",
             cursor: upgradingPlan ? 'not-allowed' : 'pointer',
@@ -332,7 +332,7 @@ export default function AnalyticsPage() {
       <div style={{ textAlign: 'center', padding: 32 }}>
         <AlertCircle size={36} color="#FF5A5A" style={{ marginBottom: 16 }} />
         <p style={{ color: '#EDEBF5', marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>{error}</p>
-        <button onClick={fetchData} style={{ background: '#2B1250', border: 'none', color: '#EDEBF5', padding: '10px 20px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}>
+        <button onClick={fetchData} style={{ background: 'linear-gradient(135deg,#7C3AED,#5B21B6)', border: 'none', borderRadius: 8, color: '#EDEBF5', padding: '10px 20px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}>
           Tentar novamente
         </button>
       </div>
@@ -342,7 +342,7 @@ export default function AnalyticsPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=DM+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
         :root {
           --abyss:#06050F; --onyx:#0F0D1E; --plum:#2B1250; --mauve:#7050A0;
           --lavender:#B8AEDD; --mist:#EDEBF5; --verdigris:#0CC89E; --dusk:#A09CC0;
@@ -354,12 +354,13 @@ export default function AnalyticsPage() {
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes spin  { to{transform:rotate(360deg)} }
 
-        .period-btn { background:transparent; border:none; border-left:1px solid var(--rule); color:var(--dusk); padding:7px 18px; cursor:pointer; font-size:12px; font-family:'IBM Plex Mono',monospace; transition:all .15s; }
-        .period-btn:first-child { border-left:none; }
+        .period-btn { background:transparent; border:none; border-left:1px solid var(--rule); color:var(--dusk); padding:7px 18px; cursor:pointer; font-size:12px; font-weight:500; font-family:'DM Sans',sans-serif; transition:all .15s; }
+        .period-btn:first-child { border-left:none; border-radius:8px 0 0 8px; }
+        .period-btn:last-child { border-radius:0 8px 8px 0; }
         .period-btn:hover  { color:var(--lavender); }
         .period-btn.active { background:var(--plum); color:var(--mist); }
 
-        .tab-btn { background:transparent; border:none; border-bottom:2px solid transparent; color:var(--dusk); padding:8px 16px; cursor:pointer; font-size:12px; font-family:'IBM Plex Mono',monospace; transition:all .15s; white-space:nowrap; margin-bottom:-1px; }
+        .tab-btn { background:transparent; border:none; border-bottom:2px solid transparent; color:var(--dusk); padding:8px 16px; cursor:pointer; font-size:12px; font-weight:500; font-family:'DM Sans',sans-serif; transition:all .15s; white-space:nowrap; margin-bottom:-1px; }
         .tab-btn:hover  { color:var(--lavender); }
         .tab-btn.active { color:var(--mist); border-bottom-color:var(--mauve); }
 
@@ -369,17 +370,34 @@ export default function AnalyticsPage() {
 
         .skeleton { background:rgba(184,174,221,0.07); border-radius:2px; animation:pulse 1.5s ease-in-out infinite; }
         .sz-bar-track { height:5px; background:rgba(184,174,221,0.08); border-radius:1px; overflow:hidden; margin-top:5px; }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+          .analytics-topbar { flex-direction:column !important; align-items:flex-start !important; gap:12px !important; padding:16px !important; }
+          .analytics-content { padding:20px 16px !important; }
+          .analytics-kpis { flex-wrap:wrap !important; }
+          .analytics-kpis > div { flex:1 1 100% !important; }
+          .analytics-grid-main { grid-template-columns:1fr !important; }
+          .analytics-grid-bottom { grid-template-columns:1fr !important; }
+          .prod-tbl-row { grid-template-columns:1fr 50px 50px 60px !important; gap:6px !important; padding:10px 16px !important; }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .analytics-topbar { padding:18px 24px !important; }
+          .analytics-content { padding:24px 24px !important; }
+          .analytics-kpis > div { flex:1 1 calc(50% - 1px) !important; }
+          .analytics-grid-main { grid-template-columns:1fr !important; }
+        }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#06050F' }}>
 
         {/* ── Topbar ── */}
-        <div style={{ borderBottom: '1px solid rgba(184,174,221,0.14)', padding: '18px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="analytics-topbar" style={{ borderBottom: '1px solid rgba(184,174,221,0.14)', padding: '18px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 20, fontWeight: 700, color: '#EDEBF5' }}>Analytics</h1>
+            <h1 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 20, fontWeight: 600, color: '#EDEBF5' }}>Analytics</h1>
             <p style={{ color: '#A09CC0', fontSize: 13, marginTop: 2 }}>Comportamento dos seus clientes no provador virtual</p>
           </div>
-          <div style={{ display: 'flex', border: '1px solid rgba(184,174,221,0.14)' }}>
+          <div style={{ display: 'flex', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 8, overflow: 'hidden' }}>
             {([7, 30] as Period[]).map(p => (
               <button key={p} className={`period-btn${period === p ? ' active' : ''}`} onClick={() => setPeriodState(p)}>
                 {p === 7 ? '7 dias' : '30 dias'}
@@ -388,10 +406,10 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
+        <div className="analytics-content" style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
 
           {/* ── 5 KPI Cards ── */}
-          <div style={{ display: 'flex', gap: '1px', background: 'rgba(184,174,221,0.14)', marginBottom: 24 }}>
+          <div className="analytics-kpis" style={{ display: 'flex', gap: '1px', background: 'rgba(184,174,221,0.14)', borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
 
             {/* Iniciados — cobalt: volume neutro, sem julgamento */}
             <KpiCard
@@ -452,21 +470,21 @@ export default function AnalyticsPage() {
           </div>
 
           {/* ── Chart + Funnel ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, marginBottom: 20 }}>
+          <div className="analytics-grid-main" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, marginBottom: 20 }}>
 
             {/* Daily Chart */}
-            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: '20px 24px' }}>
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 16, padding: '20px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div>
-                  <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>Uso Diário</h2>
+                  <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>Uso Diário</h2>
                   <p style={{ color: '#A09CC0', fontSize: 12, marginTop: 2 }}>Últimos {period} dias</p>
                 </div>
                 {/* Legend: mauve p/ iniciados (brand), verdigris p/ completos (resultado) */}
                 <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace" }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#A09CC0', fontFamily: "'DM Sans',sans-serif" }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#7050A0' }} />Iniciados
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace" }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#A09CC0', fontFamily: "'DM Sans',sans-serif" }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#0CC89E' }} />Completos
                   </div>
                 </div>
@@ -502,9 +520,9 @@ export default function AnalyticsPage() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="2 4" stroke="rgba(184,174,221,0.06)" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }} axisLine={false} tickLine={false}
+                    <XAxis dataKey="label" tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'DM Sans',sans-serif" }} axisLine={false} tickLine={false}
                       interval={period === 30 ? 4 : 0} />
-                    <YAxis tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#A09CC0', fontSize: 10, fontFamily: "'DM Sans',sans-serif" }} axisLine={false} tickLine={false} />
                     <Tooltip content={<ChartTooltip />} />
                     {chartTab === 'both' && (
                       <Area type="monotone" dataKey="initiated" stroke="#7050A0" strokeWidth={2}
@@ -520,8 +538,8 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Funnel — Lavender → Mauve → Cobalt → Verdigris */}
-            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: '20px 22px' }}>
-              <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', marginBottom: 4 }}>
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 16, padding: '20px 24px' }}>
+              <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', marginBottom: 4 }}>
                 Funil de Conversão
               </h2>
               <p style={{ color: '#A09CC0', fontSize: 12, marginBottom: 20 }}>Jornada do usuário</p>
@@ -539,7 +557,7 @@ export default function AnalyticsPage() {
                     <span style={{ fontSize: 12, color: '#EDEBF5', fontFamily: "'DM Sans',sans-serif", flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {step.label}
                     </span>
-                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, fontWeight: 600, color: step.color, flexShrink: 0, width: 44, textAlign: 'right' }}>
+                    <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 600, color: step.color, flexShrink: 0, width: 44, textAlign: 'right' }}>
                       {step.pct}%
                     </span>
                   </div>
@@ -547,7 +565,7 @@ export default function AnalyticsPage() {
                     <div style={{ height: '100%', width: `${step.pct}%`, background: step.color, transition: 'width 0.6s ease' }} />
                   </div>
                   {i < funnel.length - 1 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 0 6px 4px', fontSize: 10, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace" }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 0 6px 4px', fontSize: 10, color: '#A09CC0', fontFamily: "'DM Sans',sans-serif" }}>
                       <ChevronRight size={10} color="rgba(184,174,221,0.25)" />
                       {step.count.toLocaleString('pt-BR')} usuários
                     </div>
@@ -558,13 +576,13 @@ export default function AnalyticsPage() {
           </div>
 
           {/* ── Products + Sizes ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          <div className="analytics-grid-bottom" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
 
             {/* Top 10 Products */}
-            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: '20px 24px' }}>
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 16, padding: '20px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <Package size={14} color="#7050A0" />
-                <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>
+                <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>
                   Produtos Mais Provados
                 </h2>
               </div>
@@ -572,7 +590,7 @@ export default function AnalyticsPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 70px 70px 90px', gap: 10, padding: '0 0 8px', borderBottom: '1px solid rgba(184,174,221,0.12)' }}>
                 {['Produto', 'Inic.', 'Compl.', 'Taxa'].map(h => (
-                  <div key={h} style={{ fontSize: 10, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace", textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</div>
+                  <div key={h} style={{ fontSize: 10, fontWeight: 500, color: '#A09CC0', fontFamily: "'DM Sans',sans-serif", textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</div>
                 ))}
               </div>
 
@@ -595,17 +613,17 @@ export default function AnalyticsPage() {
                   <div key={prod.sku} className="prod-tbl-row">
                     <div>
                       <div style={{ fontSize: 12, color: '#EDEBF5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prod.name}</div>
-                      <div style={{ fontSize: 10, color: '#A09CC0', fontFamily: "'IBM Plex Mono',monospace", marginTop: 2 }}>{prod.sku}</div>
+                      <div style={{ fontSize: 10, color: '#A09CC0', fontFamily: "'DM Sans',sans-serif", marginTop: 2 }}>{prod.sku}</div>
                     </div>
                     {/* Iniciações — cobalt (volume neutro) */}
-                    <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, color: '#3B82F6' }}>{prod.initiated.toLocaleString('pt-BR')}</div>
+                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 500, fontSize: 13, color: '#3B82F6' }}>{prod.initiated.toLocaleString('pt-BR')}</div>
                     {/* Completos — verdigris (resultado positivo) */}
-                    <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, color: '#0CC89E' }}>{prod.completed.toLocaleString('pt-BR')}</div>
+                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 500, fontSize: 13, color: '#0CC89E' }}>{prod.completed.toLocaleString('pt-BR')}</div>
                     {/* Taxa — pílula semântica */}
                     <div>
                       <span style={{
                         display: 'inline-block', padding: '3px 9px', borderRadius: 100,
-                        fontSize: 11, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600,
+                        fontSize: 11, fontFamily: "'DM Sans',sans-serif", fontWeight: 600,
                         color: completionColor(prod.rate),
                         background: completionBg(prod.rate),
                         border: `1px solid ${completionBorder(prod.rate)}`,
@@ -619,10 +637,10 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Size Analysis — mauve padrão, sem semântica */}
-            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', padding: '20px 24px' }}>
+            <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 16, padding: '20px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <Ruler size={14} color="#7050A0" />
-                <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>
+                <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>
                   Análise de Tamanhos
                 </h2>
               </div>
@@ -647,12 +665,12 @@ export default function AnalyticsPage() {
                   <div key={sz.size} style={{ marginBottom: 14 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, fontWeight: 600, color: '#7050A0', minWidth: 36 }}>
+                        <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 600, color: '#7050A0', minWidth: 36 }}>
                           {sz.size}
                         </span>
                         <span style={{ fontSize: 12, color: '#A09CC0' }}>{sz.count.toLocaleString('pt-BR')} provas</span>
                       </div>
-                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: '#B8AEDD' }}>{sz.pct}%</span>
+                      <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 500, fontSize: 12, color: '#B8AEDD' }}>{sz.pct}%</span>
                     </div>
                     <div className="sz-bar-track">
                       <div style={{

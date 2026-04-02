@@ -2,7 +2,7 @@
 
 /**
  * Reflexy — app/signup/page.tsx
- * Brand System V5 · Deep Amethyst
+ * Brand System V6 · Aligned with Landing Page
  *
  * Fluxo Supabase:
  *  1. supabase.auth.signUp()  → cria usuário
@@ -27,10 +27,9 @@ import {
 } from 'lucide-react'
 
 import {
-  Eyebrow,
-  FieldLabel,
   FieldIcon,
-  InputField,
+  AuthLabel,
+  AuthInputField,
   CTAPrimary,
   CardFooter,
   FooterNavLink,
@@ -269,13 +268,13 @@ function SignupPageInner() {
 
   return (
     <main
-      className="relative min-h-screen flex items-center justify-center px-4 py-16 overflow-hidden"
+      className="relative min-h-screen flex items-center justify-center px-5 sm:px-8 py-16 overflow-hidden"
       style={{ background: '#06050F' /* --abyss */ }}
     >
       <GrainOverlay />
       <AmbientGlow />
 
-      <div className="relative z-10 w-full" style={{ maxWidth: 440 }}>
+      <div className="relative z-10 w-full" style={{ maxWidth: 400 }}>
 
         {/* ── Brand header ── */}
         <header className="flex flex-col items-center mb-10">
@@ -297,27 +296,16 @@ function SignupPageInner() {
             Reflexy
           </p>
 
-          <p
-            style={{
-              fontFamily: "'Instrument Serif', serif",
-              fontStyle:  'italic',
-              fontSize:    14,
-              color:       '#A09CC0',
-              marginTop:   4,
-            }}
-          >
-            Comece grátis. Sem cartão de crédito.
-          </p>
         </header>
 
         {/* ── Glass card ── */}
         <div
           style={{
-            background:           'rgba(15,13,30,.65)',
-            backdropFilter:       'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border:               '1px solid rgba(184,174,221,.14)',
-            borderRadius:          0,
+            background:           'rgba(255,255,255,.03)',
+            backdropFilter:       'blur(24px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+            border:               '1px solid rgba(255,255,255,.07)',
+            borderRadius:          22,
           }}
         >
           {success ? (
@@ -325,21 +313,19 @@ function SignupPageInner() {
           ) : (
             <>
               <form onSubmit={handleSubmit} noValidate>
-                <div className="p-8 flex flex-col" style={{ gap: 24 }}>
-
-                  <Eyebrow text="Criar conta" />
+                <div className="px-5 py-6 sm:p-8 flex flex-col" style={{ gap: 24 }}>
 
                   <h1
                     style={{
-                      fontFamily:    "'Bricolage Grotesque', sans-serif",
+                      fontFamily:    "'DM Sans', sans-serif",
                       fontWeight:     600,
-                      fontSize:       22,
+                      fontSize:       20,
                       color:          '#EDEBF5',
                       letterSpacing: '-.01em',
                       lineHeight:     1.15,
                     }}
                   >
-                    Configure sua loja
+                    Criar conta
                   </h1>
 
                   {/* Plan badge */}
@@ -353,6 +339,7 @@ function SignupPageInner() {
                       style={{
                         background: 'rgba(255,90,90,.07)',
                         border:     '1px solid rgba(255,90,90,.22)',
+                        borderRadius: 12,
                       }}
                     >
                       <AlertCircle
@@ -374,9 +361,9 @@ function SignupPageInner() {
                   )}
 
                   {/* Nome da Loja */}
-                  <InputField
+                  <AuthInputField
                     id="storeName"
-                    label="Nome da Loja"
+                    label="Nome da loja"
                     type="text"
                     value={form.storeName}
                     onChange={patch('storeName')}
@@ -387,7 +374,7 @@ function SignupPageInner() {
                   />
 
                   {/* E-mail */}
-                  <InputField
+                  <AuthInputField
                     id="email"
                     label="E-mail"
                     type="email"
@@ -401,7 +388,7 @@ function SignupPageInner() {
 
                   {/* Senha + strength indicator */}
                   <div className="flex flex-col gap-2">
-                    <FieldLabel htmlFor="password">Senha</FieldLabel>
+                    <AuthLabel htmlFor="password">Senha</AuthLabel>
                     <div className="relative">
                       <FieldIcon><Lock size={14} /></FieldIcon>
                       <input
@@ -415,8 +402,8 @@ function SignupPageInner() {
                         disabled={loading}
                         className="w-full outline-none transition-[border-color] duration-200"
                         style={INPUT_STYLE}
-                        onFocus={e => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.40)')}
-                        onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)')}
+                        onFocus={e => (e.currentTarget.style.borderColor = 'rgba(124,58,237,.45)')}
+                        onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(255,255,255,.07)')}
                       />
                       <button
                         type="button"
@@ -467,7 +454,7 @@ function SignupPageInner() {
 
                   {/* CTA Primary */}
                   <CTAPrimary loading={loading}>
-                    Criar minha conta
+                    Criar conta
                   </CTAPrimary>
 
                 </div>
@@ -509,9 +496,11 @@ const PAID_PLANS = new Set(['starter', 'growth', 'pro', 'enterprise'])
 
 function PlanBadge({ planSlug }: { planSlug: string }) {
   const isPaid = planSlug && PAID_PLANS.has(planSlug)
-  const label  = isPaid
-    ? `Plano ${planSlug.charAt(0).toUpperCase() + planSlug.slice(1)} — Ativado ✓`
-    : 'Plano Free — grátis'
+
+  // Hide badge entirely for free flow — avoids redundant "free" messaging
+  if (!isPaid) return null
+
+  const label = `Plano ${planSlug.charAt(0).toUpperCase() + planSlug.slice(1)} — Ativado ✓`
 
   return (
     <div
@@ -519,7 +508,8 @@ function PlanBadge({ planSlug }: { planSlug: string }) {
       style={{
         background: 'rgba(12,200,158,.07)',
         border:     '1px solid rgba(12,200,158,.22)',
-        padding:    '5px 11px',
+        borderRadius: 100,
+        padding:    '5px 14px',
       }}
     >
       {/* Pulsing dot */}
@@ -536,10 +526,9 @@ function PlanBadge({ planSlug }: { planSlug: string }) {
       />
       <span
         style={{
-          fontFamily:    "'IBM Plex Mono', monospace",
-          fontSize:       9,
-          letterSpacing: '0.22em',
-          textTransform: 'uppercase',
+          fontFamily:    "'DM Sans', sans-serif",
+          fontSize:       12,
+          fontWeight:     500,
           color:          '#0CC89E',
         }}
       >
@@ -558,10 +547,11 @@ function StrengthMeter({ strength }: { strength: StrengthResult }) {
             key={i}
             style={{
               flex:       1,
-              height:     2,
+              height:     3,
+              borderRadius: 2,
               background: i <= strength.score
                 ? strength.color
-                : 'rgba(184,174,221,.12)',
+                : 'rgba(255,255,255,.07)',
               transition: 'background .25s ease',
             }}
           />
@@ -570,10 +560,9 @@ function StrengthMeter({ strength }: { strength: StrengthResult }) {
       {strength.label && (
         <p
           style={{
-            fontFamily:    "'IBM Plex Mono', monospace",
-            fontSize:       9,
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
+            fontFamily:    "'DM Sans', sans-serif",
+            fontSize:       11,
+            fontWeight:     500,
             color:          strength.color,
             marginTop:      4,
             transition:    'color .25s',
@@ -589,7 +578,7 @@ function StrengthMeter({ strength }: { strength: StrengthResult }) {
 function SuccessState({ email }: { email: string }) {
   return (
     <div
-      className="flex flex-col items-center text-center gap-4 p-10"
+      className="flex flex-col items-center text-center gap-4 px-5 py-8 sm:p-10"
       style={{ animation: 'fadeSlideUp .45s ease both' }}
     >
       {/* Icon circle */}
@@ -608,7 +597,7 @@ function SuccessState({ email }: { email: string }) {
 
       <h2
         style={{
-          fontFamily:  "'Bricolage Grotesque', sans-serif",
+          fontFamily:  "'DM Sans', sans-serif",
           fontWeight:   600,
           fontSize:     20,
           color:        '#EDEBF5',
@@ -638,16 +627,16 @@ function SuccessState({ email }: { email: string }) {
           width:      '100%',
           background: 'rgba(12,200,158,.05)',
           border:     '1px solid rgba(12,200,158,.14)',
+          borderRadius: 12,
           padding:    '11px 16px',
         }}
       >
         <p
           style={{
-            fontFamily:    "'IBM Plex Mono', monospace",
-            fontSize:       9,
-            letterSpacing: '0.20em',
-            textTransform: 'uppercase',
-            color:          '#0CC89E',
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize:    12,
+            fontWeight:  500,
+            color:       '#0CC89E',
           }}
         >
           Verifique também a pasta de spam

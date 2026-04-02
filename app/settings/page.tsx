@@ -25,7 +25,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter }                    from 'next/navigation'
 import { createClient }                 from '@/lib/supabase/client'
-import { InternalFooter }               from '@/components/ui/InternalFooter'
 import {
   Store,
   Mail,
@@ -42,6 +41,7 @@ import {
   Save,
   LogOut,
   ChevronRight,
+  ChevronDown,
   ShoppingBag,
   Settings,
   Info,
@@ -53,13 +53,12 @@ import {
 } from 'lucide-react'
 import ReflexGem from '@/components/ui/ReflexGem'
 import {
-  Eyebrow,
   GrainOverlay,
   AmbientGlow,
   GlobalKeyframes,
   SPINNER_STYLE,
   INPUT_STYLE,
-  FieldLabel,
+  AuthLabel,
   FieldIcon,
 } from '@/app/login/page'
 
@@ -223,37 +222,37 @@ export default function SettingsPage() {
       />
 
       <div
-        className="relative z-10 mx-auto px-6"
+        className="settings-page relative z-10 mx-auto px-6"
         style={{ maxWidth: 960, paddingTop: 44, paddingBottom: 100 }}
       >
         {/* Page header */}
         <div style={{ marginBottom: 40 }}>
-          <Eyebrow text="Configurações" />
           <h1
-            className="mt-3"
             style={{
-              fontFamily:    "'Bricolage Grotesque', sans-serif",
-              fontWeight:     700,
-              fontSize:      'clamp(24px, 3vw, 36px)',
+              fontFamily:    "'DM Sans', sans-serif",
+              fontWeight:     600,
+              fontSize:       24,
               color:          '#EDEBF5',
               letterSpacing: '-.02em',
               lineHeight:     1.1,
             }}
           >
-            Configurações da Conta
+            Configurações
           </h1>
         </div>
 
-        <div className="flex gap-6" style={{ alignItems: 'flex-start' }}>
+        <div className="settings-layout flex gap-6" style={{ alignItems: 'flex-start' }}>
 
           {/* ── Sidebar tabs ── */}
           <nav
-            className="flex flex-col"
+            className="settings-sidebar flex flex-col"
             style={{
               width:     220,
               flexShrink: 0,
               background: '#0F0D1E',
               border:    '1px solid rgba(184,174,221,.14)',
+              borderRadius: 16,
+              overflow: 'hidden',
             }}
           >
             {TABS.map(tab => (
@@ -288,7 +287,7 @@ export default function SettingsPage() {
                   </span>
                 </div>
                 {activeTab === tab.id && (
-                  <ChevronRight size={12} style={{ color: '#0CC89E' }} />
+                  <span className="settings-tab-chevron"><ChevronRight size={12} style={{ color: '#0CC89E' }} /></span>
                 )}
               </button>
             ))}
@@ -311,14 +310,22 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <InternalFooter />
-
       <GlobalKeyframes />
       <style>{`
         @keyframes dotPulse  { 0%,100%{opacity:1;} 50%{opacity:.4;} }
         @keyframes fadeIn    { from{opacity:0;transform:translateY(-4px);} to{opacity:1;transform:translateY(0);} }
         @keyframes slideIn   { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
         @keyframes shake     { 0%,100%{transform:translateX(0);} 20%,60%{transform:translateX(-4px);} 40%,80%{transform:translateX(4px);} }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+          .settings-layout { flex-direction:column !important; gap:16px !important; }
+          .settings-sidebar { width:100% !important; flex-direction:row !important; overflow-x:auto !important; border-radius:12px !important; }
+          .settings-sidebar button { border-left:2px solid transparent !important; border-bottom:1px solid rgba(184,174,221,.08) !important; white-space:nowrap !important; padding:10px 14px !important; font-size:12px !important; }
+          .settings-sidebar .settings-tab-chevron { display:none !important; }
+          .settings-page { padding-left:16px !important; padding-right:16px !important; padding-top:28px !important; }
+          .settings-page h1 { font-size:20px !important; }
+        }
       `}</style>
     </main>
   )
@@ -382,7 +389,7 @@ function TopNav({
           type="button"
           onClick={onSignOut}
           className="flex items-center gap-1.5 px-3 py-1.5 transition-all"
-          style={{ background: 'transparent', border: '1px solid rgba(184,174,221,.14)', color: '#A09CC0', fontFamily: "'DM Sans', sans-serif", fontSize: 12, cursor: 'pointer' }}
+          style={{ background: 'transparent', border: '1px solid rgba(184,174,221,.14)', borderRadius: 8, color: '#A09CC0', fontFamily: "'DM Sans', sans-serif", fontSize: 12, cursor: 'pointer' }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.30)'; e.currentTarget.style.color = '#EDEBF5' }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)'; e.currentTarget.style.color = '#A09CC0' }}
         >
@@ -406,6 +413,7 @@ function SaveBanner({ state }: { state: SaveState }) {
       style={{
         background: isSaved ? 'rgba(12,200,158,.07)' : isError ? 'rgba(255,90,90,.07)' : 'rgba(184,174,221,.05)',
         border:    `1px solid ${isSaved ? 'rgba(12,200,158,.24)' : isError ? 'rgba(255,90,90,.22)' : 'rgba(184,174,221,.14)'}`,
+        borderRadius: 12,
         animation: 'fadeIn .25s ease both',
       }}
     >
@@ -442,6 +450,7 @@ function SectionCard({
       style={{
         background: '#0F0D1E',
         border:     '1px solid rgba(184,174,221,.14)',
+        borderRadius: 16,
         animation:  'slideIn .3s ease both',
       }}
     >
@@ -452,7 +461,7 @@ function SectionCard({
       >
         <div>
           <h2 style={{
-            fontFamily:    "'Bricolage Grotesque', sans-serif",
+            fontFamily:    "'DM Sans', sans-serif",
             fontWeight:     600,
             fontSize:       16,
             color:          '#EDEBF5',
@@ -512,7 +521,7 @@ function StoreProfileSection({
         <div className="flex flex-col gap-5">
 
           <div className="flex flex-col gap-1.5">
-            <FieldLabel htmlFor="storeName">Nome da Loja</FieldLabel>
+            <AuthLabel htmlFor="storeName">Nome da loja</AuthLabel>
             <div className="relative">
               <FieldIcon><Store size={14} /></FieldIcon>
               <input
@@ -524,14 +533,14 @@ function StoreProfileSection({
                 autoComplete="organization"
                 className="w-full outline-none transition-[border-color] duration-200"
                 style={INPUT_STYLE}
-                onFocus={e  => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.40)')}
-                onBlur={e   => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)')}
+                onFocus={e  => (e.currentTarget.style.borderColor = 'rgba(124,58,237,.45)')}
+                onBlur={e   => (e.currentTarget.style.borderColor = 'rgba(255,255,255,.07)')}
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <FieldLabel htmlFor="merchantEmail">E-mail</FieldLabel>
+            <AuthLabel htmlFor="merchantEmail">E-mail</AuthLabel>
             <div className="relative">
               <FieldIcon><Mail size={14} /></FieldIcon>
               <input
@@ -545,7 +554,7 @@ function StoreProfileSection({
                 style={{ ...INPUT_STYLE, cursor: 'default', opacity: 0.6 }}
               />
             </div>
-            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.16em', color: 'rgba(160,156,192,.45)', marginTop: 2 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(160,156,192,.45)', marginTop: 2 }}>
               Usado para notificações e acesso à conta.
             </p>
           </div>
@@ -624,7 +633,7 @@ function ApiKeySection({
           {/* Info box */}
           <div
             className="flex items-start gap-3 px-4 py-3"
-            style={{ background: 'rgba(59,130,246,.07)', border: '1px solid rgba(59,130,246,.20)' }}
+            style={{ background: 'rgba(59,130,246,.07)', border: '1px solid rgba(59,130,246,.20)', borderRadius: 12 }}
           >
             <Info size={13} className="mt-0.5 shrink-0" style={{ color: '#3B82F6' }} />
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'rgba(184,174,221,.70)', lineHeight: 1.65 }}>
@@ -634,7 +643,7 @@ function ApiKeySection({
 
           {/* Key field */}
           <div className="flex flex-col gap-1.5">
-            <FieldLabel>Chave de API</FieldLabel>
+            <AuthLabel>Chave de API</AuthLabel>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <FieldIcon><Key size={14} /></FieldIcon>
@@ -645,9 +654,9 @@ function ApiKeySection({
                   className="w-full outline-none"
                   style={{
                     ...INPUT_STYLE,
-                    fontFamily:  "'IBM Plex Mono', monospace",
+                    fontFamily:  "'DM Sans', sans-serif",
                     fontSize:     12,
-                    letterSpacing: visible ? '.04em' : '.08em',
+                    letterSpacing: visible ? '.02em' : '.08em',
                     color:         '#B8AEDD',
                     userSelect:    'all',
                     cursor:        'default',
@@ -674,12 +683,11 @@ function ApiKeySection({
                 style={{
                   background:  copied ? 'rgba(12,200,158,.10)' : 'rgba(184,174,221,.06)',
                   border:     `1px solid ${copied ? 'rgba(12,200,158,.30)' : 'rgba(184,174,221,.18)'}`,
+                  borderRadius: 8,
                   color:       copied ? '#0CC89E' : '#A09CC0',
-                  fontFamily: "'Bricolage Grotesque', sans-serif",
+                  fontFamily: "'DM Sans', sans-serif",
                   fontWeight:  500,
-                  fontSize:    10,
-                  letterSpacing: '.12em',
-                  textTransform: 'uppercase',
+                  fontSize:    12,
                   cursor:      'pointer',
                   minWidth:    88,
                   justifyContent: 'center',
@@ -692,7 +700,7 @@ function ApiKeySection({
               </button>
             </div>
 
-            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.16em', color: 'rgba(160,156,192,.40)', marginTop: 2 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(160,156,192,.40)', marginTop: 2 }}>
               Criada em {new Date().toLocaleDateString('pt-BR')} · Última utilização: nunca
             </p>
           </div>
@@ -714,12 +722,11 @@ function ApiKeySection({
               style={{
                 background:   'rgba(255,180,50,.07)',
                 border:       '1px solid rgba(255,180,50,.25)',
+                borderRadius:  8,
                 color:         '#FFB432',
-                fontFamily:   "'Bricolage Grotesque', sans-serif",
+                fontFamily:   "'DM Sans', sans-serif",
                 fontWeight:    500,
-                fontSize:      10,
-                letterSpacing: '.12em',
-                textTransform: 'uppercase',
+                fontSize:      12,
                 cursor:        'pointer',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,180,50,.12)')}
@@ -765,6 +772,7 @@ function RegenModal({
         style={{
           background: '#0F0D1E',
           border:     '1px solid rgba(255,180,50,.30)',
+          borderRadius: 16,
           width:       '100%',
           maxWidth:    440,
           animation:  'slideIn .25s ease both',
@@ -778,11 +786,11 @@ function RegenModal({
           <div className="flex items-center gap-3">
             <div
               className="flex items-center justify-center"
-              style={{ width: 32, height: 32, background: 'rgba(255,180,50,.10)', border: '1px solid rgba(255,180,50,.25)' }}
+              style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(255,180,50,.10)', border: '1px solid rgba(255,180,50,.25)' }}
             >
               <AlertTriangle size={15} style={{ color: '#FFB432' }} />
             </div>
-            <h3 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 600, fontSize: 16, color: '#EDEBF5', letterSpacing: '-.01em' }}>
+            <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 16, color: '#EDEBF5', letterSpacing: '-.01em' }}>
               Regerar API Key
             </h3>
           </div>
@@ -801,7 +809,7 @@ function RegenModal({
         <div style={{ padding: '20px 24px 24px' }}>
           <div
             className="flex items-start gap-3 mb-5 p-4"
-            style={{ background: 'rgba(255,180,50,.06)', border: '1px solid rgba(255,180,50,.20)' }}
+            style={{ background: 'rgba(255,180,50,.06)', border: '1px solid rgba(255,180,50,.20)', borderRadius: 12 }}
           >
             <AlertTriangle size={14} className="mt-0.5 shrink-0" style={{ color: '#FFB432' }} />
             <div>
@@ -823,12 +831,11 @@ function RegenModal({
               style={{
                 background:   'transparent',
                 border:       '1px solid rgba(184,174,221,.18)',
+                borderRadius:  8,
                 color:         '#A09CC0',
-                fontFamily:   "'Bricolage Grotesque', sans-serif",
+                fontFamily:   "'DM Sans', sans-serif",
                 fontWeight:    500,
-                fontSize:      11,
-                letterSpacing: '.12em',
-                textTransform: 'uppercase',
+                fontSize:      13,
                 cursor:        loading ? 'not-allowed' : 'pointer',
                 opacity:       loading ? 0.5 : 1,
               }}
@@ -843,12 +850,11 @@ function RegenModal({
               style={{
                 background:   'rgba(255,180,50,.12)',
                 border:       '1px solid rgba(255,180,50,.40)',
+                borderRadius:  8,
                 color:         '#FFB432',
-                fontFamily:   "'Bricolage Grotesque', sans-serif",
+                fontFamily:   "'DM Sans', sans-serif",
                 fontWeight:    500,
-                fontSize:      11,
-                letterSpacing: '.12em',
-                textTransform: 'uppercase',
+                fontSize:      13,
                 cursor:        loading ? 'not-allowed' : 'pointer',
                 opacity:       loading ? 0.7 : 1,
               }}
@@ -920,10 +926,11 @@ function BillingSection({ settings }: { settings: MerchantSettings }) {
             className="flex items-center gap-1.5 px-3 py-2 transition-all shrink-0"
             style={{
               background:   isFree
-                ? 'linear-gradient(135deg,#2B1250 0%,#7050A0 100%)'
+                ? 'linear-gradient(135deg,#7C3AED 0%,#5B21B6 100%)'
                 : 'rgba(43,18,80,.55)',
               border:       '1px solid rgba(112,80,160,.5)',
-              color:        '#B8AEDD',
+              borderRadius:  100,
+              color:         isFree ? '#EDEBF5' : '#B8AEDD',
               fontFamily:   "'DM Sans', sans-serif",
               fontSize:      12,
               fontWeight:    500,
@@ -950,10 +957,10 @@ function BillingSection({ settings }: { settings: MerchantSettings }) {
                 padding:      '4px 12px',
                 background:    isFree ? 'rgba(184,174,221,.08)' : 'rgba(12,200,158,.08)',
                 border:       `1px solid ${isFree ? 'rgba(184,174,221,.22)' : 'rgba(12,200,158,.3)'}`,
-                fontFamily:   "'IBM Plex Mono', monospace",
-                fontSize:      10,
-                letterSpacing: '.18em',
-                textTransform: 'uppercase',
+                borderRadius:  100,
+                fontFamily:   "'DM Sans', sans-serif",
+                fontSize:      12,
+                fontWeight:    500,
                 color:          isFree ? '#A09CC0' : '#0CC89E',
               }}>
                 {planLabel}
@@ -981,7 +988,7 @@ function BillingSection({ settings }: { settings: MerchantSettings }) {
                 </span>
               </div>
               <span style={{
-                fontFamily: "'IBM Plex Mono', monospace",
+                fontFamily: "'DM Sans', sans-serif",
                 fontSize:    13,
                 color:       creditsColor,
                 fontWeight:  600,
@@ -1001,9 +1008,6 @@ function BillingSection({ settings }: { settings: MerchantSettings }) {
               }} />
             </div>
 
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#A09CC0' }}>
-              Prova virtual rápida = 1 crédito · Studio Pro (tryon-max) = 4 créditos
-            </p>
           </div>
 
           {/* Credit usage hint */}
@@ -1011,31 +1015,31 @@ function BillingSection({ settings }: { settings: MerchantSettings }) {
             <div className="flex items-center gap-2 p-3" style={{
               background: 'rgba(255,90,90,.06)',
               border:     '1px solid rgba(255,90,90,.18)',
+              borderRadius: 12,
             }}>
               <AlertTriangle size={13} style={{ color: '#FF5A5A', flexShrink: 0 }} />
               <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#FF5A5A', lineHeight: 1.5 }}>
                 Seus créditos acabaram.{' '}
                 {isFree
-                  ? 'Faça upgrade para continuar gerando try-ons.'
-                  : 'Gerencie seu plano para adicionar créditos ou aguarde a renovação.'}
+                  ? 'Faça upgrade para continuar.'
+                  : 'Aguarde a renovação ou gerencie seu plano.'}
               </span>
             </div>
           )}
         </div>
       </SectionCard>
 
-      {/* Credit model info */}
+      {/* Credit model note */}
       <div style={{
         padding:    '14px 18px',
         background: 'rgba(184,174,221,.03)',
         border:     '1px solid rgba(184,174,221,.10)',
+        borderRadius: 12,
       }}>
         <div className="flex items-start gap-2.5">
           <Info size={13} style={{ color: '#7050A0', marginTop: 2, flexShrink: 0 }} />
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', lineHeight: 1.7, margin: 0 }}>
-            <strong style={{ color: '#EDEBF5' }}>Modelo de crédito unificado:</strong>{' '}
-            todos os tipos de geração usam o mesmo saldo. Prova virtual rápida consome 1 crédito,
-            Studio Pro consome 4. Os créditos não acumulam entre ciclos.
+            Saldo unificado: fast = 1 crédito, Studio Pro = 4. Créditos renovam a cada ciclo e não acumulam.
           </p>
         </div>
       </div>
@@ -1085,7 +1089,7 @@ function WidgetSection({
         {/* Toggle row */}
         <div
           className="flex items-center justify-between p-4"
-          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)' }}
+          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12 }}
         >
           <div>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 3 }}>
@@ -1127,10 +1131,10 @@ function WidgetSection({
               padding:      '4px 10px',
               background:    enabled ? 'rgba(12,200,158,.08)' : 'rgba(184,174,221,.06)',
               border:       `1px solid ${enabled ? 'rgba(12,200,158,.25)' : 'rgba(184,174,221,.14)'}`,
-              fontFamily:   "'IBM Plex Mono', monospace",
-              fontSize:      9,
-              letterSpacing: '.20em',
-              textTransform: 'uppercase',
+              borderRadius:  100,
+              fontFamily:   "'DM Sans', sans-serif",
+              fontSize:      11,
+              fontWeight:    500,
               color:          enabled ? '#0CC89E' : '#A09CC0',
               transition:    'all .3s',
             }}
@@ -1153,7 +1157,7 @@ function WidgetSection({
               Modo de geração
             </p>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', lineHeight: 1.6, marginBottom: 12 }}>
-              Define a qualidade padrão das provas virtuais do widget.
+              Define a qualidade e velocidade padrão das provas virtuais do widget.
             </p>
             <div className="flex gap-2">
               {/* Fast mode */}
@@ -1161,26 +1165,22 @@ function WidgetSection({
                 type="button"
                 disabled={saving}
                 onClick={() => handleModeChange('fast')}
-                className="flex-1 flex flex-col gap-1.5 p-3 transition-all text-left"
+                className="flex-1 flex items-center justify-between p-3 transition-all"
                 style={{
                   background:  tryonMode === 'fast' ? 'rgba(12,200,158,.07)' : 'rgba(184,174,221,.03)',
                   border:     `1px solid ${tryonMode === 'fast' ? 'rgba(12,200,158,.35)' : 'rgba(184,174,221,.12)'}`,
+                  borderRadius: 12,
                   cursor:      saving ? 'not-allowed' : 'pointer',
                   opacity:     saving ? 0.7 : 1,
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Zap size={13} style={{ color: tryonMode === 'fast' ? '#0CC89E' : '#A09CC0' }} />
-                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: tryonMode === 'fast' ? '#EDEBF5' : '#A09CC0', fontWeight: 500 }}>
-                      Fast
-                    </span>
-                  </div>
-                  {tryonMode === 'fast' && <Check size={11} style={{ color: '#0CC89E' }} />}
+                <div className="flex items-center gap-1.5">
+                  <Zap size={13} style={{ color: tryonMode === 'fast' ? '#0CC89E' : '#A09CC0' }} />
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: tryonMode === 'fast' ? '#EDEBF5' : '#A09CC0', fontWeight: 500 }}>
+                    Fast
+                  </span>
                 </div>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#A09CC0', lineHeight: 1.5, margin: 0 }}>
-                  12–17s · 1 crédito
-                </p>
+                {tryonMode === 'fast' && <Check size={11} style={{ color: '#0CC89E' }} />}
               </button>
 
               {/* Premium mode */}
@@ -1188,37 +1188,75 @@ function WidgetSection({
                 type="button"
                 disabled={saving}
                 onClick={() => handleModeChange('premium')}
-                className="flex-1 flex flex-col gap-1.5 p-3 transition-all text-left"
+                className="flex-1 flex items-center justify-between p-3 transition-all"
                 style={{
                   background:  tryonMode === 'premium' ? 'rgba(112,80,160,.12)' : 'rgba(184,174,221,.03)',
                   border:     `1px solid ${tryonMode === 'premium' ? 'rgba(112,80,160,.50)' : 'rgba(184,174,221,.12)'}`,
+                  borderRadius: 12,
                   cursor:      saving ? 'not-allowed' : 'pointer',
                   opacity:     saving ? 0.7 : 1,
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Star size={13} style={{ color: tryonMode === 'premium' ? '#B8AEDD' : '#A09CC0' }} />
-                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: tryonMode === 'premium' ? '#EDEBF5' : '#A09CC0', fontWeight: 500 }}>
-                      Premium
-                    </span>
-                  </div>
-                  {tryonMode === 'premium' && <Check size={11} style={{ color: '#B8AEDD' }} />}
+                <div className="flex items-center gap-1.5">
+                  <Star size={13} style={{ color: tryonMode === 'premium' ? '#B8AEDD' : '#A09CC0' }} />
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: tryonMode === 'premium' ? '#EDEBF5' : '#A09CC0', fontWeight: 500 }}>
+                    Premium
+                  </span>
                 </div>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#A09CC0', lineHeight: 1.5, margin: 0 }}>
-                  ~50s · 4K · 4 créditos
-                </p>
+                {tryonMode === 'premium' && <Check size={11} style={{ color: '#B8AEDD' }} />}
               </button>
             </div>
+
+            {/* Mode description */}
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(160,156,192,.50)', lineHeight: 1.7, marginTop: 10 }}>
+              {tryonMode === 'fast'
+                ? 'Até 15s por imagem · 1 crédito · Ideal para peças básicas.'
+                : '45–60s por imagem · 4 créditos · Alta fidelidade em peças detalhadas.'}
+            </p>
           </div>
         </div>
 
-        {/* Snippet section */}
-        <div className="flex flex-col gap-2 pt-4" style={{ borderTop: '1px solid rgba(184,174,221,.08)' }}>
-          <FieldLabel>Snippet de integração</FieldLabel>
+        {/* Snippet section — collapsible */}
+        <SnippetSection />
+      </div>
+    </SectionCard>
+  )
+}
+
+// ─── SnippetSection (collapsible) ─────────────────────────────────────────────
+
+function SnippetSection() {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="flex flex-col gap-2 pt-4" style={{ borderTop: '1px solid rgba(184,174,221,.08)' }}>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center justify-between w-full transition-all"
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+        }}
+      >
+        <AuthLabel>Snippet de integração</AuthLabel>
+        <ChevronDown
+          size={14}
+          style={{
+            color: '#A09CC0',
+            transition: 'transform .2s ease',
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
+        />
+      </button>
+
+      {open && (
+        <div style={{ animation: 'fadeIn .2s ease both' }}>
           <div
             className="relative"
-            style={{ background: 'rgba(6,5,15,.60)', border: '1px solid rgba(184,174,221,.12)', padding: '14px 16px' }}
+            style={{ background: 'rgba(6,5,15,.60)', border: '1px solid rgba(184,174,221,.12)', borderRadius: 8, padding: '14px 16px' }}
           >
             <pre style={{
               fontFamily: "'IBM Plex Mono', monospace",
@@ -1235,12 +1273,12 @@ function WidgetSection({
 </script>`}
             </pre>
           </div>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'rgba(160,156,192,.50)', lineHeight: 1.6 }}>
-            Cole este snippet antes do fechamento do <code style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#A09CC0' }}>&lt;/body&gt;</code> em seu tema.
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'rgba(160,156,192,.50)', lineHeight: 1.6, marginTop: 6 }}>
+            Cole antes do fechamento do <code style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#A09CC0' }}>&lt;/body&gt;</code> em seu tema.
           </p>
         </div>
-      </div>
-    </SectionCard>
+      )}
+    </div>
   )
 }
 
@@ -1257,7 +1295,7 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
       >
         <div
           className="flex items-center justify-between p-4"
-          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)' }}
+          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12 }}
         >
           <div>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 3 }}>
@@ -1274,12 +1312,11 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
             style={{
               background:   'transparent',
               border:       '1px solid rgba(184,174,221,.18)',
+              borderRadius:  8,
               color:         '#A09CC0',
-              fontFamily:   "'Bricolage Grotesque', sans-serif",
+              fontFamily:   "'DM Sans', sans-serif",
               fontWeight:    500,
-              fontSize:      10,
-              letterSpacing: '.12em',
-              textTransform: 'uppercase',
+              fontSize:      12,
               cursor:        'pointer',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.32)'; e.currentTarget.style.color = '#EDEBF5' }}
@@ -1295,6 +1332,7 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
         style={{
           background: '#0F0D1E',
           border:     '1px solid rgba(255,90,90,.16)',
+          borderRadius: 16,
           animation:  'slideIn .35s ease both',
           animationDelay: '.05s',
         }}
@@ -1304,14 +1342,14 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
           style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,90,90,.12)' }}
         >
           <AlertTriangle size={15} style={{ color: '#FF5A5A' }} />
-          <h2 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 600, fontSize: 15, color: '#FF5A5A', letterSpacing: '-.01em' }}>
+          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 15, color: '#FF5A5A', letterSpacing: '-.01em' }}>
             Zona de Perigo
           </h2>
         </div>
         <div style={{ padding: 24 }}>
           <div
             className="flex items-center justify-between p-4"
-            style={{ background: 'rgba(255,90,90,.04)', border: '1px solid rgba(255,90,90,.12)' }}
+            style={{ background: 'rgba(255,90,90,.04)', border: '1px solid rgba(255,90,90,.12)', borderRadius: 12 }}
           >
             <div>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 3 }}>
@@ -1328,12 +1366,11 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
               style={{
                 background:   'rgba(255,90,90,.08)',
                 border:       '1px solid rgba(255,90,90,.25)',
+                borderRadius:  8,
                 color:         '#FF5A5A',
-                fontFamily:   "'Bricolage Grotesque', sans-serif",
+                fontFamily:   "'DM Sans', sans-serif",
                 fontWeight:    500,
-                fontSize:      10,
-                letterSpacing: '.12em',
-                textTransform: 'uppercase',
+                fontSize:      12,
                 cursor:        'pointer',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,90,90,.14)')}
@@ -1353,10 +1390,10 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
           onClick={e => { if (e.target === e.currentTarget) setConfirmSignOut(false) }}
         >
           <div
-            style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,.18)', width: '100%', maxWidth: 380, animation: 'slideIn .22s ease both' }}
+            style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,.18)', borderRadius: 16, width: '100%', maxWidth: 380, animation: 'slideIn .22s ease both' }}
           >
             <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(184,174,221,.10)' }}>
-              <h3 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 600, fontSize: 15, color: '#EDEBF5' }}>
+              <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 15, color: '#EDEBF5' }}>
                 Encerrar sessão?
               </h3>
             </div>
@@ -1368,7 +1405,7 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
                 <button
                   type="button"
                   onClick={() => setConfirmSignOut(false)}
-                  style={{ background: 'transparent', border: '1px solid rgba(184,174,221,.18)', color: '#A09CC0', fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer', padding: '8px 16px' }}
+                  style={{ background: 'transparent', border: '1px solid rgba(184,174,221,.18)', borderRadius: 8, color: '#A09CC0', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 13, cursor: 'pointer', padding: '8px 16px' }}
                 >
                   Cancelar
                 </button>
@@ -1376,7 +1413,7 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
                   type="button"
                   onClick={onSignOut}
                   className="flex items-center gap-2"
-                  style={{ background: 'rgba(184,174,221,.08)', border: '1px solid rgba(184,174,221,.22)', color: '#EDEBF5', fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer', padding: '8px 16px' }}
+                  style={{ background: 'rgba(184,174,221,.08)', border: '1px solid rgba(184,174,221,.22)', borderRadius: 8, color: '#EDEBF5', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 13, cursor: 'pointer', padding: '8px 16px' }}
                 >
                   <LogOut size={12} /> Sair
                 </button>
@@ -1412,14 +1449,13 @@ function PrimaryButton({
       style={{
         background:    disabled
           ? 'rgba(43,18,80,.3)'
-          : 'linear-gradient(135deg, #2B1250 0%, #7050A0 100%)',
+          : 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
         border:        '1px solid rgba(112,80,160,.35)',
+        borderRadius:   100,
         color:          disabled ? 'rgba(184,174,221,.35)' : '#EDEBF5',
-        fontFamily:    "'Bricolage Grotesque', sans-serif",
+        fontFamily:    "'DM Sans', sans-serif",
         fontWeight:     500,
-        fontSize:       11,
-        letterSpacing: '.12em',
-        textTransform: 'uppercase',
+        fontSize:       13,
         cursor:        (disabled || loading) ? 'not-allowed' : 'pointer',
         filter:       (!disabled && !loading) ? 'drop-shadow(0 0 16px rgba(43,18,80,.40))' : 'none',
         opacity:       disabled ? 0.5 : 1,
@@ -1447,7 +1483,7 @@ function LoadingScreen() {
     >
       <div className="flex flex-col items-center gap-4">
         <ReflexGem size={48} uid="loading" />
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '.28em', textTransform: 'uppercase', color: '#A09CC0', marginTop: 4 }}>
+        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500, color: '#A09CC0', marginTop: 4 }}>
           Carregando…
         </span>
       </div>
