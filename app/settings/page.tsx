@@ -134,7 +134,7 @@ export default function SettingsPage() {
           .select(`
             id, store_name, email, api_key, widget_enabled, tryon_mode,
             plan_id, stripe_customer_id, subscription_current_period_end,
-            credits_remaining, credits_monthly,
+            credits_remaining,
             plans!plan_id(slug, credits_monthly)
           `)
           .eq('id', user.id)
@@ -153,7 +153,7 @@ export default function SettingsPage() {
           planId:                          data.plan_id        ?? 'free',
           planSlug:                        plan.slug ?? 'free',
           credits_remaining:               (data as any).credits_remaining ?? 0,
-          credits_monthly:                 plan.credits_monthly ?? (data as any).credits_monthly ?? 10,
+          credits_monthly:                 plan.credits_monthly ?? 10,
           stripe_customer_id:              (data as any).stripe_customer_id ?? null,
           subscription_current_period_end: (data as any).subscription_current_period_end ?? null,
         })
