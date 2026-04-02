@@ -132,7 +132,7 @@ export default function SettingsPage() {
         const { data, error } = await supabase
           .from('merchants')
           .select(`
-            id, store_name, email, api_key, widget_enabled, tryon_mode,
+            id, store_name, email, api_key, tryon_mode,
             plan_id, stripe_customer_id, subscription_current_period_end,
             credits_remaining,
             plans!plan_id(slug, credits_monthly)
@@ -148,7 +148,7 @@ export default function SettingsPage() {
           storeName:                       data.store_name    ?? '',
           email:                           data.email         ?? user.email ?? '',
           apiKey:                          data.api_key       ?? generateDemoKey(),
-          widgetEnabled:                   data.widget_enabled ?? true,
+          widgetEnabled:                   true, // column doesn't exist yet, default to true
           tryonMode:                       (data as any).tryon_mode ?? 'fast',
           planId:                          data.plan_id        ?? 'free',
           planSlug:                        plan.slug ?? 'free',
@@ -177,7 +177,7 @@ export default function SettingsPage() {
       // Build only the fields that are being updated
       const payload: Record<string, unknown> = {}
       if (updates.storeName     !== undefined) payload.store_name     = updates.storeName.trim()
-      if (updates.widgetEnabled !== undefined) payload.widget_enabled = updates.widgetEnabled
+      // widget_enabled column doesn't exist yet — skip for now
       if (updates.tryonMode     !== undefined) payload.tryon_mode     = updates.tryonMode
 
       if (Object.keys(payload).length === 0) {
