@@ -169,7 +169,7 @@ function SignupPageInner() {
       // ── Step 2: Criar merchant com plano free ───────────────────────────
       const { data: planData } = await supabase
         .from('plans')
-        .select('id')
+        .select('id, credits_monthly')
         .eq('slug', 'free')
         .single()
 
@@ -178,6 +178,7 @@ function SignupPageInner() {
         store_name: form.storeName.trim(),
         email:      form.email.trim().toLowerCase(),
         plan_id:    planData?.id || null,
+        credits_remaining: planData?.credits_monthly ?? 10,
         api_key:    'tk_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
         created_at: new Date().toISOString(),
       })
