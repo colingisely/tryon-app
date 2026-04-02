@@ -8,7 +8,7 @@
 
     // ─── Reflexy Analytics Module ─────────────────────────────────────────────
     const ReflexyAnalytics = (function () {
-        const ENDPOINT = '/api/analytics';
+        let ENDPOINT = '/api/analytics';
         let _state = {
             sessionId: null,
             productId: null,
@@ -127,12 +127,16 @@
             },
         };
 
-        return { track, getSessionId };
+        function setBaseUrl(baseUrl) {
+            if (baseUrl) ENDPOINT = baseUrl.replace(/\/$/, '') + '/api/analytics';
+        }
+
+        return { track, getSessionId, setBaseUrl };
     })();
 
     // ─── Reflexy Conversion Tracking Module ───────────────────────────────────
     const ReflexyConversion = (function () {
-        const ENDPOINT = '/api/analytics';
+        let ENDPOINT = '/api/analytics';
 
         function send(eventType, productId, sessionId, metadata) {
             const payload = JSON.stringify({ event_type: eventType, product_id: String(productId ?? 'unknown'), session_id: String(sessionId), metadata });
@@ -234,7 +238,11 @@
             patchFormSubmit();
         }
 
-        return { init };
+        function setBaseUrl(baseUrl) {
+            if (baseUrl) ENDPOINT = baseUrl.replace(/\/$/, '') + '/api/analytics';
+        }
+
+        return { init, setBaseUrl };
     })();
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -1711,6 +1719,18 @@
     // ─── Init ─────────────────────────────────────────────────────────────────
 
     var scriptTag = document.currentScript;
+    // Derive base URL for analytics from script src or apiEndpoint
+    // When the widget runs on a Shopify store (different domain), relative URLs
+    // like '/api/analytics' would point to the store's domain instead of Reflexy's.
+    var _reflexyBaseUrl = (function () {
+        if (scriptTag && scriptTag.src) {
+            try { return new URL(scriptTag.src).origin; } catch (_) {}
+        }
+        return 'https://tryon-app-tau.vercel.app';
+    })();
+    ReflexyAnalytics.setBaseUrl(_reflexyBaseUrl);
+    ReflexyConversion.setBaseUrl(_reflexyBaseUrl);
+
     var config = {
         shop: scriptTag ? scriptTag.dataset.shop : '',
         apiEndpoint: scriptTag ? scriptTag.dataset.apiEndpoint : 'https://tryon-app-tau.vercel.app/api/tryon',
