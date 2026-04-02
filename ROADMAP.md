@@ -1,95 +1,70 @@
-# Virtual Try-On - Product Roadmap
+# Reflexy — Product Roadmap
 
-## 🎯 MVP (Atual)
+## MVP (Concluído)
 - [x] Plugin JavaScript para Shopify
 - [x] Modal profissional e responsivo
 - [x] Integração com FASHN.ai (alta qualidade)
 - [x] Upload de foto do usuário
-- [x] Geração de imagem com try-on
+- [x] Geração de imagem com try-on (Fast + Studio Pro)
 - [x] Download do resultado
 
 ---
 
-## 🚀 Fase 2: Validação e Primeiros Clientes
-**Objetivo**: Validar o produto e conseguir os primeiros 10 clientes pagantes
+## Fase 2: Validação e Primeiros Clientes (Em progresso)
+**Objetivo**: Validar o produto e conseguir os primeiros assinantes pagantes
 
-### Features Prioritárias
-- [ ] Analytics básico (quantas tentativas, taxa de conversão)
-- [ ] Melhorar mensagens de erro (mais específicas)
-- [ ] Adicionar loading state mais visual
-- [ ] Otimizar para mobile (testar em vários dispositivos)
-- [ ] Criar landing page para vender o plugin
+### Features Implementadas
+- [x] Analytics comportamental (eventos, sessões, conversão)
+- [x] Landing page profissional (reflexy.co) com PT + EN
+- [x] Blog (blog.reflexy.co)
+- [x] Dashboard completo para merchants
+- [x] Studio Pro (geração de fotos 4K de produto)
 
-### Monetização
-- [ ] Definir planos de preço (Free, Pro, Plus)
-- [ ] Integrar Stripe para pagamentos
-- [ ] Sistema de créditos/limites por plano
+### Monetização (Concluída)
+- [x] Planos definidos: Free (10cr), Starter ($19/150cr), Growth ($39/320cr), Pro ($99/800cr)
+- [x] Stripe integrado (checkout, webhooks, Customer Portal)
+- [x] Sistema de créditos unificado: 1 crédito = 1 prova rápida, 4 créditos = 1 Studio Pro
 
----
-
-## 💎 Fase 3: Features Premium (Plano Plus)
-
-### 🎨 Tema Dinâmico (PRIORIDADE ALTA)
-**Descrição**: Modal se adapta automaticamente à identidade visual da loja
-
-**Como funciona**:
-- Plugin detecta cores principais do tema Shopify
-- Aplica paleta de cores no modal (botões, bordas, destaques)
-- Mantém estrutura e UX profissional
-- Disponível apenas para **Plano Plus**
-
-**Implementação técnica**:
-```javascript
-// Detectar cores do tema
-const primaryColor = getComputedStyle(document.documentElement)
-  .getPropertyValue('--color-primary') || '#000';
-
-// Aplicar no modal
-modal.style.setProperty('--vto-primary', primaryColor);
-```
-
-**Benefícios**:
-- Diferencial competitivo
-- Aumenta percepção de valor
-- Justifica preço premium
+### Em Andamento
+- [ ] Corrigir bugs restantes (analytics URL, webhook emails)
+- [ ] Atualizar brand system em todas as páginas internas
+- [ ] Responsividade mobile
+- [ ] Construir Shopify App oficial (OAuth + admin embeddable)
 
 ---
 
-### 🤖 Outras Features Premium
-- [ ] **Múltiplos produtos por sessão**: Testar vários looks de uma vez
-- [ ] **Histórico de tentativas**: Salvar e comparar resultados
-- [ ] **Compartilhar nas redes sociais**: Botão direto para Instagram/Facebook
-- [ ] **Recomendações personalizadas**: "Produtos que combinam com você"
-- [ ] **Suporte prioritário**: Chat ao vivo para clientes Plus
+## Fase 3: Go-To-Market
+- [ ] Shopify App Store listing
+- [ ] Onboarding email drip (5 emails via Resend)
+- [ ] 2 artigos blog SEO-otimizados
+- [ ] Ativar 7 merchants beta
+- [ ] Product Hunt launch
 
 ---
 
-## 🔧 Fase 4: Melhorias Técnicas
-- [ ] Criar Shopify App oficial (não apenas plugin)
-- [ ] Dashboard para lojistas (analytics, configurações)
-- [ ] Webhook para notificar lojista quando cliente usa o try-on
-- [ ] A/B testing de diferentes UIs
-- [ ] Suporte a múltiplos idiomas
+## Fase 4: Escala
+- [ ] Alertas de uso (80% e 100% créditos)
+- [ ] Widget V2 (adaptação de tema, UX melhorada)
+- [ ] API pública (OpenAPI spec)
+- [ ] A/B testing de CTAs e pricing
+- [ ] Chat in-app (Crisp ou Intercom)
 
 ---
 
-## 📊 Métricas de Sucesso
-- **MVP**: 10 lojas testando
-- **Fase 2**: 50 clientes pagantes
-- **Fase 3**: $5k MRR (receita recorrente mensal)
-- **Fase 4**: 500+ lojas ativas
+## Métricas de Sucesso
+- **30 dias**: 0 bugs críticos, 1-2 pagantes
+- **60 dias**: Shopify App Store listado, 8 pagantes, $300 MRR
+- **90 dias**: 25 pagantes, $1,000 MRR
 
 ---
 
-## 💡 Ideias Futuras (Backlog)
-- [ ] Integração com outras plataformas (WooCommerce, Magento)
-- [ ] API pública para desenvolvedores
+## Backlog (Futuro)
+- [ ] Integração VTEX / WooCommerce
 - [ ] White-label para agências
-- [ ] Modelo de IA próprio (reduzir custo do FASHN.ai)
-- [ ] Try-on para acessórios (óculos, joias, relógios)
-- [ ] Try-on para maquiagem
-- [ ] Realidade aumentada (AR) via câmera ao vivo
+- [ ] Modelo de IA próprio
+- [ ] Try-on para acessórios
+- [ ] Realidade aumentada (AR)
 
 ---
 
-**Última atualização**: 22 de fevereiro de 2026
+**Última atualização**: 2 de abril de 2026
