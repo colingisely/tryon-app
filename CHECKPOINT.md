@@ -1,166 +1,123 @@
-# CHECKPOINT v2.6 - Prompt Engineering + Admin Studio
+# CHECKPOINT v3.0 — Sistema de Billing Unificado + Bug Fixes
 
-**Data**: 22/02/2026  
-**Commit**: 1226f5b  
-**Tag**: v2.6  
-**Status**: ✅ Deployed and Functional
-
----
-
-## 🎯 O que foi implementado na v2.6
-
-### 1. Prompt Engineering Melhorado (Backend)
-**Arquivo**: `app/api/tryon/route.ts`
-
-O sistema de análise de peças via GPT Vision foi aprimorado para gerar descrições mais detalhadas e preservar melhor o cenário e as roupas existentes:
-
-**Melhorias no prompt:**
-- Aumentado de 15 para 25 palavras (max_tokens: 60 → 80)
-- Descrição de **detalhes visuais**: cor, padrão, textura, tipo de tecido, acabamentos
-- Especificação de **caimento e drapeado**: loose, fitted, oversized, cropped, high-waisted, wide-leg
-- Instruções específicas por tipo:
-  - **Tops**: decote, comprimento de manga, tipo de fechamento
-  - **Bottoms**: altura da cintura, forma da perna, comprimento
-  - **One-pieces**: silhueta, cintura, comprimento geral
-- **Preservação explícita**: "preserve existing lower body" para tops, "preserve existing upper body" for bottoms
-- **Proibição de remoção de fundo**: "NEVER mention removing background or changing scenery"
-- **Foco em realismo**: "Focus on REALISTIC DRAPING and NATURAL FABRIC BEHAVIOR"
-
-**Resultado esperado:**
-- Melhor preservação de detalhes do produto
-- Caimento mais realista
-- Cenário e roupas existentes preservados
+**Data**: 02/04/2026
+**Branch**: main
+**Status**: Em produção (reflexy.co)
 
 ---
 
-### 2. Estúdio Profissional (Admin)
-**Arquivo**: `app/admin/page.tsx`  
-**URL**: https://tryon-app-tau.vercel.app/admin  
-**Senha**: `tryonapp2026`
+## O que mudou desde o v2.6
 
-Interface profissional para lojistas gerarem fotos de alta qualidade com Try-On Max:
+### 1. Sistema de Créditos Unificado
+O modelo de créditos separados (fast_credits + premium_credits) foi substituído por um pool unificado:
 
-**Funcionalidades:**
-- 🔐 Autenticação simples com senha
-- 📸 Upload de foto do modelo
-- 👗 Upload de foto do produto
-- 🚀 Geração com Try-On Max (modo premium)
-- 📊 Barra de progresso (~1 minuto)
-- ⬇️ Download do resultado em PNG
-- 🔄 Opção de gerar nova foto
+| Plano | Preço | Créditos/mês | Try-ons rápidos | Studio Pro |
+|-------|-------|-------------|-----------------|------------|
+| Free (Preview) | $0 | 10 | 10 | 2 |
+| Starter | $19/mês | 150 | 150 | 37 |
+| Growth | $39/mês | 320 | 320 | 80 |
+| Pro | $99/mês | 800 | 800 | 200 |
 
-**Design:**
-- Interface limpa e profissional
-- Gradiente roxo (#667eea → #764ba2)
-- Cards brancos com sombras suaves
-- Layout responsivo em grid
+**Conversão**: 1 crédito = 1 prova rápida · 4 créditos = 1 Studio Pro
 
-**Uso:**
-1. Acesse `/admin`
-2. Digite a senha `tryonapp2026`
-3. Faça upload da foto do modelo e do produto
-4. Clique em "Gerar Foto Profissional"
-5. Aguarde ~1 minuto
-6. Baixe o resultado
+### 2. Billing via Stripe
+- Checkout com `create-checkout-session` (auth-first: requer login antes de pagar)
+- Webhooks: `invoice.payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`
+- Customer Portal para gerenciar assinatura
+- Credit ledger para auditoria de cada mudança de crédito
+
+### 3. Bug Fixes Críticos (Abril 2026)
+- **Settings query**: Removia `widget_enabled` e `credits_monthly` da query (colunas inexistentes na tabela merchants), causando fallback silencioso para Free/0cr
+- **CTA upgrade**: Corrigido — agora abre Stripe Portal para assinantes, /#pricing para free
+- **Analytics URL**: `ReflexyAnalytics` usava URL relativa `/api/analytics` — corrigido para URL absoluta derivada do script src
+- **Landing page pricing**: Atualizado para modelo de créditos unificado (era try-ons + Studio Pro separados)
+- **Branches limpas**: 37 branches mergeadas removidas
 
 ---
 
-## 📦 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 tryon-app/
 ├── app/
-│   ├── admin/
-│   │   └── page.tsx          # ✨ NOVO: Estúdio Profissional
+│   ├── dashboard/page.tsx       # Dashboard com créditos unificados
+│   ├── settings/page.tsx        # Settings com Plano & Faturamento
+│   ├── studio/page.tsx          # Studio Pro (4 créditos por geração)
+│   ├── analytics/page.tsx       # Analytics comportamental
+│   ├── login/page.tsx           # Login
+│   ├── signup/page.tsx          # Signup
+│   ├── backoffice/              # Admin (email allowlist)
 │   └── api/
-│       └── tryon/
-│           └── route.ts       # ✅ MELHORADO: Prompt engineering
+│       ├── tryon/route.ts       # API de try-on (fast + premium)
+│       ├── payments/
+│       │   ├── create-checkout/route.ts
+│       │   ├── create-portal-session/route.ts
+│       │   └── webhook/route.ts  # Stripe webhooks
+│       └── cron/
+│           └── suspensions/route.ts  # Cron diário 03:00 UTC
+├── components/landing/reflexy/  # Landing page (PT + EN)
 ├── public/
-│   └── virtual-tryon.js       # Plugin Shopify (v2.5)
-├── CHECKPOINT.md              # Este arquivo
-└── BUGFIX_LOG.md              # Histórico de correções
+│   └── virtual-tryon.js         # Widget Shopify (v2.5)
+├── ROADMAP.md
+└── CHECKPOINT.md                # Este arquivo
 ```
 
 ---
 
-## 🔧 Configuração Necessária
+## Variáveis de Ambiente (Vercel)
 
-### Variáveis de Ambiente (Vercel)
 ```
-FASHN_API_KEY=<sua_chave_fashn>
-OPENAI_API_KEY=<sua_chave_openai>
-```
-
-### Instalação na Shopify
-Adicione no `theme.liquid` antes do `</body>`:
-
-```html
-<script 
-  src="https://tryon-app-tau.vercel.app/virtual-tryon.js"
-  data-shop="{{ shop.permanent_domain }}"
-  data-api-endpoint="https://tryon-app-tau.vercel.app/api/tryon"
-  defer>
-</script>
+FASHN_API_KEY=<chave_fashn>
+OPENAI_API_KEY=<chave_openai>
+NEXT_PUBLIC_SUPABASE_URL=<url_supabase>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key>
+SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
+STRIPE_SECRET_KEY=<stripe_secret>
+STRIPE_WEBHOOK_SECRET=<webhook_secret>
+RESEND_API_KEY=<resend_key>
+SENTRY_DSN=<sentry_dsn>
 ```
 
 ---
 
-## 🧪 Como Testar
+## Como Testar
 
-### Testar o Plugin Público (Shopify)
-1. Acesse um produto na loja
+### Widget na Shopify
+1. Acesse um produto na demo store (tryonapp-2.myshopify.com)
 2. Clique em "Provar em Mim"
 3. Faça upload de uma foto
-4. Escolha "Rápido" ou "Premium MAX"
-5. Clique em "Experimentar"
+4. Gere o try-on (consome 1 crédito)
 
-### Testar o Admin (Lojista)
-1. Acesse https://tryon-app-tau.vercel.app/admin
-2. Digite a senha: `tryonapp2026`
-3. Faça upload de uma foto de modelo e produto
-4. Clique em "Gerar Foto Profissional"
-5. Aguarde ~1 minuto
-6. Baixe o resultado
+### Dashboard
+1. Login em reflexy.co/login
+2. Verifique créditos e plano no dashboard
+3. Settings → Plano & Faturamento deve mostrar plano correto
+4. CTA "Gerenciar plano" deve abrir Stripe Portal
 
----
-
-## 📊 Custos por Geração
-
-| Modo | Endpoint | Tempo | Créditos | Custo (USD) | Custo (BRL) |
-|------|----------|-------|----------|-------------|-------------|
-| **Rápido** | v1.6 Quality | ~15s | 1 | $0.075 | R$ 0.43 |
-| **Premium MAX** | Try-On Max | ~50s | 4 | $0.30 | R$ 1.74 |
+### Billing
+1. Signup → selecionar plano → Stripe Checkout
+2. Webhook processa pagamento e ativa créditos
+3. Customer Portal permite upgrade/downgrade/cancelamento
 
 ---
 
-## 🚀 Próximos Passos (Pendentes)
+## Custos por Geração
 
-1. **Remover toggle Rápido/Premium** do modal público antes do lançamento
-2. **Testar qualidade** do prompt engineering melhorado com produtos reais
-3. **Implementar autenticação real** no admin (substituir senha fixa)
-4. **Adicionar histórico** de gerações no admin
-5. **Implementar sistema de créditos** para lojistas
-6. **Estúdio de Vídeo IA** (futuro): vídeos 360º com motion control para lojistas
+| Modo | Créditos | Tempo | Custo API |
+|------|----------|-------|-----------|
+| **Rápido (Fast)** | 1 | ~15s | ~$0.075 |
+| **Studio Pro** | 4 | ~50s | ~$0.30 |
 
 ---
 
-## 🔄 Como Restaurar Este Checkpoint
+## Próximos Passos
 
-```bash
-git checkout v2.6
-# ou
-git checkout 1226f5b
-```
-
----
-
-## 📝 Notas Importantes
-
-- O toggle Rápido/Premium está **mantido provisoriamente** para testes
-- A senha do admin (`tryonapp2026`) é **temporária** e deve ser substituída
-- O prompt engineering foi otimizado para **preservar cenário** (não remove fundo)
-- O admin sempre usa **Try-On Max** (modo premium) para máxima qualidade
+1. Brand system: unificar visual das páginas internas com a landing page
+2. Responsividade mobile em todas as páginas
+3. Construir Shopify App oficial (OAuth + admin embeddable)
+4. Onboarding email drip (5 emails)
+5. Shopify App Store listing
 
 ---
 
-**Desenvolvido com ❤️ por Manus AI**
+**Última atualização**: 2 de abril de 2026
