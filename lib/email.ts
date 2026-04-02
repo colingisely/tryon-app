@@ -88,7 +88,7 @@ function btn(text: string, href: string) {
 
 // ── Emails ─────────────────────────────────────────────────────────────────
 
-/** Boas-vindas após signup (plano Preview) */
+/** Boas-vindas após signup (plano Free) */
 export async function sendWelcomeEmail(to: string, storeName?: string) {
   const name = storeName || 'loja'
   const html = baseLayout(`
@@ -98,12 +98,12 @@ export async function sendWelcomeEmail(to: string, storeName?: string) {
       font-style:italic">${name}</p>
 
     <p style="font-size:15px;color:#B8B4D4;line-height:1.75;margin:0 0 20px">
-      Sua conta está ativa com o plano <strong style="color:#C084FC">Preview</strong> —
-      10 provas virtuais para você experimentar o Reflexy na sua loja Shopify.
+      Sua conta está ativa com o plano <strong style="color:#C084FC">Free</strong> —
+      10 créditos para você experimentar o Reflexy na sua loja.
     </p>
 
     <p style="font-size:15px;color:#B8B4D4;line-height:1.75;margin:0 0 32px">
-      Instale o plugin na sua loja e veja a experiência completa do provador virtual com IA.
+      Instale o widget na sua loja e veja a experiência completa do provador virtual com IA.
     </p>
 
     <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:32px">

@@ -88,8 +88,11 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        const periodEnd = subscription.current_period_end
-          ? new Date(subscription.current_period_end * 1000).toISOString()
+        // current_period_end moved to items level in newer Stripe API versions
+        const periodEndRaw = subscription.current_period_end
+          ?? subscription.items.data[0]?.current_period_end;
+        const periodEnd = periodEndRaw
+          ? new Date(periodEndRaw * 1000).toISOString()
           : null;
 
         await supabase
@@ -175,8 +178,11 @@ export async function POST(req: NextRequest) {
         const renewedSub = merchant.plan_id
           ? await stripe.subscriptions.list({ customer: customerId, limit: 1 }).then(r => r.data[0]).catch(() => null)
           : null;
-        const renewedPeriodEnd = renewedSub?.current_period_end
-          ? new Date(renewedSub.current_period_end * 1000).toISOString()
+        // current_period_end moved to items level in newer Stripe API versions
+        const renewedPeriodEndRaw = renewedSub?.current_period_end
+          ?? renewedSub?.items?.data?.[0]?.current_period_end;
+        const renewedPeriodEnd = renewedPeriodEndRaw
+          ? new Date(renewedPeriodEndRaw * 1000).toISOString()
           : null;
 
         await supabase
