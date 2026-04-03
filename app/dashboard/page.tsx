@@ -310,7 +310,7 @@ export default function DashboardPage() {
       if (eErr) throw eErr;
 
       const evts = events ?? [];
-      const tryOns   = evts.filter((e: any) => e.event_type === 'try_on_completed');
+      const tryOns   = evts.filter((e: any) => e.event_type === 'tryon_completed' || e.event_type === 'try_on_completed');
       const purchases = evts.filter((e: any) => e.event_type === 'purchase');
       const convRate  = tryOns.length > 0
         ? parseFloat(((purchases.length / tryOns.length) * 100).toFixed(1))
@@ -344,7 +344,7 @@ export default function DashboardPage() {
 
       // Top products
       const prodMap: Record<string, { name: string; count: number }> = {};
-      evts.filter((e: any) => e.event_type === 'try_on_completed').forEach((e: any) => {
+      evts.filter((e: any) => e.event_type === 'tryon_completed' || e.event_type === 'try_on_completed').forEach((e: any) => {
         const sku  = e.metadata?.sku ?? e.metadata?.product_id ?? 'unknown';
         const name = e.metadata?.product_name ?? sku;
         prodMap[sku] = prodMap[sku] ?? { name, count: 0 };

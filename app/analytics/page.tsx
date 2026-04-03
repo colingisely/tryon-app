@@ -174,8 +174,8 @@ export default function AnalyticsPage() {
       if (eErr) throw eErr;
 
       const evts      = events ?? [];
-      const initiated = evts.filter((e: any) => e.event_type === 'try_on_started').length;
-      const completed = evts.filter((e: any) => e.event_type === 'try_on_completed').length;
+      const initiated = evts.filter((e: any) => e.event_type === 'tryon_started' || e.event_type === 'try_on_started').length;
+      const completed = evts.filter((e: any) => e.event_type === 'tryon_completed' || e.event_type === 'try_on_completed').length;
       const purchases = evts.filter((e: any) => e.event_type === 'purchase').length;
       const sessions  = new Set(evts.map((e: any) => e.metadata?.session_id).filter(Boolean)).size;
       const durations = evts.filter((e: any) => e.metadata?.duration_ms).map((e: any) => e.metadata.duration_ms as number);
@@ -215,8 +215,8 @@ export default function AnalyticsPage() {
         const dayEvts = evts.filter((e: any) => e.created_at?.startsWith(ds));
         days.push({
           label,
-          initiated: dayEvts.filter((e: any) => e.event_type === 'try_on_started').length,
-          completed: dayEvts.filter((e: any) => e.event_type === 'try_on_completed').length,
+          initiated: dayEvts.filter((e: any) => e.event_type === 'tryon_started' || e.event_type === 'try_on_started').length,
+          completed: dayEvts.filter((e: any) => e.event_type === 'tryon_completed' || e.event_type === 'try_on_completed').length,
         });
       }
       setDailyData(days);
@@ -228,8 +228,8 @@ export default function AnalyticsPage() {
         if (!sku) return;
         const name = e.metadata?.product_name ?? sku;
         prodMap[sku] = prodMap[sku] ?? { name, initiated: 0, completed: 0 };
-        if (e.event_type === 'try_on_started')   prodMap[sku].initiated++;
-        if (e.event_type === 'try_on_completed') prodMap[sku].completed++;
+        if (e.event_type === 'tryon_started' || e.event_type === 'try_on_started')   prodMap[sku].initiated++;
+        if (e.event_type === 'tryon_completed' || e.event_type === 'try_on_completed') prodMap[sku].completed++;
       });
       setTopProducts(
         Object.entries(prodMap)
