@@ -1726,14 +1726,14 @@
         if (scriptTag && scriptTag.src) {
             try { return new URL(scriptTag.src).origin; } catch (_) {}
         }
-        return 'https://tryon-app-tau.vercel.app';
+        return 'https://reflexy.co';
     })();
     ReflexyAnalytics.setBaseUrl(_reflexyBaseUrl);
     ReflexyConversion.setBaseUrl(_reflexyBaseUrl);
 
     var config = {
         shop: scriptTag ? scriptTag.dataset.shop : '',
-        apiEndpoint: scriptTag ? scriptTag.dataset.apiEndpoint : 'https://tryon-app-tau.vercel.app/api/tryon',
+        apiEndpoint: scriptTag ? scriptTag.dataset.apiEndpoint : 'https://reflexy.co/api/tryon',
         apiKey: (window.TryOnConfig && window.TryOnConfig.apiKey) || null,
     };
 

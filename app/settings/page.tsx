@@ -1217,7 +1217,7 @@ function WidgetSection({
         </div>
 
         {/* Snippet section — collapsible */}
-        <SnippetSection />
+        <SnippetSection apiKey={settings.apiKey} />
       </div>
     </SectionCard>
   )
@@ -1225,8 +1225,27 @@ function WidgetSection({
 
 // ─── SnippetSection (collapsible) ─────────────────────────────────────────────
 
-function SnippetSection() {
+function SnippetSection({ apiKey }: { apiKey?: string }) {
   const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const snippet = `<!-- Reflexy Virtual Try-On Widget -->
+<script>
+  window.TryOnConfig = {
+    apiKey: "${apiKey || 'SUA_API_KEY'}"
+  };
+</script>
+<script
+  src="https://reflexy.co/virtual-tryon.js"
+  data-shop="{{ shop.permanent_domain }}"
+  defer>
+</script>`
+
+  function handleCopy() {
+    navigator.clipboard.writeText(snippet)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="flex flex-col gap-2 pt-4" style={{ borderTop: '1px solid rgba(184,174,221,.08)' }}>
@@ -1258,8 +1277,27 @@ function SnippetSection() {
             className="relative"
             style={{ background: 'rgba(6,5,15,.60)', border: '1px solid rgba(184,174,221,.12)', borderRadius: 8, padding: '14px 16px' }}
           >
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="absolute"
+              style={{
+                top: 8, right: 8,
+                background: copied ? 'rgba(12,200,158,.15)' : 'rgba(184,174,221,.08)',
+                border: `1px solid ${copied ? 'rgba(12,200,158,.3)' : 'rgba(184,174,221,.15)'}`,
+                borderRadius: 6,
+                padding: '4px 10px',
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 11,
+                color: copied ? '#0CC89E' : '#A09CC0',
+                cursor: 'pointer',
+                transition: 'all .2s ease',
+              }}
+            >
+              {copied ? '✓ Copiado' : 'Copiar'}
+            </button>
             <pre style={{
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: "monospace",
               fontSize:    11,
               letterSpacing: '.02em',
               color:       '#B8AEDD',
@@ -1267,14 +1305,12 @@ function SnippetSection() {
               overflowX:   'auto',
               margin:       0,
             }}>
-{`<script src="https://cdn.reflexy.com/widget.js"
-  data-store-id="YOUR_STORE_ID"
-  data-api-key="YOUR_API_KEY">
-</script>`}
+{snippet}
             </pre>
           </div>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'rgba(160,156,192,.50)', lineHeight: 1.6, marginTop: 6 }}>
-            Cole antes do fechamento do <code style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#A09CC0' }}>&lt;/body&gt;</code> em seu tema.
+            Cole antes do fechamento do <code style={{ fontFamily: "monospace", fontSize: 11, color: '#A09CC0' }}>&lt;/body&gt;</code> no seu <code style={{ fontFamily: "monospace", fontSize: 11, color: '#A09CC0' }}>theme.liquid</code>.
+            Sua API key já está preenchida.
           </p>
         </div>
       )}
