@@ -452,9 +452,10 @@ export default function StudioPage() {
 
       {/* ── Nav ── */}
       <nav
-        className="sticky top-0 z-50 flex items-center justify-between px-7"
+        className="sticky top-0 z-50 flex items-center justify-between"
         style={{
-          height:              52,
+          height:              64,
+          padding:            '0 40px',
           borderBottom:       '1px solid rgba(184,174,221,.09)',
           background:         'rgba(6,5,15,.92)',
           backdropFilter:     'blur(20px)',
@@ -507,9 +508,16 @@ export default function StudioPage() {
 
           {/* Credits counter or upgrade CTA */}
           {merchant.credits_remaining > 0 ? (
-            <div className="flex items-center gap-1.5">
-              <Zap size={11} style={{ color: '#A09CC0' }} />
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#A09CC0' }}>
+            <div
+              className="flex items-center gap-2"
+              style={{ background: 'rgba(124,58,237,.10)', border: '1px solid rgba(124,58,237,.22)', borderRadius: 100, padding: '8px 16px' }}
+            >
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: '#7C3AED', boxShadow: '0 0 6px #7C3AED',
+                display: 'inline-block',
+              }} />
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500, color: '#B8AEDD' }}>
                 {merchant.credits_remaining} crédito{merchant.credits_remaining !== 1 ? 's' : ''}
               </span>
             </div>
@@ -545,57 +553,64 @@ export default function StudioPage() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex items-center gap-1.5 px-3 py-1.5 transition-all"
+            className="flex items-center gap-1.5 transition-all"
             style={{
-              background:  'transparent',
+              background:  'rgba(184,174,221,.04)',
               border:      '1px solid rgba(184,174,221,.14)',
               borderRadius: 8,
               color:        '#A09CC0',
               fontFamily:  "'DM Sans', sans-serif",
-              fontSize:     12,
+              fontSize:     13,
+              fontWeight:   500,
+              padding:     '7px 14px',
               cursor:       'pointer',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.30)'; e.currentTarget.style.color = '#EDEBF5' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)'; e.currentTarget.style.color = '#A09CC0' }}
           >
-            <LogOut size={13} /> Sair
+            <LogOut size={16} /> Sair
           </button>
         </div>
       </nav>
 
       {/* ── Page content ── */}
       <div
-        className="studio-content relative z-10 px-7"
-        style={{ width: '100%', paddingTop: 48, paddingBottom: 100, flex: 1 }}
+        className="studio-content relative z-10"
+        style={{ width: '100%', maxWidth: 1100, margin: '0 auto', paddingLeft: 40, paddingRight: 40, paddingTop: 48, paddingBottom: 100, flex: 1 }}
       >
 
         {/* Header */}
-        <div style={{ marginBottom: 44 }}>
+        <div style={{ marginBottom: 40 }}>
           <div
-            className="inline-flex items-center gap-2 mb-4"
-            style={{ background: 'rgba(43,18,80,.55)', border: '1px solid rgba(112,80,160,.30)', borderRadius: 100, padding: '5px 14px' }}
+            className="inline-flex items-center gap-2"
+            style={{ background: 'rgba(43,18,80,.55)', border: '1px solid rgba(112,80,160,.30)', borderRadius: 100, padding: '5px 14px', marginBottom: 24 }}
           >
-            <Sparkles size={12} style={{ color: '#B8AEDD' }} />
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: '#0CC89E', boxShadow: '0 0 6px #0CC89E',
+              display: 'inline-block',
+              animation: 'dotPulse 2s ease-in-out infinite',
+            }} />
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#B8AEDD' }}>
               Try-On Max — Qualidade Máxima
             </span>
           </div>
 
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, fontSize: 13, color: 'rgba(160,156,192,.50)', lineHeight: 1.6 }}>
-            Ideal para catálogo, anúncios e redes sociais.
+            Ideal para catálogos, anúncios e redes sociais.
           </p>
         </div>
 
         {/* ── Upload grid ── */}
         <div
-          className="studio-upload-grid grid gap-4 mb-4"
-          style={{ gridTemplateColumns: '1fr 1fr' }}
+          className="studio-upload-grid grid gap-5"
+          style={{ gridTemplateColumns: '1fr 1fr', marginBottom: 40 }}
         >
 
           {/* Modelo card */}
-          <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,.14)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,.14)', borderRadius: 20, padding: 28, overflow: 'hidden' }}>
             <UploadCardHeader
-              icon={<User size={15} style={{ color: '#A09CC0' }} />}
+              icon={<User size={18} style={{ color: '#7C3AED' }} />}
               title="Foto do Modelo"
               desc="Pessoa a ser vestida"
             />
@@ -625,10 +640,12 @@ export default function StudioPage() {
               onClick={() => setRecOpen(v => !v)}
               className="w-full flex items-center justify-between transition-colors"
               style={{
-                padding:     '10px 16px',
+                padding:     '10px 12px',
+                marginTop:   14,
                 borderTop:  '1px solid rgba(184,174,221,.14)',
                 background:  'transparent',
                 cursor:      'pointer',
+                borderRadius: 8,
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(184,174,221,.03)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -691,9 +708,9 @@ export default function StudioPage() {
           </div>
 
           {/* Produto card */}
-          <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,.14)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,.14)', borderRadius: 20, padding: 28, overflow: 'hidden' }}>
             <UploadCardHeader
-              icon={<ShoppingBag size={15} style={{ color: '#A09CC0' }} />}
+              icon={<ShoppingBag size={18} style={{ color: '#7C3AED' }} />}
               title="Foto do Produto"
               desc="Peça de roupa a vestir"
             />
@@ -717,10 +734,10 @@ export default function StudioPage() {
 
         {/* Tip bar */}
         <div
-          className="flex items-start gap-3 mb-8"
-          style={{ padding: '12px 18px', background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12 }}
+          className="flex items-start gap-3"
+          style={{ padding: '14px 20px', marginBottom: 48, background: 'rgba(124,58,237,.06)', border: '1px solid rgba(124,58,237,.18)', borderRadius: 12 }}
         >
-          <span style={{ color: '#A09CC0', marginTop: 1, flexShrink: 0 }}>
+          <span style={{ color: '#7C3AED', marginTop: 1, flexShrink: 0 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           </span>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#A09CC0', lineHeight: 1.6 }}>
@@ -730,7 +747,7 @@ export default function StudioPage() {
         </div>
 
         {/* ── Generate area ── */}
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-4">
 
           {/* CTA */}
           <button
@@ -741,18 +758,18 @@ export default function StudioPage() {
             style={{
               width:         '100%',
               maxWidth:       480,
-              padding:       '16px 48px',
+              padding:       '16px 56px',
               background:    canGenerate
                 ? 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)'
                 : 'rgba(15,13,30,.80)',
               border:        canGenerate
                 ? '1px solid rgba(112,80,160,.40)'
                 : '1px solid rgba(184,174,221,.12)',
-              borderRadius:   100,
+              borderRadius:   14,
               color:          canGenerate ? '#EDEBF5' : 'rgba(160,156,192,.45)',
               fontFamily:    "'DM Sans', sans-serif",
               fontWeight:     500,
-              fontSize:       14,
+              fontSize:       16,
               cursor:        canGenerate ? 'pointer' : 'not-allowed',
               filter:        canGenerate ? 'drop-shadow(0 0 24px rgba(43,18,80,.45))' : 'none',
             }}
@@ -762,9 +779,9 @@ export default function StudioPage() {
             {isGenerating ? (
               <><span style={SPINNER_STYLE} /> Gerando…</>
             ) : status === 'done' ? (
-              <><RefreshCw size={14} /> Nova geração</>
+              <><RefreshCw size={18} /> Nova geração</>
             ) : (
-              <><Sparkles size={14} /> Gerar Foto Profissional</>
+              <><Sparkles size={18} /> Gerar Foto Profissional</>
             )}
           </button>
 
@@ -889,8 +906,8 @@ export default function StudioPage() {
                       const filename = `Reflexy Studio Pro ${paddedNum}.jpg`
                       triggerDownload(result, filename)
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 transition-all"
-                    style={{ background: 'linear-gradient(135deg,#7C3AED,#5B21B6)', border: '1px solid rgba(112,80,160,.35)', borderRadius: 8, color: '#EDEBF5', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
+                    className="flex items-center gap-1.5 transition-all"
+                    style={{ padding: '10px 20px', background: 'linear-gradient(135deg,#7C3AED,#5B21B6)', border: '1px solid rgba(112,80,160,.35)', borderRadius: 8, color: '#EDEBF5', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
                     onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.12)')}
                     onMouseLeave={e => (e.currentTarget.style.filter = 'none')}
                   >
@@ -992,14 +1009,14 @@ export default function StudioPage() {
 function UploadCardHeader({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
     <div
-      className="flex items-center gap-3"
-      style={{ padding: '16px 20px', borderBottom: '1px solid rgba(184,174,221,.14)' }}
+      className="flex items-center gap-2.5"
+      style={{ marginBottom: 20 }}
     >
-      <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(184,174,221,.06)', border: '1px solid rgba(184,174,221,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(124,58,237,.12)', border: '1px solid rgba(124,58,237,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         {icon}
       </div>
       <div>
-        <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 14, color: '#EDEBF5' }}>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 18, color: '#EDEBF5' }}>
           {title}
         </div>
         <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', marginTop: 1 }}>
@@ -1032,88 +1049,95 @@ function UploadDropZone({
   image, isDragging, inputRef,
   onDragOver, onDragLeave, onDrop, onChange, onClear, onSwap,
 }: DropZoneProps) {
+  const commonBase = {
+    borderRadius: 14 as const,
+    minHeight:    200 as const,
+  }
+
+  if (image) {
+    return (
+      <div
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className="group relative overflow-hidden"
+        style={{
+          ...commonBase,
+          background: isDragging ? 'rgba(184,174,221,.04)' : 'transparent',
+          cursor: 'default',
+        }}
+      >
+        <img
+          src={image.preview}
+          alt=""
+          style={{
+            width:      '100%',
+            height:     280,
+            objectFit:  'cover',
+            display:    'block',
+            borderRadius: 14,
+          }}
+        />
+        {/* Hover overlay */}
+        <div
+          className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ background: 'rgba(6,5,15,.68)', borderRadius: 14 }}
+        >
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onClear() }}
+            className="flex items-center gap-1.5 px-3 py-1.5 transition-colors"
+            style={{ background: 'rgba(255,90,90,.12)', border: '1px solid rgba(255,90,90,.28)', borderRadius: 8, color: '#FF5A5A', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
+          >
+            <X size={10} /> Remover
+          </button>
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onSwap() }}
+            className="flex items-center gap-1.5 px-3 py-1.5 transition-colors"
+            style={{ background: 'rgba(184,174,221,.08)', border: '1px solid rgba(184,174,221,.22)', borderRadius: 8, color: '#B8AEDD', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
+          >
+            <RefreshCw size={10} /> Trocar
+          </button>
+        </div>
+        {/* File name */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '8px 14px', background: 'linear-gradient(to top, rgba(6,5,15,.80), transparent)' }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: '#A09CC0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {image.name}
+          </p>
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={onChange}
+          id={`input-${id}`}
+        />
+      </div>
+    )
+  }
+
   return (
     <div
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      onClick={() => !image && inputRef.current?.click()}
-      className="relative overflow-hidden transition-colors"
+      onClick={() => inputRef.current?.click()}
+      className="relative overflow-hidden transition-all"
       style={{
-        aspectRatio: '4/3',
-        cursor:      image ? 'default' : 'pointer',
-        background:  isDragging ? 'rgba(184,174,221,.04)' : 'transparent',
-        minHeight:   260,
+        ...commonBase,
+        border: `1.5px dashed ${isDragging ? 'rgba(184,174,221,.40)' : 'rgba(184,174,221,.14)'}`,
+        padding: '40px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        background: isDragging ? 'rgba(184,174,221,.04)' : 'rgba(184,174,221,.02)',
+        cursor: 'pointer',
       }}
     >
-      {image ? (
-        <>
-          <img src={image.preview} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-          {/* Hover overlay */}
-          <div
-            className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 hover:opacity-100 transition-opacity"
-            style={{ background: 'rgba(6,5,15,.68)' }}
-          >
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); onClear() }}
-              className="flex items-center gap-1.5 px-3 py-1.5 transition-colors"
-              style={{ background: 'rgba(255,90,90,.12)', border: '1px solid rgba(255,90,90,.28)', borderRadius: 8, color: '#FF5A5A', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
-            >
-              <X size={10} /> Remover
-            </button>
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); onSwap() }}
-              className="flex items-center gap-1.5 px-3 py-1.5 transition-colors"
-              style={{ background: 'rgba(184,174,221,.08)', border: '1px solid rgba(184,174,221,.22)', borderRadius: 8, color: '#B8AEDD', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
-            >
-              <RefreshCw size={10} /> Trocar
-            </button>
-          </div>
-          {/* File name */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '8px 14px', background: 'linear-gradient(to top, rgba(6,5,15,.80), transparent)' }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: '#A09CC0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {image.name}
-            </p>
-          </div>
-        </>
-      ) : (
-        <div
-          className="absolute flex flex-col items-center justify-center gap-3 transition-all"
-          style={{
-            inset:      16,
-            border:    `1px dashed ${isDragging ? 'rgba(184,174,221,.40)' : 'rgba(184,174,221,.14)'}`,
-          }}
-        >
-          <div
-            style={{
-              width:      40,
-              height:     40,
-              background: isDragging ? 'rgba(184,174,221,.10)' : 'rgba(184,174,221,.05)',
-              display:    'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transform:  isDragging ? 'translateY(-3px)' : 'none',
-              transition: 'all .2s',
-            }}
-          >
-            <Upload size={18} style={{ color: isDragging ? '#B8AEDD' : '#A09CC0' }} />
-          </div>
-          <div className="text-center">
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14, color: isDragging ? '#B8AEDD' : '#EDEBF5', textAlign: 'center' }}>
-              {primaryText}
-            </p>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', textAlign: 'center', marginTop: 2 }}>
-              {secondaryText}
-            </p>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: 'rgba(160,156,192,.45)', textAlign: 'center', marginTop: 4 }}>
-              PNG, JPG — max. 10MB
-            </p>
-          </div>
-        </div>
-      )}
-
       <input
         ref={inputRef}
         type="file"
@@ -1122,6 +1146,25 @@ function UploadDropZone({
         onChange={onChange}
         id={`input-${id}`}
       />
+      <Upload
+        size={28}
+        style={{
+          color: isDragging ? '#B8AEDD' : '#A09CC0',
+          transform: isDragging ? 'translateY(-3px)' : 'none',
+          transition: 'all .2s',
+        }}
+      />
+      <div style={{ textAlign: 'center' }}>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14, color: isDragging ? '#B8AEDD' : '#EDEBF5', textAlign: 'center' }}>
+          {primaryText}
+        </p>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', textAlign: 'center', marginTop: 2 }}>
+          {secondaryText}
+        </p>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(160,156,192,.45)', textAlign: 'center', marginTop: 4 }}>
+          PNG, JPG — max. 10MB
+        </p>
+      </div>
     </div>
   )
 }
