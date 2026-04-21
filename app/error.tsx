@@ -152,7 +152,7 @@ export default function Error({
             zIndex: 1,
           }}
         >
-          Algo deu errado
+          Algo deu errado do nosso lado
         </h1>
 
         {/* Subtext */}
@@ -168,7 +168,7 @@ export default function Error({
             zIndex: 1,
           }}
         >
-          Ocorreu um erro inesperado. Nossa equipe já foi notificada.
+          Tente de novo em segundos.
         </p>
 
         {/* Buttons */}
@@ -185,15 +185,17 @@ export default function Error({
           <button
             onClick={reset}
             style={{
-              fontFamily: "'Bricolage Grotesque', sans-serif",
-              padding: '0.75rem 1.75rem',
-              background: '#2B1250',
-              border: '1px solid rgba(112,80,160,.35)',
-              borderRadius: '2px',
+              fontFamily: "'DM Sans', sans-serif",
+              padding: '16px 56px',
+              background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+              border: '1px solid rgba(112,80,160,.40)',
+              borderRadius: 14,
               color: '#EDEBF5',
               cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '12px',
+              fontWeight: 500,
+              fontSize: 16,
+              filter: 'drop-shadow(0 0 24px rgba(43,18,80,.45))',
+              transition: 'filter .2s',
             }}
           >
             Tentar novamente
@@ -201,16 +203,17 @@ export default function Error({
           <Link
             href="/dashboard"
             style={{
-              fontFamily: "'Bricolage Grotesque', sans-serif",
-              padding: '0.75rem 1.75rem',
-              background: 'transparent',
-              border: '1px solid rgba(184,174,221,0.14)',
-              borderRadius: '2px',
+              fontFamily: "'DM Sans', sans-serif",
+              padding: '16px 56px',
+              background: 'rgba(184,174,221,.04)',
+              border: '1px solid rgba(184,174,221,.14)',
+              borderRadius: 14,
               color: '#B8AEDD',
               textDecoration: 'none',
-              fontWeight: 600,
-              fontSize: '12px',
+              fontWeight: 500,
+              fontSize: 16,
               display: 'inline-block',
+              transition: 'all .2s',
             }}
           >
             Ir para o Dashboard
