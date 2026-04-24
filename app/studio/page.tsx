@@ -105,12 +105,12 @@ const GENERATION_STEPS: { status: GenerationStatus; message: string; pct: number
 
 /** Preset models offered by Reflexy. Replace URLs with real CDN assets. */
 const PRESET_MODELS: { id: string; url: string; thumb: string; label: string }[] = [
-  { id: 'p1', url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=90', thumb: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=75', label: 'Modelo 1' },
-  { id: 'p2', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=90', thumb: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=75', label: 'Modelo 2' },
-  { id: 'p3', url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&q=90', thumb: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&q=75', label: 'Modelo 3' },
-  { id: 'p4', url: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=800&q=90', thumb: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=200&q=75', label: 'Modelo 4' },
-  { id: 'p5', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=90', thumb: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=75', label: 'Modelo 5' },
-  { id: 'p6', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=90', thumb: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=75', label: 'Modelo 6' },
+  { id: 'p1', url: '/models/recomendados/modelo-01.jpg', thumb: '/models/recomendados/modelo-01.jpg', label: 'Modelo feminina, tee branca e jeans, fundo cinza' },
+  { id: 'p2', url: '/models/recomendados/modelo-02.jpg', thumb: '/models/recomendados/modelo-02.jpg', label: 'Modelo feminina asiática, regata branca e jeans, fundo cinza' },
+  { id: 'p3', url: '/models/recomendados/modelo-03.jpg', thumb: '/models/recomendados/modelo-03.jpg', label: 'Modelo feminina negra, top e calça preta, fundo cinza' },
+  { id: 'p4', url: '/models/recomendados/modelo-04.jpg', thumb: '/models/recomendados/modelo-04.jpg', label: 'Modelo feminina, vestido cream longo, fundo branco' },
+  { id: 'p5', url: '/models/recomendados/modelo-05.jpg', thumb: '/models/recomendados/modelo-05.jpg', label: 'Modelo masculino, tee azul-marinho e jeans, fundo branco' },
+  { id: 'p6', url: '/models/recomendados/modelo-06.jpg', thumb: '/models/recomendados/modelo-06.jpg', label: 'Modelo masculino, tee branca e calça preta, fundo cinza' },
 ]
 
 // ─── Demo gallery ─────────────────────────────────────────────────────────────
