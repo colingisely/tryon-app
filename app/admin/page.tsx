@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 
@@ -24,6 +25,7 @@ const Icons = {
 };
 
 export default function AdminPage() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,17 +39,32 @@ export default function AdminPage() {
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("Aguardando imagens...");
 
+  // Server-side admin gate — checks user email against ADMIN_EMAILS env.
+  // Not-admin users are redirected to /dashboard; auth itself stays valid.
+  async function verifyAdminAndSet(authUser: any) {
+    if (!authUser) { setUser(null); return; }
+    try {
+      const res = await fetch('/api/admin/check');
+      const { isAdmin } = await res.json();
+      if (!isAdmin) { router.push('/dashboard'); return; }
+      setUser(authUser);
+    } catch (err) {
+      console.error("Admin check error:", err);
+      router.push('/dashboard');
+    }
+  }
+
   useEffect(() => {
     if (!supabase) { setLoading(false); return; }
     const checkUser = async () => {
       try {
         const { data: { user } } = await supabase!.auth.getUser();
-        setUser(user);
+        await verifyAdminAndSet(user);
       } catch (err) { console.error("Error:", err); } finally { setLoading(false); }
     };
     checkUser();
     const { data: authListener } = supabase!.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      verifyAdminAndSet(session?.user ?? null);
     });
     return () => { authListener.subscription.unsubscribe(); };
   }, []);

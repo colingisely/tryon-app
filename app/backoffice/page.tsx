@@ -29,11 +29,8 @@ const T = {
 };
 
 // ─── Admin gate ──────────────────────────────────────────────────────────────
-const ADMIN_EMAILS = [
-  'gisely@reflexy.co',
-  'colin@reflexy.co',
-  'admin@reflexy.co',
-];
+// Moved to server-side: calls GET /api/admin/check which reads
+// ADMIN_EMAILS env via lib/auth/isAdmin.ts (fail-closed in prod).
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Merchant {
@@ -143,7 +140,17 @@ export default function BackofficePage() {
     if (!supabase) { router.push('/login'); return; }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/login'); return; }
-    if (!ADMIN_EMAILS.includes(user.email ?? '')) { router.push('/dashboard'); return; }
+
+    // Server-side admin allowlist (ADMIN_EMAILS env). Fail-closed.
+    try {
+      const res = await fetch('/api/admin/check');
+      const { isAdmin } = await res.json();
+      if (!isAdmin) { router.push('/dashboard'); return; }
+    } catch {
+      router.push('/dashboard');
+      return;
+    }
+
     setReady(true);
     load();
   }
