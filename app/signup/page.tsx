@@ -269,8 +269,8 @@ function SignupPageInner() {
 
   return (
     <main
-      className="relative min-h-screen flex items-center justify-center px-5 sm:px-8 py-16 overflow-hidden"
-      style={{ background: '#06050F' /* --abyss */ }}
+      className="relative min-h-screen flex items-start justify-center overflow-hidden"
+      style={{ background: '#06050F', padding: '56px 20px 80px' /* --abyss */ }}
     >
       <GrainOverlay />
       <AmbientGlow />
@@ -278,12 +278,13 @@ function SignupPageInner() {
       <div className="relative z-10 w-full" style={{ maxWidth: 400 }}>
 
         {/* ── Brand header ── */}
-        <header className="flex flex-col items-center mb-10">
+        <header className="flex flex-col items-center" style={{ marginBottom: 56 }}>
           <ReflexGem size={64} uid="signup" />
 
           <p
-            className="mt-5 tracking-[.22em] uppercase"
+            className="tracking-[.22em] uppercase"
             style={{
+              marginTop:    20,
               fontFamily:  "'Bricolage Grotesque', sans-serif",
               fontWeight:   700,
               fontSize:     22,
@@ -314,7 +315,7 @@ function SignupPageInner() {
           ) : (
             <>
               <form onSubmit={handleSubmit} noValidate>
-                <div className="px-5 py-6 sm:p-8 flex flex-col" style={{ gap: 24 }}>
+                <div className="flex flex-col" style={{ padding: '32px 24px', gap: 24 }}>
 
                   <h1
                     style={{
