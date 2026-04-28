@@ -222,8 +222,8 @@ export default function SettingsPage() {
       />
 
       <div
-        className="settings-page relative z-10 mx-auto px-6"
-        style={{ maxWidth: 960, paddingTop: 44, paddingBottom: 100 }}
+        className="settings-page relative z-10 mx-auto"
+        style={{ maxWidth: 960, paddingLeft: 40, paddingRight: 40, paddingTop: 44, paddingBottom: 100 }}
       >
         {/* Page header */}
         <div style={{ marginBottom: 40 }}>
@@ -319,6 +319,9 @@ export default function SettingsPage() {
 
         /* ── Responsive ── */
         @media (max-width: 900px) {
+          .settings-nav { padding:0 16px !important; }
+          .settings-nav-right { gap:10px !important; }
+          .settings-nav-storename { display:none !important; }
           .settings-layout { flex-direction:column !important; gap:16px !important; }
           .settings-sidebar { width:100% !important; flex-direction:row !important; overflow-x:auto !important; border-radius:12px !important; }
           .settings-sidebar button { border-left:2px solid transparent !important; border-bottom:1px solid rgba(184,174,221,.08) !important; white-space:nowrap !important; padding:10px 14px !important; font-size:12px !important; }
@@ -344,9 +347,10 @@ function TopNav({
 }) {
   return (
     <nav
-      className="sticky top-0 z-50 flex items-center justify-between px-6"
+      className="settings-nav sticky top-0 z-50 flex items-center justify-between"
       style={{
-        height:              52,
+        height:              64,
+        padding:            '0 40px',
         borderBottom:       '1px solid rgba(184,174,221,.09)',
         background:         'rgba(6,5,15,.92)',
         backdropFilter:     'blur(20px)',
@@ -370,16 +374,12 @@ function TopNav({
             Reflexy
           </span>
         </div>
-        <span style={{ width: 1, height: 16, background: 'rgba(184,174,221,.18)', margin: '0 14px' }} />
-        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#A09CC0' }}>
-          Configurações
-        </span>
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="settings-nav-right flex items-center" style={{ gap: 10 }}>
         {/* Store name */}
         {storeName && (
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0' }}>
+          <span className="settings-nav-storename" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0' }}>
             {storeName}
           </span>
         )}
@@ -388,12 +388,25 @@ function TopNav({
         <button
           type="button"
           onClick={onSignOut}
-          className="flex items-center gap-1.5 px-3 py-1.5 transition-all"
-          style={{ background: 'transparent', border: '1px solid rgba(184,174,221,.14)', borderRadius: 8, color: '#A09CC0', fontFamily: "'DM Sans', sans-serif", fontSize: 12, cursor: 'pointer' }}
+          className="flex items-center transition-all"
+          style={{
+            background:  'rgba(184,174,221,.04)',
+            border:      '1px solid rgba(184,174,221,.14)',
+            borderRadius: 8,
+            color:        '#A09CC0',
+            fontFamily:  "'DM Sans', sans-serif",
+            fontSize:     13,
+            fontWeight:   500,
+            padding:     '7px 14px',
+            cursor:       'pointer',
+            gap:          6,
+            flexShrink:   0,
+            whiteSpace:  'nowrap',
+          }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.30)'; e.currentTarget.style.color = '#EDEBF5' }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)'; e.currentTarget.style.color = '#A09CC0' }}
         >
-          <LogOut size={13} /> Sair
+          <LogOut size={16} /> Sair
         </button>
       </div>
     </nav>
@@ -409,11 +422,13 @@ function SaveBanner({ state }: { state: SaveState }) {
 
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3"
+      className="flex items-center"
       style={{
         background: isSaved ? 'rgba(12,200,158,.07)' : isError ? 'rgba(255,90,90,.07)' : 'rgba(184,174,221,.05)',
         border:    `1px solid ${isSaved ? 'rgba(12,200,158,.24)' : isError ? 'rgba(255,90,90,.22)' : 'rgba(184,174,221,.14)'}`,
         borderRadius: 12,
+        padding:   '12px 16px',
+        gap:        12,
         animation: 'fadeIn .25s ease both',
       }}
     >
@@ -1445,7 +1460,7 @@ function PrimaryButton({
     <button
       type={type}
       disabled={disabled || loading}
-      className="flex items-center gap-2 px-5 py-2.5 transition-all"
+      className="flex items-center transition-all"
       style={{
         background:    disabled
           ? 'rgba(43,18,80,.3)'
@@ -1455,7 +1470,10 @@ function PrimaryButton({
         color:          disabled ? 'rgba(184,174,221,.35)' : '#EDEBF5',
         fontFamily:    "'DM Sans', sans-serif",
         fontWeight:     500,
-        fontSize:       13,
+        fontSize:       14,
+        padding:       '12px 28px',
+        gap:            8,
+        whiteSpace:    'nowrap',
         cursor:        (disabled || loading) ? 'not-allowed' : 'pointer',
         filter:       (!disabled && !loading) ? 'drop-shadow(0 0 16px rgba(43,18,80,.40))' : 'none',
         opacity:       disabled ? 0.5 : 1,
