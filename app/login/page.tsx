@@ -152,13 +152,13 @@ export default function LoginPage() {
 
   return (
     <main
-      className="relative min-h-screen flex items-center justify-center px-5 sm:px-8 py-16 overflow-hidden"
-      style={{ background: '#06050F' /* --abyss */ }}
+      className="relative min-h-screen flex items-start justify-center overflow-hidden"
+      style={{ background: '#06050F', padding: '56px 20px 80px' /* --abyss */ }}
     >
       <GrainOverlay />
       <AmbientGlow />
 
-      <div className="relative z-10 w-full" style={{ maxWidth: 400 }}>
+      <div className="relative z-10" style={{ maxWidth: 400, width: '100%' }}>
 
         {/* ── Payment success banner ── */}
         {fromPayment && (
@@ -185,20 +185,18 @@ export default function LoginPage() {
         )}
 
         {/* ── Brand header ── */}
-        <header className="flex flex-col items-center mb-10">
+        <header className="flex flex-col items-center" style={{ marginBottom: 56 }}>
           <ReflexGem size={64} uid="login" />
 
           <p
-            className="mt-5 tracking-[.22em] uppercase"
+            className="uppercase"
             style={{
+              marginTop:    20,
               fontFamily:  "'Bricolage Grotesque', sans-serif",
               fontWeight:   700,
               fontSize:     22,
-              background:
-                'linear-gradient(160deg, #EDEBF5 0%, rgba(237,235,245,.75) 60%, #B8AEDD 100%)',
-              WebkitBackgroundClip: 'text',
-              backgroundClip:       'text',
-              WebkitTextFillColor:  'transparent',
+              letterSpacing: '.18em',
+              color:        '#EDEBF5',
             }}
           >
             Reflexy
@@ -217,7 +215,7 @@ export default function LoginPage() {
           }}
         >
           <form onSubmit={handleSubmit} noValidate>
-            <div className="px-5 py-6 sm:p-8 flex flex-col gap-5">
+            <div className="flex flex-col" style={{ padding: '32px 24px', gap: 20 }}>
 
               <h1
                 style={{

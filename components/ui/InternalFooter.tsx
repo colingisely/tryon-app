@@ -15,12 +15,13 @@ export function InternalFooter() {
       style={{
         borderTop: '1px solid rgba(184,174,221,.06)',
         marginTop: 64,
-        padding: '16px 32px',
+        padding: '20px 24px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         flexWrap: 'wrap',
-        gap: 12,
+        gap: '10px 24px',
+        textAlign: 'center',
       }}
     >
       <span
@@ -34,7 +35,7 @@ export function InternalFooter() {
         © {year} Reflexy. Todos os direitos reservados.
       </span>
 
-      <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
         <Link
           href="/privacy"
           style={{

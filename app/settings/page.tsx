@@ -50,8 +50,11 @@ import {
   Star,
   ExternalLink,
   Loader2,
+  Menu,
+  ArrowLeft,
 } from 'lucide-react'
 import ReflexGem from '@/components/ui/ReflexGem'
+import AppNav from '@/components/ui/AppNav'
 import {
   GrainOverlay,
   AmbientGlow,
@@ -90,8 +93,8 @@ interface SaveState {
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: 'store',   label: 'Perfil da Loja',     icon: <Store size={14} />      },
-  { id: 'api',     label: 'API & Integração',   icon: <Key size={14} />        },
   { id: 'widget',  label: 'Widget',             icon: <ShoppingBag size={14} />},
+  { id: 'api',     label: 'API & Integração',   icon: <Key size={14} />        },
   { id: 'billing', label: 'Plano & Faturamento',icon: <CreditCard size={14} /> },
   { id: 'danger',  label: 'Conta',              icon: <Settings size={14} />   },
 ]
@@ -103,6 +106,7 @@ export default function SettingsPage() {
   const supabase = createClient()
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('store')
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [loading,   setLoading]   = useState(true)
   const [settings,  setSettings]  = useState<MerchantSettings>({
     id:                              '',
@@ -215,15 +219,11 @@ export default function SettingsPage() {
       <AmbientGlow />
 
       {/* ── Top nav ── */}
-      <TopNav
-        storeName={settings.storeName}
-        planId={settings.planId}
-        onSignOut={handleSignOut}
-      />
+      <AppNav current="settings" onSignOut={handleSignOut} />
 
       <div
-        className="settings-page relative z-10 mx-auto px-6"
-        style={{ maxWidth: 960, paddingTop: 44, paddingBottom: 100 }}
+        className="settings-page relative z-10 mx-auto"
+        style={{ maxWidth: 960, paddingLeft: 40, paddingRight: 40, paddingTop: 44, paddingBottom: 100 }}
       >
         {/* Page header */}
         <div style={{ marginBottom: 40 }}>
@@ -241,56 +241,180 @@ export default function SettingsPage() {
           </h1>
         </div>
 
+        {/* ── Mobile menu trigger (visible only ≤900px) ── */}
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          className="settings-menu-trigger flex items-center justify-between"
+          style={{
+            display:      'none',
+            width:        '100%',
+            background:   '#0F0D1E',
+            border:       '1px solid rgba(184,174,221,.14)',
+            borderRadius:  12,
+            padding:      '12px 16px',
+            marginBottom:  16,
+            cursor:        'pointer',
+            color:         '#EDEBF5',
+            fontFamily:   "'DM Sans', sans-serif",
+            fontSize:      13,
+            fontWeight:    500,
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Menu size={14} style={{ color: '#A09CC0' }} />
+            {TABS.find(t => t.id === activeTab)?.label ?? 'Menu'}
+          </span>
+          <ChevronRight size={12} style={{ color: '#A09CC0' }} />
+        </button>
+
+        {/* ── Mobile drawer overlay ── */}
+        {drawerOpen && (
+          <div
+            className="settings-drawer-backdrop"
+            onClick={() => setDrawerOpen(false)}
+            style={{
+              position: 'fixed',
+              inset:    0,
+              zIndex:   60,
+              background: 'rgba(6,5,15,.80)',
+              backdropFilter: 'blur(8px)',
+              animation: 'fadeIn .2s ease both',
+            }}
+          >
+            <nav
+              onClick={e => e.stopPropagation()}
+              style={{
+                position: 'absolute',
+                top: 0, left: 0, bottom: 0,
+                width:    '82%',
+                maxWidth:  300,
+                background: '#0F0D1E',
+                borderRight: '1px solid rgba(184,174,221,.14)',
+                display:    'flex',
+                flexDirection: 'column',
+                animation: 'slideInLeft .25s ease both',
+              }}
+            >
+              <div
+                className="flex items-center justify-between"
+                style={{ padding: '18px 20px', borderBottom: '1px solid rgba(184,174,221,.10)' }}
+              >
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#EDEBF5', letterSpacing: '-.01em' }}>
+                  Menu
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setDrawerOpen(false)}
+                  aria-label="Fechar menu"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A09CC0', padding: 0 }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {TABS.map(tab => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => { setActiveTab(tab.id); setDrawerOpen(false) }}
+                    className="flex items-center justify-between transition-all text-left w-full"
+                    style={{
+                      background:   activeTab === tab.id ? 'rgba(43,18,80,.55)' : 'transparent',
+                      borderLeft:  `2px solid ${activeTab === tab.id ? '#0CC89E' : 'transparent'}`,
+                      borderBottom: '1px solid rgba(184,174,221,.06)',
+                      padding:      '14px 18px',
+                      cursor:       'pointer',
+                    }}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span style={{ color: activeTab === tab.id ? '#0CC89E' : '#A09CC0' }}>
+                        {tab.icon}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize:   13,
+                          color:      activeTab === tab.id ? '#EDEBF5' : '#A09CC0',
+                          fontWeight: activeTab === tab.id ? 500 : 400,
+                        }}
+                      >
+                        {tab.label}
+                      </span>
+                    </div>
+                    {activeTab === tab.id && (
+                      <ChevronRight size={12} style={{ color: '#0CC89E' }} />
+                    )}
+                  </button>
+                ))}
+                <a
+                  href="/dashboard"
+                  className="flex items-center gap-2.5 transition-all w-full"
+                  style={{
+                    borderLeft: '2px solid transparent',
+                    padding:   '14px 18px',
+                    color:      '#A09CC0',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <ArrowLeft size={14} />
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
+                    Voltar ao dashboard
+                  </span>
+                </a>
+              </div>
+            </nav>
+          </div>
+        )}
+
         <div className="settings-layout flex gap-6" style={{ alignItems: 'flex-start' }}>
 
-          {/* ── Sidebar tabs ── */}
+          {/* ── Sidebar tabs (desktop only) ── */}
           <nav
             className="settings-sidebar flex flex-col"
             style={{
-              width:     220,
-              flexShrink: 0,
-              background: '#0F0D1E',
-              border:    '1px solid rgba(184,174,221,.14)',
-              borderRadius: 16,
-              overflow: 'hidden',
+              width:      200,
+              flexShrink:  0,
+              gap:         4,
+              paddingRight: 16,
+              borderRight: '1px solid rgba(184,174,221,.08)',
             }}
           >
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className="flex items-center justify-between px-4 py-3 transition-all text-left w-full"
-                style={{
-                  background:   activeTab === tab.id ? 'rgba(43,18,80,.55)' : 'transparent',
-                  borderLeft:  `2px solid ${activeTab === tab.id ? '#0CC89E' : 'transparent'}`,
-                  borderBottom: '1px solid rgba(184,174,221,.08)',
-                  cursor:       'pointer',
-                }}
-                onMouseEnter={e => { if (activeTab !== tab.id) e.currentTarget.style.background = 'rgba(184,174,221,.03)' }}
-                onMouseLeave={e => { if (activeTab !== tab.id) e.currentTarget.style.background = 'transparent' }}
-              >
-                <div className="flex items-center gap-2.5">
-                  <span style={{ color: activeTab === tab.id ? '#0CC89E' : '#A09CC0', transition: 'color .15s' }}>
+            {TABS.map(tab => {
+              const active = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className="flex items-center transition-all text-left w-full"
+                  style={{
+                    gap:           10,
+                    padding:      '10px 14px',
+                    borderRadius:  8,
+                    background:    active ? 'rgba(43,18,80,.55)' : 'transparent',
+                    cursor:        'pointer',
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(184,174,221,.04)' }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <span style={{ color: active ? '#0CC89E' : '#A09CC0', display: 'inline-flex', transition: 'color .15s' }}>
                     {tab.icon}
                   </span>
                   <span
                     style={{
                       fontFamily: "'DM Sans', sans-serif",
                       fontSize:   13,
-                      color:      activeTab === tab.id ? '#EDEBF5' : '#A09CC0',
+                      color:      active ? '#EDEBF5' : '#A09CC0',
                       transition: 'color .15s',
-                      fontWeight: activeTab === tab.id ? 500 : 400,
+                      fontWeight: active ? 500 : 400,
                     }}
                   >
                     {tab.label}
                   </span>
-                </div>
-                {activeTab === tab.id && (
-                  <span className="settings-tab-chevron"><ChevronRight size={12} style={{ color: '#0CC89E' }} /></span>
-                )}
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </nav>
 
           {/* ── Content panel ── */}
@@ -316,15 +440,25 @@ export default function SettingsPage() {
         @keyframes fadeIn    { from{opacity:0;transform:translateY(-4px);} to{opacity:1;transform:translateY(0);} }
         @keyframes slideIn   { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
         @keyframes shake     { 0%,100%{transform:translateX(0);} 20%,60%{transform:translateX(-4px);} 40%,80%{transform:translateX(4px);} }
+        @keyframes slideInLeft { from{opacity:0;transform:translateX(-12px);} to{opacity:1;transform:translateX(0);} }
 
         /* ── Responsive ── */
         @media (max-width: 900px) {
-          .settings-layout { flex-direction:column !important; gap:16px !important; }
-          .settings-sidebar { width:100% !important; flex-direction:row !important; overflow-x:auto !important; border-radius:12px !important; }
-          .settings-sidebar button { border-left:2px solid transparent !important; border-bottom:1px solid rgba(184,174,221,.08) !important; white-space:nowrap !important; padding:10px 14px !important; font-size:12px !important; }
-          .settings-sidebar .settings-tab-chevron { display:none !important; }
+          .settings-nav { padding:0 16px !important; }
+          .settings-nav-right { gap:10px !important; }
+          .settings-nav-storename { display:none !important; }
+          .settings-menu-trigger { display:flex !important; }
+          .settings-sidebar { display:none !important; }
           .settings-page { padding-left:16px !important; padding-right:16px !important; padding-top:28px !important; }
           .settings-page h1 { font-size:20px !important; }
+        }
+        @media (max-width: 640px) {
+          .danger-row { flex-direction:column !important; align-items:stretch !important; }
+          .danger-row > button { width:100% !important; justify-content:center !important; }
+          .section-card-header { flex-direction:column !important; align-items:stretch !important; }
+          .section-card-header > button { width:100% !important; justify-content:center !important; }
+          .save-row { justify-content:stretch !important; }
+          .save-row > button { width:100% !important; justify-content:center !important; }
         }
       `}</style>
     </main>
@@ -344,9 +478,10 @@ function TopNav({
 }) {
   return (
     <nav
-      className="sticky top-0 z-50 flex items-center justify-between px-6"
+      className="settings-nav sticky top-0 z-50 flex items-center justify-between"
       style={{
-        height:              52,
+        height:              64,
+        padding:            '0 40px',
         borderBottom:       '1px solid rgba(184,174,221,.09)',
         background:         'rgba(6,5,15,.92)',
         backdropFilter:     'blur(20px)',
@@ -354,7 +489,7 @@ function TopNav({
       }}
     >
       <div className="flex items-center">
-        <div className="flex items-center gap-2">
+        <a href="/dashboard" aria-label="Voltar ao dashboard" className="flex items-center gap-2" style={{ textDecoration: 'none' }}>
           <ReflexGem size={18} uid="settings-nav" noReflection />
           <span style={{
             fontFamily:    "'Bricolage Grotesque', sans-serif",
@@ -369,17 +504,13 @@ function TopNav({
           }}>
             Reflexy
           </span>
-        </div>
-        <span style={{ width: 1, height: 16, background: 'rgba(184,174,221,.18)', margin: '0 14px' }} />
-        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#A09CC0' }}>
-          Configurações
-        </span>
+        </a>
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="settings-nav-right flex items-center" style={{ gap: 10 }}>
         {/* Store name */}
         {storeName && (
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0' }}>
+          <span className="settings-nav-storename" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0' }}>
             {storeName}
           </span>
         )}
@@ -388,12 +519,25 @@ function TopNav({
         <button
           type="button"
           onClick={onSignOut}
-          className="flex items-center gap-1.5 px-3 py-1.5 transition-all"
-          style={{ background: 'transparent', border: '1px solid rgba(184,174,221,.14)', borderRadius: 8, color: '#A09CC0', fontFamily: "'DM Sans', sans-serif", fontSize: 12, cursor: 'pointer' }}
+          className="flex items-center transition-all"
+          style={{
+            background:  'rgba(184,174,221,.04)',
+            border:      '1px solid rgba(184,174,221,.14)',
+            borderRadius: 8,
+            color:        '#A09CC0',
+            fontFamily:  "'DM Sans', sans-serif",
+            fontSize:     13,
+            fontWeight:   500,
+            padding:     '7px 14px',
+            cursor:       'pointer',
+            gap:          6,
+            flexShrink:   0,
+            whiteSpace:  'nowrap',
+          }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.30)'; e.currentTarget.style.color = '#EDEBF5' }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)'; e.currentTarget.style.color = '#A09CC0' }}
         >
-          <LogOut size={13} /> Sair
+          <LogOut size={16} /> Sair
         </button>
       </div>
     </nav>
@@ -409,11 +553,13 @@ function SaveBanner({ state }: { state: SaveState }) {
 
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3"
+      className="flex items-center"
       style={{
         background: isSaved ? 'rgba(12,200,158,.07)' : isError ? 'rgba(255,90,90,.07)' : 'rgba(184,174,221,.05)',
         border:    `1px solid ${isSaved ? 'rgba(12,200,158,.24)' : isError ? 'rgba(255,90,90,.22)' : 'rgba(184,174,221,.14)'}`,
         borderRadius: 12,
+        padding:   '12px 16px',
+        gap:        12,
         animation: 'fadeIn .25s ease both',
       }}
     >
@@ -456,8 +602,8 @@ function SectionCard({
     >
       {/* Card header */}
       <div
-        className="flex items-start justify-between"
-        style={{ padding: '20px 24px', borderBottom: '1px solid rgba(184,174,221,.10)' }}
+        className="section-card-header flex items-start justify-between"
+        style={{ padding: '20px 24px', borderBottom: '1px solid rgba(184,174,221,.10)', gap: 12 }}
       >
         <div>
           <h2 style={{
@@ -560,7 +706,7 @@ function StoreProfileSection({
           </div>
 
           {/* Save button */}
-          <div className="flex justify-end">
+          <div className="save-row flex justify-end">
             <PrimaryButton type="submit" loading={saving} disabled={!hasChanges || saving} icon={<Save size={13} />}>
               Salvar Alterações
             </PrimaryButton>
@@ -632,11 +778,11 @@ function ApiKeySection({
 
           {/* Info box */}
           <div
-            className="flex items-start gap-3 px-4 py-3"
-            style={{ background: 'rgba(59,130,246,.07)', border: '1px solid rgba(59,130,246,.20)', borderRadius: 12 }}
+            className="flex items-start"
+            style={{ background: 'rgba(59,130,246,.07)', border: '1px solid rgba(59,130,246,.20)', borderRadius: 12, padding: '12px 16px', gap: 12 }}
           >
-            <Info size={13} className="mt-0.5 shrink-0" style={{ color: '#3B82F6' }} />
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'rgba(184,174,221,.70)', lineHeight: 1.65 }}>
+            <Info size={13} style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }} />
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', lineHeight: 1.65 }}>
               Trate sua API Key como uma senha. Mantenha-a protegida.
             </p>
           </div>
@@ -660,6 +806,7 @@ function ApiKeySection({
                     color:         '#B8AEDD',
                     userSelect:    'all',
                     cursor:        'default',
+                    paddingRight:  44,
                   }}
                 />
                 <button
@@ -679,7 +826,7 @@ function ApiKeySection({
               <button
                 type="button"
                 onClick={handleCopy}
-                className="flex items-center gap-2 px-4 transition-all shrink-0"
+                className="flex items-center transition-all shrink-0"
                 style={{
                   background:  copied ? 'rgba(12,200,158,.10)' : 'rgba(184,174,221,.06)',
                   border:     `1px solid ${copied ? 'rgba(12,200,158,.30)' : 'rgba(184,174,221,.18)'}`,
@@ -687,9 +834,12 @@ function ApiKeySection({
                   color:       copied ? '#0CC89E' : '#A09CC0',
                   fontFamily: "'DM Sans', sans-serif",
                   fontWeight:  500,
-                  fontSize:    12,
+                  fontSize:    13,
                   cursor:      'pointer',
-                  minWidth:    88,
+                  minWidth:    96,
+                  padding:    '10px 16px',
+                  gap:         6,
+                  whiteSpace: 'nowrap',
                   justifyContent: 'center',
                   transition: 'all .2s',
                 }}
@@ -700,25 +850,25 @@ function ApiKeySection({
               </button>
             </div>
 
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(160,156,192,.40)', marginTop: 2 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(160,156,192,.45)', marginTop: 2, lineHeight: 1.6 }}>
               Criada em {new Date().toLocaleDateString('pt-BR')} · Última utilização: nunca
             </p>
           </div>
 
           {/* Regen button */}
-          <div className="flex justify-between items-center pt-2" style={{ borderTop: '1px solid rgba(184,174,221,.08)' }}>
+          <div className="danger-row flex justify-between items-center" style={{ borderTop: '1px solid rgba(184,174,221,.08)', paddingTop: 20, gap: 12 }}>
             <div>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#EDEBF5', fontWeight: 500 }}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 3 }}>
                 Regerar chave
               </p>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', marginTop: 2 }}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', lineHeight: 1.6 }}>
                 A chave atual será invalidada imediatamente.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setRegenOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 transition-all shrink-0"
+              className="flex items-center transition-all shrink-0"
               style={{
                 background:   'rgba(255,180,50,.07)',
                 border:       '1px solid rgba(255,180,50,.25)',
@@ -726,7 +876,10 @@ function ApiKeySection({
                 color:         '#FFB432',
                 fontFamily:   "'DM Sans', sans-serif",
                 fontWeight:    500,
-                fontSize:      12,
+                fontSize:      13,
+                padding:      '10px 16px',
+                gap:           6,
+                whiteSpace:   'nowrap',
                 cursor:        'pointer',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,180,50,.12)')}
@@ -923,7 +1076,7 @@ function BillingSection({ settings }: { settings: MerchantSettings }) {
             type="button"
             onClick={handleManagePlan}
             disabled={upgrading}
-            className="flex items-center gap-1.5 px-3 py-2 transition-all shrink-0"
+            className="flex items-center transition-all shrink-0"
             style={{
               background:   isFree
                 ? 'linear-gradient(135deg,#7C3AED 0%,#5B21B6 100%)'
@@ -932,11 +1085,13 @@ function BillingSection({ settings }: { settings: MerchantSettings }) {
               borderRadius:  100,
               color:         isFree ? '#EDEBF5' : '#B8AEDD',
               fontFamily:   "'DM Sans', sans-serif",
-              fontSize:      12,
+              fontSize:      13,
               fontWeight:    500,
+              padding:      '8px 18px',
+              gap:           8,
+              whiteSpace:   'nowrap',
               cursor:        upgrading ? 'not-allowed' : 'pointer',
               opacity:       upgrading ? 0.7 : 1,
-              whiteSpace:   'nowrap',
             }}
           >
             {upgrading
@@ -1037,8 +1192,8 @@ function BillingSection({ settings }: { settings: MerchantSettings }) {
         borderRadius: 12,
       }}>
         <div className="flex items-start gap-2.5">
-          <Info size={13} style={{ color: '#7050A0', marginTop: 2, flexShrink: 0 }} />
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', lineHeight: 1.7, margin: 0 }}>
+          <Info size={13} style={{ color: '#7C3AED', marginTop: 2, flexShrink: 0 }} />
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', lineHeight: 1.65, margin: 0 }}>
             Saldo unificado: fast = 1 crédito, Studio Pro = 4. Créditos renovam a cada ciclo e não acumulam.
           </p>
         </div>
@@ -1088,8 +1243,8 @@ function WidgetSection({
 
         {/* Toggle row */}
         <div
-          className="flex items-center justify-between p-4"
-          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12 }}
+          className="flex items-center justify-between"
+          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12, padding: 16, gap: 12 }}
         >
           <div>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 3 }}>
@@ -1127,13 +1282,13 @@ function WidgetSection({
             style={{
               display:      'inline-flex',
               alignItems:   'center',
-              gap:           6,
-              padding:      '4px 10px',
+              gap:           8,
+              padding:      '6px 14px',
               background:    enabled ? 'rgba(12,200,158,.08)' : 'rgba(184,174,221,.06)',
               border:       `1px solid ${enabled ? 'rgba(12,200,158,.25)' : 'rgba(184,174,221,.14)'}`,
               borderRadius:  100,
               fontFamily:   "'DM Sans', sans-serif",
-              fontSize:      11,
+              fontSize:      12,
               fontWeight:    500,
               color:          enabled ? '#0CC89E' : '#A09CC0',
               transition:    'all .3s',
@@ -1151,7 +1306,7 @@ function WidgetSection({
         </div>
 
         {/* Try-on mode toggle */}
-        <div className="flex flex-col gap-3 pt-4" style={{ borderTop: '1px solid rgba(184,174,221,.08)' }}>
+        <div className="flex flex-col gap-3" style={{ borderTop: '1px solid rgba(184,174,221,.08)', paddingTop: 20 }}>
           <div>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 4 }}>
               Modo de geração
@@ -1165,11 +1320,12 @@ function WidgetSection({
                 type="button"
                 disabled={saving}
                 onClick={() => handleModeChange('fast')}
-                className="flex-1 flex items-center justify-between p-3 transition-all"
+                className="flex-1 flex items-center justify-between transition-all"
                 style={{
                   background:  tryonMode === 'fast' ? 'rgba(12,200,158,.07)' : 'rgba(184,174,221,.03)',
                   border:     `1px solid ${tryonMode === 'fast' ? 'rgba(12,200,158,.35)' : 'rgba(184,174,221,.12)'}`,
                   borderRadius: 12,
+                  padding:     '14px 16px',
                   cursor:      saving ? 'not-allowed' : 'pointer',
                   opacity:     saving ? 0.7 : 1,
                 }}
@@ -1188,27 +1344,28 @@ function WidgetSection({
                 type="button"
                 disabled={saving}
                 onClick={() => handleModeChange('premium')}
-                className="flex-1 flex items-center justify-between p-3 transition-all"
+                className="flex-1 flex items-center justify-between transition-all"
                 style={{
-                  background:  tryonMode === 'premium' ? 'rgba(112,80,160,.12)' : 'rgba(184,174,221,.03)',
-                  border:     `1px solid ${tryonMode === 'premium' ? 'rgba(112,80,160,.50)' : 'rgba(184,174,221,.12)'}`,
+                  background:  tryonMode === 'premium' ? 'rgba(124,58,237,.12)' : 'rgba(184,174,221,.03)',
+                  border:     `1px solid ${tryonMode === 'premium' ? 'rgba(124,58,237,.45)' : 'rgba(184,174,221,.12)'}`,
                   borderRadius: 12,
+                  padding:     '14px 16px',
                   cursor:      saving ? 'not-allowed' : 'pointer',
                   opacity:     saving ? 0.7 : 1,
                 }}
               >
                 <div className="flex items-center gap-1.5">
-                  <Star size={13} style={{ color: tryonMode === 'premium' ? '#B8AEDD' : '#A09CC0' }} />
+                  <Star size={13} style={{ color: tryonMode === 'premium' ? '#7C3AED' : '#A09CC0' }} />
                   <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: tryonMode === 'premium' ? '#EDEBF5' : '#A09CC0', fontWeight: 500 }}>
                     Premium
                   </span>
                 </div>
-                {tryonMode === 'premium' && <Check size={11} style={{ color: '#B8AEDD' }} />}
+                {tryonMode === 'premium' && <Check size={11} style={{ color: '#7C3AED' }} />}
               </button>
             </div>
 
             {/* Mode description */}
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(160,156,192,.50)', lineHeight: 1.7, marginTop: 10 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(160,156,192,.45)', lineHeight: 1.6, marginTop: 10 }}>
               {tryonMode === 'fast'
                 ? 'Até 15s por imagem · 1 crédito · Ideal para peças básicas.'
                 : '45–60s por imagem · 4 créditos · Alta fidelidade em peças detalhadas.'}
@@ -1229,7 +1386,7 @@ function SnippetSection() {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="flex flex-col gap-2 pt-4" style={{ borderTop: '1px solid rgba(184,174,221,.08)' }}>
+    <div className="flex flex-col gap-2" style={{ borderTop: '1px solid rgba(184,174,221,.08)', paddingTop: 20 }}>
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
@@ -1253,10 +1410,18 @@ function SnippetSection() {
       </button>
 
       {open && (
-        <div style={{ animation: 'fadeIn .2s ease both' }}>
+        <div style={{ animation: 'fadeIn .2s ease both', maxWidth: '100%' }}>
           <div
             className="relative"
-            style={{ background: 'rgba(6,5,15,.60)', border: '1px solid rgba(184,174,221,.12)', borderRadius: 8, padding: '14px 16px' }}
+            style={{
+              background: 'rgba(6,5,15,.60)',
+              border: '1px solid rgba(184,174,221,.12)',
+              borderRadius: 8,
+              padding: '14px 16px',
+              overflow: 'hidden',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+            }}
           >
             <pre style={{
               fontFamily: "'IBM Plex Mono', monospace",
@@ -1266,6 +1431,7 @@ function SnippetSection() {
               lineHeight:  1.7,
               overflowX:   'auto',
               margin:       0,
+              maxWidth:    '100%',
             }}>
 {`<script src="https://cdn.reflexy.com/widget.js"
   data-store-id="YOUR_STORE_ID"
@@ -1273,7 +1439,7 @@ function SnippetSection() {
 </script>`}
             </pre>
           </div>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'rgba(160,156,192,.50)', lineHeight: 1.6, marginTop: 6 }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'rgba(160,156,192,.45)', lineHeight: 1.6, marginTop: 6 }}>
             Cole antes do fechamento do <code style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#A09CC0' }}>&lt;/body&gt;</code> em seu tema.
           </p>
         </div>
@@ -1294,8 +1460,8 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
         description="Gerencie o acesso à sua conta."
       >
         <div
-          className="flex items-center justify-between p-4"
-          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12 }}
+          className="danger-row flex items-center justify-between"
+          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12, padding: 16, gap: 16 }}
         >
           <div>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 3 }}>
@@ -1308,21 +1474,24 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
           <button
             type="button"
             onClick={() => setConfirmSignOut(true)}
-            className="flex items-center gap-2 px-4 py-2.5 transition-all shrink-0 ml-4"
+            className="flex items-center transition-all shrink-0"
             style={{
-              background:   'transparent',
+              background:   'rgba(184,174,221,.04)',
               border:       '1px solid rgba(184,174,221,.18)',
               borderRadius:  8,
               color:         '#A09CC0',
               fontFamily:   "'DM Sans', sans-serif",
               fontWeight:    500,
-              fontSize:      12,
+              fontSize:      13,
+              padding:      '10px 18px',
+              gap:           6,
+              whiteSpace:   'nowrap',
               cursor:        'pointer',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.32)'; e.currentTarget.style.color = '#EDEBF5' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.18)'; e.currentTarget.style.color = '#A09CC0' }}
           >
-            <LogOut size={12} /> Sair
+            <LogOut size={14} /> Sair
           </button>
         </div>
       </SectionCard>
@@ -1342,14 +1511,14 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
           style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,90,90,.12)' }}
         >
           <AlertTriangle size={15} style={{ color: '#FF5A5A' }} />
-          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 15, color: '#FF5A5A', letterSpacing: '-.01em' }}>
+          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 16, color: '#FF5A5A', letterSpacing: '-.01em' }}>
             Zona de Perigo
           </h2>
         </div>
         <div style={{ padding: 24 }}>
           <div
-            className="flex items-center justify-between p-4"
-            style={{ background: 'rgba(255,90,90,.04)', border: '1px solid rgba(255,90,90,.12)', borderRadius: 12 }}
+            className="danger-row flex items-center justify-between"
+            style={{ background: 'rgba(255,90,90,.04)', border: '1px solid rgba(255,90,90,.12)', borderRadius: 12, padding: 16, gap: 16 }}
           >
             <div>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 3 }}>
@@ -1362,7 +1531,7 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
             <button
               type="button"
               onClick={() => alert('Entre em contato com o suporte para excluir sua conta.')}
-              className="flex items-center gap-2 px-4 py-2.5 transition-all shrink-0 ml-4"
+              className="flex items-center transition-all shrink-0"
               style={{
                 background:   'rgba(255,90,90,.08)',
                 border:       '1px solid rgba(255,90,90,.25)',
@@ -1370,13 +1539,16 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
                 color:         '#FF5A5A',
                 fontFamily:   "'DM Sans', sans-serif",
                 fontWeight:    500,
-                fontSize:      12,
+                fontSize:      13,
+                padding:      '10px 18px',
+                gap:           6,
+                whiteSpace:   'nowrap',
                 cursor:        'pointer',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,90,90,.14)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,90,90,.08)')}
             >
-              <X size={12} /> Excluir conta
+              <X size={14} /> Excluir conta
             </button>
           </div>
         </div>
@@ -1393,7 +1565,7 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
             style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,.18)', borderRadius: 16, width: '100%', maxWidth: 380, animation: 'slideIn .22s ease both' }}
           >
             <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(184,174,221,.10)' }}>
-              <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 15, color: '#EDEBF5' }}>
+              <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 16, color: '#EDEBF5' }}>
                 Encerrar sessão?
               </h3>
             </div>
@@ -1445,7 +1617,7 @@ function PrimaryButton({
     <button
       type={type}
       disabled={disabled || loading}
-      className="flex items-center gap-2 px-5 py-2.5 transition-all"
+      className="flex items-center transition-all"
       style={{
         background:    disabled
           ? 'rgba(43,18,80,.3)'
@@ -1455,7 +1627,10 @@ function PrimaryButton({
         color:          disabled ? 'rgba(184,174,221,.35)' : '#EDEBF5',
         fontFamily:    "'DM Sans', sans-serif",
         fontWeight:     500,
-        fontSize:       13,
+        fontSize:       14,
+        padding:       '12px 28px',
+        gap:            8,
+        whiteSpace:    'nowrap',
         cursor:        (disabled || loading) ? 'not-allowed' : 'pointer',
         filter:       (!disabled && !loading) ? 'drop-shadow(0 0 16px rgba(43,18,80,.40))' : 'none',
         opacity:       disabled ? 0.5 : 1,
