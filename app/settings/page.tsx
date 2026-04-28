@@ -647,8 +647,8 @@ function ApiKeySection({
 
           {/* Info box */}
           <div
-            className="flex items-start gap-3 px-4 py-3"
-            style={{ background: 'rgba(59,130,246,.07)', border: '1px solid rgba(59,130,246,.20)', borderRadius: 12 }}
+            className="flex items-start"
+            style={{ background: 'rgba(59,130,246,.07)', border: '1px solid rgba(59,130,246,.20)', borderRadius: 12, padding: '12px 16px', gap: 12 }}
           >
             <Info size={13} className="mt-0.5 shrink-0" style={{ color: '#3B82F6' }} />
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'rgba(184,174,221,.70)', lineHeight: 1.65 }}>
@@ -694,7 +694,7 @@ function ApiKeySection({
               <button
                 type="button"
                 onClick={handleCopy}
-                className="flex items-center gap-2 px-4 transition-all shrink-0"
+                className="flex items-center transition-all shrink-0"
                 style={{
                   background:  copied ? 'rgba(12,200,158,.10)' : 'rgba(184,174,221,.06)',
                   border:     `1px solid ${copied ? 'rgba(12,200,158,.30)' : 'rgba(184,174,221,.18)'}`,
@@ -702,9 +702,12 @@ function ApiKeySection({
                   color:       copied ? '#0CC89E' : '#A09CC0',
                   fontFamily: "'DM Sans', sans-serif",
                   fontWeight:  500,
-                  fontSize:    12,
+                  fontSize:    13,
                   cursor:      'pointer',
-                  minWidth:    88,
+                  minWidth:    96,
+                  padding:    '10px 16px',
+                  gap:         6,
+                  whiteSpace: 'nowrap',
                   justifyContent: 'center',
                   transition: 'all .2s',
                 }}
@@ -733,7 +736,7 @@ function ApiKeySection({
             <button
               type="button"
               onClick={() => setRegenOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 transition-all shrink-0"
+              className="flex items-center transition-all shrink-0"
               style={{
                 background:   'rgba(255,180,50,.07)',
                 border:       '1px solid rgba(255,180,50,.25)',
@@ -741,7 +744,10 @@ function ApiKeySection({
                 color:         '#FFB432',
                 fontFamily:   "'DM Sans', sans-serif",
                 fontWeight:    500,
-                fontSize:      12,
+                fontSize:      13,
+                padding:      '10px 16px',
+                gap:           6,
+                whiteSpace:   'nowrap',
                 cursor:        'pointer',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,180,50,.12)')}
@@ -938,7 +944,7 @@ function BillingSection({ settings }: { settings: MerchantSettings }) {
             type="button"
             onClick={handleManagePlan}
             disabled={upgrading}
-            className="flex items-center gap-1.5 px-3 py-2 transition-all shrink-0"
+            className="flex items-center transition-all shrink-0"
             style={{
               background:   isFree
                 ? 'linear-gradient(135deg,#7C3AED 0%,#5B21B6 100%)'
@@ -947,11 +953,13 @@ function BillingSection({ settings }: { settings: MerchantSettings }) {
               borderRadius:  100,
               color:         isFree ? '#EDEBF5' : '#B8AEDD',
               fontFamily:   "'DM Sans', sans-serif",
-              fontSize:      12,
+              fontSize:      13,
               fontWeight:    500,
+              padding:      '8px 18px',
+              gap:           8,
+              whiteSpace:   'nowrap',
               cursor:        upgrading ? 'not-allowed' : 'pointer',
               opacity:       upgrading ? 0.7 : 1,
-              whiteSpace:   'nowrap',
             }}
           >
             {upgrading
@@ -1103,8 +1111,8 @@ function WidgetSection({
 
         {/* Toggle row */}
         <div
-          className="flex items-center justify-between p-4"
-          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12 }}
+          className="flex items-center justify-between"
+          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12, padding: 16, gap: 12 }}
         >
           <div>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 3 }}>
@@ -1142,13 +1150,13 @@ function WidgetSection({
             style={{
               display:      'inline-flex',
               alignItems:   'center',
-              gap:           6,
-              padding:      '4px 10px',
+              gap:           8,
+              padding:      '6px 14px',
               background:    enabled ? 'rgba(12,200,158,.08)' : 'rgba(184,174,221,.06)',
               border:       `1px solid ${enabled ? 'rgba(12,200,158,.25)' : 'rgba(184,174,221,.14)'}`,
               borderRadius:  100,
               fontFamily:   "'DM Sans', sans-serif",
-              fontSize:      11,
+              fontSize:      12,
               fontWeight:    500,
               color:          enabled ? '#0CC89E' : '#A09CC0',
               transition:    'all .3s',
@@ -1180,11 +1188,12 @@ function WidgetSection({
                 type="button"
                 disabled={saving}
                 onClick={() => handleModeChange('fast')}
-                className="flex-1 flex items-center justify-between p-3 transition-all"
+                className="flex-1 flex items-center justify-between transition-all"
                 style={{
                   background:  tryonMode === 'fast' ? 'rgba(12,200,158,.07)' : 'rgba(184,174,221,.03)',
                   border:     `1px solid ${tryonMode === 'fast' ? 'rgba(12,200,158,.35)' : 'rgba(184,174,221,.12)'}`,
                   borderRadius: 12,
+                  padding:     '14px 16px',
                   cursor:      saving ? 'not-allowed' : 'pointer',
                   opacity:     saving ? 0.7 : 1,
                 }}
@@ -1203,11 +1212,12 @@ function WidgetSection({
                 type="button"
                 disabled={saving}
                 onClick={() => handleModeChange('premium')}
-                className="flex-1 flex items-center justify-between p-3 transition-all"
+                className="flex-1 flex items-center justify-between transition-all"
                 style={{
                   background:  tryonMode === 'premium' ? 'rgba(112,80,160,.12)' : 'rgba(184,174,221,.03)',
                   border:     `1px solid ${tryonMode === 'premium' ? 'rgba(112,80,160,.50)' : 'rgba(184,174,221,.12)'}`,
                   borderRadius: 12,
+                  padding:     '14px 16px',
                   cursor:      saving ? 'not-allowed' : 'pointer',
                   opacity:     saving ? 0.7 : 1,
                 }}
@@ -1268,10 +1278,18 @@ function SnippetSection() {
       </button>
 
       {open && (
-        <div style={{ animation: 'fadeIn .2s ease both' }}>
+        <div style={{ animation: 'fadeIn .2s ease both', maxWidth: '100%' }}>
           <div
             className="relative"
-            style={{ background: 'rgba(6,5,15,.60)', border: '1px solid rgba(184,174,221,.12)', borderRadius: 8, padding: '14px 16px' }}
+            style={{
+              background: 'rgba(6,5,15,.60)',
+              border: '1px solid rgba(184,174,221,.12)',
+              borderRadius: 8,
+              padding: '14px 16px',
+              overflow: 'hidden',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+            }}
           >
             <pre style={{
               fontFamily: "'IBM Plex Mono', monospace",
@@ -1281,6 +1299,7 @@ function SnippetSection() {
               lineHeight:  1.7,
               overflowX:   'auto',
               margin:       0,
+              maxWidth:    '100%',
             }}>
 {`<script src="https://cdn.reflexy.com/widget.js"
   data-store-id="YOUR_STORE_ID"
@@ -1309,8 +1328,8 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
         description="Gerencie o acesso à sua conta."
       >
         <div
-          className="flex items-center justify-between p-4"
-          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12 }}
+          className="flex items-center justify-between"
+          style={{ background: 'rgba(184,174,221,.03)', border: '1px solid rgba(184,174,221,.10)', borderRadius: 12, padding: 16, gap: 16 }}
         >
           <div>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 3 }}>
@@ -1323,21 +1342,24 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
           <button
             type="button"
             onClick={() => setConfirmSignOut(true)}
-            className="flex items-center gap-2 px-4 py-2.5 transition-all shrink-0 ml-4"
+            className="flex items-center transition-all shrink-0"
             style={{
-              background:   'transparent',
+              background:   'rgba(184,174,221,.04)',
               border:       '1px solid rgba(184,174,221,.18)',
               borderRadius:  8,
               color:         '#A09CC0',
               fontFamily:   "'DM Sans', sans-serif",
               fontWeight:    500,
-              fontSize:      12,
+              fontSize:      13,
+              padding:      '10px 18px',
+              gap:           6,
+              whiteSpace:   'nowrap',
               cursor:        'pointer',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.32)'; e.currentTarget.style.color = '#EDEBF5' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.18)'; e.currentTarget.style.color = '#A09CC0' }}
           >
-            <LogOut size={12} /> Sair
+            <LogOut size={14} /> Sair
           </button>
         </div>
       </SectionCard>
@@ -1363,8 +1385,8 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
         </div>
         <div style={{ padding: 24 }}>
           <div
-            className="flex items-center justify-between p-4"
-            style={{ background: 'rgba(255,90,90,.04)', border: '1px solid rgba(255,90,90,.12)', borderRadius: 12 }}
+            className="flex items-center justify-between"
+            style={{ background: 'rgba(255,90,90,.04)', border: '1px solid rgba(255,90,90,.12)', borderRadius: 12, padding: 16, gap: 16 }}
           >
             <div>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#EDEBF5', fontWeight: 500, marginBottom: 3 }}>
@@ -1377,7 +1399,7 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
             <button
               type="button"
               onClick={() => alert('Entre em contato com o suporte para excluir sua conta.')}
-              className="flex items-center gap-2 px-4 py-2.5 transition-all shrink-0 ml-4"
+              className="flex items-center transition-all shrink-0"
               style={{
                 background:   'rgba(255,90,90,.08)',
                 border:       '1px solid rgba(255,90,90,.25)',
@@ -1385,13 +1407,16 @@ function DangerSection({ onSignOut }: { onSignOut: () => void }) {
                 color:         '#FF5A5A',
                 fontFamily:   "'DM Sans', sans-serif",
                 fontWeight:    500,
-                fontSize:      12,
+                fontSize:      13,
+                padding:      '10px 18px',
+                gap:           6,
+                whiteSpace:   'nowrap',
                 cursor:        'pointer',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,90,90,.14)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,90,90,.08)')}
             >
-              <X size={12} /> Excluir conta
+              <X size={14} /> Excluir conta
             </button>
           </div>
         </div>
