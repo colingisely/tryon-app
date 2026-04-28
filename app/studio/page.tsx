@@ -1270,13 +1270,35 @@ function PresetModelThumb({
 // ─── RecentGallery ────────────────────────────────────────────────────────────
 
 function RecentGallery({ items }: { items: GenerationResult[] }) {
+  // Default collapsed: cleaner first-impression, especially when older items
+  // hit the FASHN CDN expiration window (see §14 da BUG list).
+  const [open, setOpen] = useState(false)
+
   if (!items.length) return null
 
   return (
-    <section style={{ marginTop: 64 }}>
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', margin: 0 }}>Gerações Recentes</h2>
+    <section style={{ marginTop: 48 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between transition-colors"
+        style={{
+          background:    'rgba(184,174,221,.04)',
+          border:        '1px solid rgba(184,174,221,.14)',
+          borderRadius:  12,
+          padding:       '14px 16px',
+          cursor:        'pointer',
+          fontFamily:    "'DM Sans', sans-serif",
+          marginBottom:   open ? 14 : 0,
+        }}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.26)')}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)')}
+        aria-expanded={open}
+      >
+        <div className="flex items-center" style={{ gap: 12 }}>
+          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', margin: 0 }}>
+            Gerações Recentes
+          </h2>
           <span
             style={{
               fontFamily:    "'DM Sans', sans-serif",
@@ -1288,24 +1310,24 @@ function RecentGallery({ items }: { items: GenerationResult[] }) {
               borderRadius:   100,
             }}
           >
-            {items.length} imagens
+            {items.length} {items.length === 1 ? 'imagem' : 'imagens'}
           </span>
         </div>
-        <button
-          type="button"
-          className="flex items-center gap-1 transition-colors"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#A09CC0', padding: 0 }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#B8AEDD')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#A09CC0')}
-        >
-          Ver arquivo
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-      </div>
+        <ChevronDown
+          size={18}
+          style={{
+            color:      '#A09CC0',
+            flexShrink:  0,
+            transform:   open ? 'rotate(180deg)' : 'rotate(0)',
+            transition: 'transform .2s ease',
+          }}
+        />
+      </button>
 
+      {open && (
       <div
         className="grid"
-        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 1, background: 'rgba(184,174,221,.14)', borderRadius: 16, overflow: 'hidden' }}
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 1, background: 'rgba(184,174,221,.14)', borderRadius: 16, overflow: 'hidden', animation: 'recPanelReveal .22s ease both' }}
       >
         {items.map(item => (
           <div key={item.id} className="group relative" style={{ background: '#0F0D1E', overflow: 'hidden' }}>
@@ -1373,6 +1395,7 @@ function RecentGallery({ items }: { items: GenerationResult[] }) {
           </div>
         ))}
       </div>
+      )}
     </section>
   )
 }
