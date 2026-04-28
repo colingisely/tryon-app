@@ -275,7 +275,7 @@ function SignupPageInner() {
       <GrainOverlay />
       <AmbientGlow />
 
-      <div className="relative z-10 w-full" style={{ maxWidth: 400 }}>
+      <div className="relative z-10" style={{ maxWidth: 400, width: '100%' }}>
 
         {/* ── Brand header ── */}
         <header className="flex flex-col items-center" style={{ marginBottom: 56 }}>

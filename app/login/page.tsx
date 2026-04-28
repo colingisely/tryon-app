@@ -158,7 +158,7 @@ export default function LoginPage() {
       <GrainOverlay />
       <AmbientGlow />
 
-      <div className="relative z-10 w-full" style={{ maxWidth: 400 }}>
+      <div className="relative z-10" style={{ maxWidth: 400, width: '100%' }}>
 
         {/* ── Payment success banner ── */}
         {fromPayment && (
