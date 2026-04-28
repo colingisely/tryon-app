@@ -189,17 +189,14 @@ export default function LoginPage() {
           <ReflexGem size={64} uid="login" />
 
           <p
-            className="tracking-[.22em] uppercase"
+            className="uppercase"
             style={{
               marginTop:    20,
               fontFamily:  "'Bricolage Grotesque', sans-serif",
               fontWeight:   700,
               fontSize:     22,
-              background:
-                'linear-gradient(160deg, #EDEBF5 0%, rgba(237,235,245,.75) 60%, #B8AEDD 100%)',
-              WebkitBackgroundClip: 'text',
-              backgroundClip:       'text',
-              WebkitTextFillColor:  'transparent',
+              letterSpacing: '.18em',
+              color:        '#EDEBF5',
             }}
           >
             Reflexy

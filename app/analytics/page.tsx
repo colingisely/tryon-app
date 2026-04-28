@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { InternalFooter } from '@/components/ui/InternalFooter';
+import AppNav from '@/components/ui/AppNav';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
@@ -372,6 +373,7 @@ export default function AnalyticsPage() {
         .sz-bar-track { height:5px; background:rgba(184,174,221,0.08); border-radius:1px; overflow:hidden; margin-top:5px; }
 
         /* ── Responsive ── */
+        .analytics-grid-main > *, .analytics-grid-bottom > * { min-width: 0; }
         @media (max-width: 768px) {
           .analytics-topbar { flex-direction:column !important; align-items:flex-start !important; gap:12px !important; padding:16px !important; }
           .analytics-content { padding:20px 16px !important; }
@@ -388,6 +390,11 @@ export default function AnalyticsPage() {
           .analytics-grid-main { grid-template-columns:1fr !important; }
         }
       `}</style>
+
+      <AppNav
+        current="analytics"
+        onSignOut={async () => { await supabase.auth.signOut(); router.push('/login'); }}
+      />
 
       <div style={{ minHeight: '100vh', background: '#06050F' }}>
 
@@ -581,8 +588,8 @@ export default function AnalyticsPage() {
             {/* Top 10 Products */}
             <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 16, padding: '20px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <Package size={14} color="#7050A0" />
-                <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>
+                <Package size={14} color="#7C3AED" />
+                <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', margin: 0 }}>
                   Produtos Mais Provados
                 </h2>
               </div>
@@ -605,9 +612,9 @@ export default function AnalyticsPage() {
                     </div>
                   ))
                 ) : topProducts.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0' }}>
                     <Package size={28} color="#A09CC0" style={{ marginBottom: 10 }} />
-                    <p style={{ color: '#A09CC0', fontSize: 13 }}>Nenhum produto ainda</p>
+                    <p style={{ color: '#A09CC0', fontSize: 13, textAlign: 'center' }}>Nenhum produto ainda</p>
                   </div>
                 ) : topProducts.map(prod => (
                   <div key={prod.sku} className="prod-tbl-row">
@@ -639,8 +646,8 @@ export default function AnalyticsPage() {
             {/* Size Analysis — mauve padrão, sem semântica */}
             <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 16, padding: '20px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <Ruler size={14} color="#7050A0" />
-                <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5' }}>
+                <Ruler size={14} color="#7C3AED" />
+                <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', margin: 0 }}>
                   Análise de Tamanhos
                 </h2>
               </div>
@@ -654,9 +661,9 @@ export default function AnalyticsPage() {
                   </div>
                 ))
               ) : sizeData.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0' }}>
                   <Ruler size={28} color="#A09CC0" style={{ marginBottom: 10 }} />
-                  <p style={{ color: '#A09CC0', fontSize: 13 }}>Nenhum dado de tamanho ainda</p>
+                  <p style={{ color: '#A09CC0', fontSize: 13, textAlign: 'center' }}>Nenhum dado de tamanho ainda</p>
                 </div>
               ) : sizeData.map((sz, i) => {
                 /* Mauve com opacidade variando por posição — intensidade de brand, não semântica */

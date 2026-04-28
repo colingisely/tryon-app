@@ -32,6 +32,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { InternalFooter } from '@/components/ui/InternalFooter'
+import AppNav from '@/components/ui/AppNav'
 import { getPlanFeatures } from '@/lib/plan-features'
 import {
   Upload,
@@ -47,10 +48,8 @@ import {
   LayoutGrid,
   RefreshCw,
   Crown,
-  LogOut,
   Check,
 } from 'lucide-react'
-import ReflexGem from '@/components/ui/ReflexGem'
 import {
   GrainOverlay,
   AmbientGlow,
@@ -436,7 +435,7 @@ export default function StudioPage() {
             onClick={handleUpgrade}
             disabled={upgradingPlan}
             style={{
-              background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+              background: '#2B1250',
               border: 'none', borderRadius: 100, color: '#EDEBF5',
               padding: '13px 32px', fontSize: 14, fontWeight: 600,
               fontFamily: "'DM Sans', sans-serif",
@@ -466,153 +465,66 @@ export default function StudioPage() {
       <AmbientGlow />
 
       {/* ── Nav ── */}
-      <nav
-        className="studio-nav sticky top-0 z-50 flex items-center justify-between"
-        style={{
-          height:              64,
-          padding:            '0 40px',
-          borderBottom:       '1px solid rgba(184,174,221,.09)',
-          background:         'rgba(6,5,15,.92)',
-          backdropFilter:     'blur(20px)',
-          WebkitBackdropFilter:'blur(20px)',
-        }}
-      >
-        {/* Left */}
-        <div className="flex items-center">
-          <div className="flex items-center gap-2">
-            <ReflexGem size={18} uid="nav" noReflection />
-            <span style={{
-              fontFamily:    "'Bricolage Grotesque', sans-serif",
-              fontWeight:     700,
-              fontSize:       13,
-              letterSpacing: '.20em',
-              textTransform: 'uppercase',
-              background:    'linear-gradient(160deg,#EDEBF5 0%,#B8AEDD 100%)',
-              WebkitBackgroundClip: 'text',
-              backgroundClip:       'text',
-              WebkitTextFillColor:  'transparent',
-            }}>
-              Reflexy
-            </span>
-          </div>
-          <span className="studio-nav-divider" style={{ width: 1, height: 16, background: 'rgba(184,174,221,.18)', margin: '0 14px' }} />
-          <span className="studio-nav-subtitle" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#A09CC0' }}>
-            Estúdio Pro
-          </span>
-        </div>
+      <AppNav
+        current="studio"
+        onSignOut={handleSignOut}
+        extraRight={(() => {
+          const PLAN_LIMITS: Record<string, number> = { free: 10, starter: 150, growth: 320, pro: 800, enterprise: 2000 }
+          const limit         = PLAN_LIMITS[merchant.plan] ?? 100
+          const lowThreshold  = Math.max(3, Math.floor(limit * 0.20))
+          const credits       = merchant.credits_remaining
+          const isZero        = credits === 0
+          const isLow         = !isZero && credits <= lowThreshold
+          const isCTA         = isZero || isLow
 
-        {/* Right */}
-        <div className="studio-nav-right flex items-center gap-2.5">
+          const tokens = isZero
+            ? { dot: '#FF5A5A', bg: 'rgba(255,90,90,.10)',  border: 'rgba(255,90,90,.30)',  text: '#FF8888' }
+            : isLow
+            ? { dot: '#FFB432', bg: 'rgba(255,180,50,.10)', border: 'rgba(255,180,50,.30)', text: '#FFC971' }
+            : { dot: '#0CC89E', bg: 'rgba(124,58,237,.10)', border: 'rgba(124,58,237,.22)', text: '#B8AEDD' }
 
-          {/* Premium badge */}
-          {(merchant.plan === 'pro' || merchant.plan === 'enterprise') && (
-            <div
-              className="flex items-center gap-2 px-3 py-1.5"
-              style={{ background: 'rgba(43,18,80,.60)', border: '1px solid rgba(112,80,160,.35)', borderRadius: 100 }}
-            >
-              <span style={{
-                width: 6, height: 6, borderRadius: '50%',
-                background: '#0CC89E', boxShadow: '0 0 6px #0CC89E',
-                display: 'inline-block', animation: 'dotPulse 3s ease-in-out infinite',
-              }} />
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#B8AEDD' }}>
-                Premium
-              </span>
-            </div>
-          )}
+          const text = isCTA
+            ? 'Obter mais créditos'
+            : `${credits} crédito${credits !== 1 ? 's' : ''}`
 
-          {/* Credits counter — 3 states: healthy (plum), low (warning), zero (error) */}
-          {(() => {
-            const PLAN_LIMITS: Record<string, number> = { free: 10, starter: 150, growth: 320, pro: 800, enterprise: 2000 }
-            const limit         = PLAN_LIMITS[merchant.plan] ?? 100
-            const lowThreshold  = Math.max(3, Math.floor(limit * 0.20))
-            const credits       = merchant.credits_remaining
-            const isZero        = credits === 0
-            const isLow         = !isZero && credits <= lowThreshold
-            const isCTA         = isZero || isLow
+          const pillStyle: React.CSSProperties = {
+            background: tokens.bg,
+            border: `1px solid ${tokens.border}`,
+            borderRadius: 100,
+            padding: '8px 16px',
+            gap: 8,
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+            cursor: isCTA ? 'pointer' : 'default',
+          }
+          const dotStyle: React.CSSProperties = {
+            width: 6, height: 6, borderRadius: '50%',
+            background: tokens.dot, boxShadow: `0 0 6px ${tokens.dot}`,
+            display: 'inline-block', flexShrink: 0,
+            ...(isCTA ? { animation: `dotPulse ${isZero ? 1.5 : 2}s ease-in-out infinite` } : {}),
+          }
+          const textStyle: React.CSSProperties = {
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 12, fontWeight: 500,
+            color: tokens.text, whiteSpace: 'nowrap',
+          }
 
-            // Brand v7 semantic tokens
-            const tokens = isZero
-              ? { dot: '#FF5A5A', bg: 'rgba(255,90,90,.10)',  border: 'rgba(255,90,90,.30)',  text: '#FF8888' }
-              : isLow
-              ? { dot: '#FFB432', bg: 'rgba(255,180,50,.10)', border: 'rgba(255,180,50,.30)', text: '#FFC971' }
-              : { dot: '#7C3AED', bg: 'rgba(124,58,237,.10)', border: 'rgba(124,58,237,.22)', text: '#B8AEDD' }
-
-            const text = isCTA
-              ? 'Obter mais créditos'
-              : `${credits} crédito${credits !== 1 ? 's' : ''}`
-
-            const pillStyle: React.CSSProperties = {
-              background: tokens.bg,
-              border: `1px solid ${tokens.border}`,
-              borderRadius: 100,
-              padding: '8px 16px',
-              gap: 8,
-              flexShrink: 0,
-              whiteSpace: 'nowrap',
-              cursor: isCTA ? 'pointer' : 'default',
-            }
-            const dotStyle: React.CSSProperties = {
-              width: 6, height: 6, borderRadius: '50%',
-              background: tokens.dot, boxShadow: `0 0 6px ${tokens.dot}`,
-              display: 'inline-block', flexShrink: 0,
-              ...(isCTA ? { animation: `dotPulse ${isZero ? 1.5 : 2}s ease-in-out infinite` } : {}),
-            }
-            const textStyle: React.CSSProperties = {
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 12, fontWeight: 500,
-              color: tokens.text, whiteSpace: 'nowrap',
-            }
-
-            if (isCTA) {
-              return (
-                <button type="button" onClick={handleUpgrade} className="flex items-center" style={pillStyle}>
-                  <span style={dotStyle} />
-                  <span style={textStyle}>{text}</span>
-                </button>
-              )
-            }
+          if (isCTA) {
             return (
-              <div className="flex items-center" style={pillStyle}>
+              <button type="button" onClick={handleUpgrade} className="flex items-center" style={pillStyle}>
                 <span style={dotStyle} />
                 <span style={textStyle}>{text}</span>
-              </div>
+              </button>
             )
-          })()}
-
-          {/* Store name */}
-          {merchant.storeName && (
-            <span className="studio-nav-storename" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0' }}>
-              {merchant.storeName}
-            </span>
-          )}
-
-          {/* Sign out */}
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="flex items-center transition-all"
-            style={{
-              background:  'rgba(184,174,221,.04)',
-              border:      '1px solid rgba(184,174,221,.14)',
-              borderRadius: 8,
-              color:        '#A09CC0',
-              fontFamily:  "'DM Sans', sans-serif",
-              fontSize:     13,
-              fontWeight:   500,
-              padding:     '7px 14px',
-              cursor:       'pointer',
-              gap: 6,
-              flexShrink: 0,
-              whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.30)'; e.currentTarget.style.color = '#EDEBF5' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)'; e.currentTarget.style.color = '#A09CC0' }}
-          >
-            <LogOut size={16} /> Sair
-          </button>
-        </div>
-      </nav>
+          }
+          return (
+            <div className="flex items-center" style={pillStyle}>
+              <span style={dotStyle} />
+              <span style={textStyle}>{text}</span>
+            </div>
+          )
+        })()}
+      />
 
       {/* ── Page content ── */}
       <div
@@ -624,11 +536,11 @@ export default function StudioPage() {
         <div style={{ marginBottom: 40 }}>
           <div
             className="inline-flex items-center gap-2"
-            style={{ background: 'rgba(43,18,80,.55)', border: '1px solid rgba(112,80,160,.30)', borderRadius: 100, padding: '5px 14px', marginBottom: 24 }}
+            style={{ background: 'rgba(124,58,237,.10)', border: '1px solid rgba(124,58,237,.35)', borderRadius: 100, padding: '5px 14px', marginBottom: 24 }}
           >
             <span style={{
               width: 6, height: 6, borderRadius: '50%',
-              background: '#0CC89E', boxShadow: '0 0 6px #0CC89E',
+              background: '#7C3AED', boxShadow: '0 0 6px #7C3AED',
               display: 'inline-block',
               animation: 'dotPulse 2s ease-in-out infinite',
             }} />
@@ -637,7 +549,7 @@ export default function StudioPage() {
             </span>
           </div>
 
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, fontSize: 13, color: 'rgba(160,156,192,.50)', lineHeight: 1.6 }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, fontSize: 13, color: 'rgba(160,156,192,.45)', lineHeight: 1.6 }}>
             Ideal para catálogos, anúncios e redes sociais.
           </p>
         </div>
@@ -801,7 +713,7 @@ export default function StudioPage() {
               maxWidth:       480,
               padding:       '16px 56px',
               background:    canGenerate
-                ? 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)'
+                ? '#2B1250'
                 : 'rgba(15,13,30,.80)',
               border:        canGenerate
                 ? '1px solid rgba(112,80,160,.40)'
@@ -814,8 +726,8 @@ export default function StudioPage() {
               cursor:        canGenerate ? 'pointer' : 'not-allowed',
               filter:        canGenerate ? 'drop-shadow(0 0 24px rgba(43,18,80,.45))' : 'none',
             }}
-            onMouseEnter={e => { if (canGenerate) e.currentTarget.style.filter = 'drop-shadow(0 0 36px rgba(43,18,80,.70)) brightness(1.08)' }}
-            onMouseLeave={e => { if (canGenerate) e.currentTarget.style.filter = 'drop-shadow(0 0 24px rgba(43,18,80,.45))' }}
+            onMouseEnter={e => { if (canGenerate) { e.currentTarget.style.background = '#7050A0'; e.currentTarget.style.filter = 'drop-shadow(0 0 36px rgba(43,18,80,.70))' } }}
+            onMouseLeave={e => { if (canGenerate) { e.currentTarget.style.background = '#2B1250'; e.currentTarget.style.filter = 'drop-shadow(0 0 24px rgba(43,18,80,.45))' } }}
           >
             {isGenerating ? (
               <><span style={SPINNER_STYLE} /> Gerando…</>
@@ -828,7 +740,7 @@ export default function StudioPage() {
 
           {/* Hint / progress */}
           {!isGenerating && status === 'idle' && !canGenerate && (
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'rgba(160,156,192,.50)', textAlign: 'center' }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'rgba(160,156,192,.45)', textAlign: 'center' }}>
               Faça upload das duas imagens para continuar
             </p>
           )}
@@ -948,7 +860,7 @@ export default function StudioPage() {
                       triggerDownload(result, filename)
                     }}
                     className="flex items-center gap-1.5 transition-all"
-                    style={{ padding: '10px 20px', background: 'linear-gradient(135deg,#7C3AED,#5B21B6)', border: '1px solid rgba(112,80,160,.35)', borderRadius: 8, color: '#EDEBF5', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
+                    style={{ padding: '10px 20px', background: '#2B1250', border: '1px solid rgba(112,80,160,.35)', borderRadius: 8, color: '#EDEBF5', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, cursor: 'pointer' }}
                     onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.12)')}
                     onMouseLeave={e => (e.currentTarget.style.filter = 'none')}
                   >
@@ -1059,7 +971,7 @@ function UploadCardHeader({ icon, title, desc }: { icon: React.ReactNode; title:
         {icon}
       </div>
       <div>
-        <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 18, color: '#EDEBF5' }}>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14, color: '#EDEBF5' }}>
           {title}
         </div>
         <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#A09CC0', marginTop: 1 }}>
@@ -1285,8 +1197,8 @@ function RecentGallery({ items }: { items: GenerationResult[] }) {
         style={{
           background:    'rgba(184,174,221,.04)',
           border:        '1px solid rgba(184,174,221,.14)',
-          borderRadius:  12,
-          padding:       '14px 16px',
+          borderRadius:  10,
+          padding:       '10px 14px',
           cursor:        'pointer',
           fontFamily:    "'DM Sans', sans-serif",
           marginBottom:   open ? 14 : 0,
@@ -1295,17 +1207,18 @@ function RecentGallery({ items }: { items: GenerationResult[] }) {
         onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(184,174,221,.14)')}
         aria-expanded={open}
       >
-        <div className="flex items-center" style={{ gap: 12 }}>
-          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', margin: 0 }}>
+        <div className="flex items-center gap-2">
+          <Clock size={11} style={{ color: '#A09CC0' }} />
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 500, color: '#A09CC0' }}>
             Gerações Recentes
-          </h2>
+          </span>
           <span
             style={{
               fontFamily:    "'DM Sans', sans-serif",
               fontSize:       10,
               fontWeight:     500,
               color:         'rgba(160,156,192,.45)',
-              padding:       '3px 8px',
+              padding:       '2px 7px',
               border:        '1px solid rgba(184,174,221,.10)',
               borderRadius:   100,
             }}
@@ -1314,7 +1227,7 @@ function RecentGallery({ items }: { items: GenerationResult[] }) {
           </span>
         </div>
         <ChevronDown
-          size={18}
+          size={13}
           style={{
             color:      '#A09CC0',
             flexShrink:  0,
@@ -1386,8 +1299,8 @@ function RecentGallery({ items }: { items: GenerationResult[] }) {
                 {item.modelName}
               </span>
               <div className="flex items-center gap-1 shrink-0 ml-2">
-                <Clock size={9} style={{ color: 'rgba(160,156,192,.40)' }} />
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: 'rgba(160,156,192,.40)' }}>
+                <Clock size={9} style={{ color: 'rgba(160,156,192,.45)' }} />
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: 'rgba(160,156,192,.45)' }}>
                   {formatRelative(item.createdAt)}
                 </span>
               </div>

@@ -4,15 +4,16 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { InternalFooter } from '@/components/ui/InternalFooter';
+import AppNav from '@/components/ui/AppNav';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import {
   Zap, Star, Eye, TrendingUp, TrendingDown,
-  BarChart2, Settings, Layers, ArrowUpRight,
+  ArrowUpRight,
   AlertCircle, Loader2, RefreshCw, ShoppingBag,
-  Key, AlertTriangle, Mail, Download, Lock, Copy, Check,
+  Mail, Download, Lock, Copy, Check,
 } from 'lucide-react';
 import { getPlanFeatures } from '@/lib/plan-features';
 
@@ -489,6 +490,7 @@ export default function DashboardPage() {
         .skeleton { background:rgba(184,174,221,0.07); border-radius:2px; animation:pulse 1.5s ease-in-out infinite; }
 
         /* ── Responsive ── */
+        .dash-grid-main > *, .dash-grid-credits > *, .dash-stats > * { min-width: 0; }
         @media (max-width: 768px) {
           .dash-topbar { flex-direction:column !important; align-items:flex-start !important; gap:12px !important; padding:16px 20px !important; }
           .dash-content { padding:20px 16px !important; }
@@ -505,6 +507,39 @@ export default function DashboardPage() {
           .dash-grid-credits { grid-template-columns:repeat(2,1fr) !important; }
         }
       `}</style>
+
+      <AppNav
+        current="dashboard"
+        onSignOut={async () => { await supabase.auth.signOut(); router.push('/login'); }}
+        extraRight={merchant?.plan_slug ? (
+          <div
+            className="flex items-center"
+            style={{
+              gap: 8,
+              padding: '6px 14px',
+              background: 'rgba(43,18,80,0.55)',
+              border: '1px solid rgba(112,80,160,0.35)',
+              borderRadius: 100,
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: '#0CC89E', boxShadow: '0 0 6px #0CC89E',
+              display: 'inline-block', flexShrink: 0,
+              animation: 'pulse 3s ease-in-out infinite',
+            }} />
+            <span style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 12, fontWeight: 500,
+              color: '#B8AEDD', textTransform: 'capitalize',
+            }}>
+              {merchant.plan_slug}
+            </span>
+          </div>
+        ) : undefined}
+      />
 
       <div style={{ minHeight: '100vh', background: '#06050F' }}>
 
@@ -540,42 +575,6 @@ export default function DashboardPage() {
               <h1 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 20, fontWeight: 600, color: '#EDEBF5' }}>
                 {loading ? 'Dashboard' : `Olá, ${merchant?.store_name ?? 'lojista'}`}
               </h1>
-              {merchant?.plan_slug && (
-                <span style={{
-                  padding: '3px 10px', fontSize: 11, fontWeight: 500, fontFamily: "'DM Sans',sans-serif",
-                  borderRadius: 100,
-                  /* Plan badge uses brand colors, not semantic */
-                  background: merchant.plan_slug === 'premium' ? 'rgba(43,18,80,0.6)' : 'rgba(43,18,80,0.4)',
-                  border: '1px solid rgba(112,80,160,0.4)',
-                  color: '#B8AEDD',
-                }}>
-                  {merchant.plan_slug}
-                </span>
-              )}
-              {/* Manage / Upgrade button — always visible */}
-              <button
-                onClick={() => handleUpgrade()}
-                disabled={!!upgradingPlan}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '4px 12px', fontSize: 11, cursor: upgradingPlan ? 'not-allowed' : 'pointer',
-                  fontFamily: "'DM Sans',sans-serif", letterSpacing: '0.02em',
-                  background: merchant?.stripe_customer_id
-                    ? 'rgba(43,18,80,0.4)'
-                    : 'linear-gradient(135deg,#2B1250 0%,#7050A0 100%)',
-                  border: '1px solid rgba(112,80,160,0.5)',
-                  color: '#B8AEDD', borderRadius: 100,
-                  opacity: upgradingPlan ? 0.6 : 1,
-                  transition: 'all .15s',
-                }}
-              >
-                {upgradingPlan === 'portal' ? (
-                  <Loader2 size={10} style={{ animation: 'spin 0.8s linear infinite' }} />
-                ) : (
-                  <ArrowUpRight size={10} />
-                )}
-                {merchant?.stripe_customer_id ? 'Gerenciar plano' : 'Fazer upgrade'}
-              </button>
             </div>
             <p style={{ color: '#A09CC0', fontSize: 13, marginTop: 2 }}>Aqui está o resumo da sua loja hoje.</p>
           </div>
@@ -703,9 +702,12 @@ export default function DashboardPage() {
 
             {/* Top Products — mauve como cor padrão, sem semântica de performance */}
             <div style={{ background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 16, padding: 24 }}>
-              <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', marginBottom: 4 }}>
-                Produtos Mais Provados
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <ShoppingBag size={14} color="#7C3AED" />
+                <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', margin: 0 }}>
+                  Produtos Mais Provados
+                </h2>
+              </div>
               <p style={{ color: '#A09CC0', fontSize: 12, marginBottom: 20 }}>Top 5 no período</p>
 
               {loading ? (
@@ -716,9 +718,9 @@ export default function DashboardPage() {
                   </div>
                 ))
               ) : topProducts.length === 0 ? (
-                <div style={{ textAlign: 'center', paddingTop: 32 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 32, paddingBottom: 16 }}>
                   <ShoppingBag size={28} color="#A09CC0" style={{ marginBottom: 10 }} />
-                  <p style={{ color: '#A09CC0', fontSize: 13 }}>Nenhum produto ainda</p>
+                  <p style={{ color: '#A09CC0', fontSize: 13, textAlign: 'center' }}>Nenhum produto ainda</p>
                 </div>
               ) : (() => {
                 const max = topProducts[0]?.count ?? 1;
@@ -743,33 +745,13 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* ── Shortcuts ── */}
-          <div className="dash-grid-credits" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-            <button className="shortcut-btn" onClick={() => window.location.href = '/studio'}>
-              <Layers  size={14} style={{ color: '#7050A0' }} />
-              <span>Estúdio Pro</span>
-              <ArrowUpRight size={12} style={{ marginLeft: 'auto', opacity: 0.4 }} />
-            </button>
-            <button className="shortcut-btn" onClick={() => window.location.href = '/analytics'}>
-              <BarChart2 size={14} style={{ color: '#7050A0' }} />
-              <span>Analytics</span>
-              <ArrowUpRight size={12} style={{ marginLeft: 'auto', opacity: 0.4 }} />
-            </button>
-            <button className="shortcut-btn" onClick={() => window.location.href = '/settings'}>
-              {/* Warning color no ícone de API Key — dado sensível, merece atenção */}
-              <Key size={14} style={{ color: '#FFB432' }} />
-              <span>Configurações</span>
-              <ArrowUpRight size={12} style={{ marginLeft: 'auto', opacity: 0.4 }} />
-            </button>
-          </div>
-
           {/* ── Leads ── */}
           <div style={{ marginTop: 20, background: '#0F0D1E', border: '1px solid rgba(184,174,221,0.14)', borderRadius: 16, overflow: 'hidden' }}>
 
             {/* Header */}
             <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(184,174,221,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Mail size={14} color="#7050A0" />
+                <Mail size={14} color="#7C3AED" />
                 <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: '#EDEBF5', margin: 0 }}>
                   Leads Coletados
                 </h2>
@@ -830,12 +812,12 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : leads.length === 0 ? (
-              <div style={{ padding: '36px 24px', textAlign: 'center' }}>
+              <div style={{ padding: '36px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <Mail size={28} color="#A09CC0" style={{ marginBottom: 10 }} />
-                <p style={{ color: '#A09CC0', fontSize: 13, fontFamily: "'DM Sans',sans-serif" }}>
+                <p style={{ color: '#A09CC0', fontSize: 13, fontFamily: "'DM Sans',sans-serif", textAlign: 'center' }}>
                   Nenhum lead capturado ainda.
                 </p>
-                <p style={{ color: 'rgba(160,156,192,0.55)', fontSize: 12, marginTop: 4 }}>
+                <p style={{ color: 'rgba(160,156,192,0.55)', fontSize: 12, marginTop: 4, textAlign: 'center' }}>
                   Os emails aparecem aqui quando visitantes usam o provador pela segunda vez.
                 </p>
               </div>
@@ -879,17 +861,6 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* API Key warning banner */}
-          <div style={{ marginTop: 12, padding: '10px 16px', background: 'rgba(255,180,50,0.05)', border: '1px solid rgba(255,180,50,0.18)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <AlertTriangle size={13} color="#FFB432" style={{ flexShrink: 0 }} />
-            <p style={{ fontSize: 12, color: '#A09CC0', fontFamily: "'DM Sans',sans-serif" }}>
-              Sua API Key está disponível em{' '}
-              <button onClick={() => window.location.href = '/settings'} style={{ background: 'none', border: 'none', color: '#FFB432', cursor: 'pointer', fontSize: 12, fontFamily: "'DM Sans',sans-serif", padding: 0 }}>
-                Configurações
-              </button>. Nunca a exponha publicamente.
-            </p>
           </div>
 
           <InternalFooter />
